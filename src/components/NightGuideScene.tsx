@@ -235,7 +235,7 @@ export function NightGuideScene({ className }: { className?: string }) {
         if (!bannerMesh) return
         const mat = bannerMesh.material as THREE.MeshBasicMaterial
         const fresh = makeHandwrittenBannerTexture(
-          'Welcome to stress-free, data-driven teaching',
+          'Welcome to stress-free teaching',
         )
         ownedTextures.push(fresh)
         mat.map = fresh
@@ -584,7 +584,7 @@ function buildSkyBiplane() {
 
   // Banner in XY plane so it faces the viewer when the plane flies left↔right in front of the camera
   const bannerTex = makeHandwrittenBannerTexture(
-    'Welcome to stress-free, data-driven teaching',
+    'Welcome to stress-free teaching',
   )
   textures.push(bannerTex)
   const bannerGeom = new THREE.PlaneGeometry(bannerW, bannerH, 40, 8)
