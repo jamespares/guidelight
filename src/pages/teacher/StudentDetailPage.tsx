@@ -2,11 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FileText, RefreshCw, Save } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { WeakspotsPanel, weakspotLabel } from '@/components/WeakspotsPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { api, type StudentRow } from '@/lib/api'
+import { api, type StudentRow, type Weakspot } from '@/lib/api'
 
 export function StudentDetailPage() {
   const { id } = useParams()
@@ -17,8 +18,13 @@ export function StudentDetailPage() {
   const [career, setCareer] = useState('')
   const [summary, setSummary] = useState('')
   const [error, setError] = useState('')
+  const [pinpointError, setPinpointError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pinpointBusy, setPinpointBusy] = useState(false)
   const [notes, setNotes] = useState('')
+  const [weakspots, setWeakspots] = useState<Weakspot[]>([])
+  const [weakspotsSummary, setWeakspotsSummary] = useState<string | null>(null)
+  const [weakspotsUpdatedAt, setWeakspotsUpdatedAt] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -30,6 +36,9 @@ export function StudentDetailPage() {
         setInterests(res.student.interests)
         setCareer(res.student.career_ambitions)
         setSummary(res.student.ai_summary)
+        setWeakspots(res.student.weakspots ?? [])
+        setWeakspotsSummary(res.student.weakspots_summary ?? null)
+        setWeakspotsUpdatedAt(res.student.weakspots_updated_at ?? null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed')
       }
@@ -75,6 +84,22 @@ export function StudentDetailPage() {
     }
   }
 
+  async function pinpoint() {
+    if (!id) return
+    setPinpointBusy(true)
+    setPinpointError('')
+    try {
+      const res = await api.pinpointStudentWeakspots(id)
+      setWeakspots(res.weakspots)
+      setWeakspotsSummary(res.summary)
+      setWeakspotsUpdatedAt(res.weakspotsUpdatedAt)
+    } catch (err) {
+      setPinpointError(err instanceof Error ? err.message : 'Pinpoint failed')
+    } finally {
+      setPinpointBusy(false)
+    }
+  }
+
   if (!student) {
     return <p className="text-muted-foreground">{error || 'Loading…'}</p>
   }
@@ -107,8 +132,8 @@ export function StudentDetailPage() {
           },
           {
             label: 'Weakspots',
-            value: student.weakspots?.length
-              ? student.weakspots.map((w) => w.topic).join(', ')
+            value: weakspots.length
+              ? weakspots.map((w) => weakspotLabel(w)).join(', ')
               : 'None yet',
           },
           { label: 'Attempts', value: String(attempts.length) },
@@ -123,6 +148,15 @@ export function StudentDetailPage() {
           </Card>
         ))}
       </div>
+
+      <WeakspotsPanel
+        weakspots={weakspots}
+        summary={weakspotsSummary}
+        updatedAt={weakspotsUpdatedAt}
+        busy={pinpointBusy}
+        error={pinpointError}
+        onPinpoint={() => void pinpoint()}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">

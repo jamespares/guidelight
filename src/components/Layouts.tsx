@@ -1,9 +1,11 @@
 import {
   BookOpenCheck,
+  BookOpenText,
   ClipboardList,
   Home,
   LineChart,
   LogOut,
+  Settings,
   Wrench,
   Users,
   type LucideIcon,
@@ -20,11 +22,13 @@ type NavItem = { to: string; label: string; icon: LucideIcon }
 function AppShell({
   role,
   items,
+  secondaryItems,
   footerTo,
   footerLabel,
 }: {
   role: string
   items: NavItem[]
+  secondaryItems: NavItem[]
   footerTo: string
   footerLabel: string
 }) {
@@ -40,6 +44,26 @@ function AppShell({
 
         <nav className="flex flex-1 flex-col gap-1 p-3">
           {items.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
+                )
+              }
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {label}
+            </NavLink>
+          ))}
+
+          <div className="my-2 border-t border-sidebar-border" />
+
+          {secondaryItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -97,9 +121,19 @@ const teacherNav: NavItem[] = [
   { to: '/teacher/insights', label: 'Insights', icon: LineChart },
 ]
 
+const teacherSecondary: NavItem[] = [
+  { to: '/teacher/settings', label: 'Settings', icon: Settings },
+  { to: '/teacher/guide', label: 'How to use', icon: BookOpenText },
+]
+
 const studentNav: NavItem[] = [
   { to: '/student/tasks', label: 'Tasks', icon: BookOpenCheck },
   { to: '/student/tools', label: 'Tools', icon: Wrench },
+]
+
+const studentSecondary: NavItem[] = [
+  { to: '/student/settings', label: 'Settings', icon: Settings },
+  { to: '/student/guide', label: 'How to use', icon: BookOpenText },
 ]
 
 export function TeacherLayout() {
@@ -107,6 +141,7 @@ export function TeacherLayout() {
     <AppShell
       role="Teacher"
       items={teacherNav}
+      secondaryItems={teacherSecondary}
       footerTo="/"
       footerLabel="Switch portal"
     />
@@ -118,6 +153,7 @@ export function StudentLayout() {
     <AppShell
       role="Student"
       items={studentNav}
+      secondaryItems={studentSecondary}
       footerTo="/"
       footerLabel="Switch portal"
     />

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { api, type Question, type StudentRow, type TaskContent, type TaskRow } from '@/lib/api'
+import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 
 export function TaskReviewPage() {
   const { id } = useParams()
@@ -110,7 +111,10 @@ export function TaskReviewPage() {
             <>
               {isSpecial ? 'Specialised assessment · ' : 'Human-in-the-loop edit before setting · '}
               <Badge variant={task.status === 'published' ? 'accent' : 'warn'}>{task.status}</Badge>
-              {task.subtype ? ` · ${task.subtype}` : ''}
+              {' · '}
+              <Badge className={taskTypeBadgeClass(task.type, task.subtype)}>
+                {taskTypeLabel(task.type, task.subtype)}
+              </Badge>
             </>
           }
         />
@@ -164,6 +168,9 @@ export function TaskReviewPage() {
               Q{i + 1} · {q.type} · topic: {q.topic}
               {q.bloomLevel ? ` · Bloom: ${q.bloomLevel}` : ''}
             </p>
+            {q.learningObjective ? (
+              <p className="text-sm text-muted-foreground">{q.learningObjective}</p>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
@@ -176,6 +183,14 @@ export function TaskReviewPage() {
             <div className="space-y-2">
               <Label>Topic tag</Label>
               <Input value={q.topic} onChange={(e) => updateQuestion(i, { topic: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Learning objective</Label>
+              <Input
+                value={q.learningObjective ?? ''}
+                onChange={(e) => updateQuestion(i, { learningObjective: e.target.value })}
+                placeholder="One sentence: what this question assesses"
+              />
             </div>
             {q.options ? (
               <div className="space-y-2">

@@ -29,6 +29,7 @@ async function runChat(
   env: Env,
   system: string,
   user: string | Array<Record<string, unknown>>,
+  opts?: { timeoutMs?: number; maxTokens?: number },
 ): Promise<string> {
   const userContent =
     typeof user === 'string'
@@ -40,14 +41,15 @@ async function runChat(
       { role: 'system', content: system },
       { role: 'user', content: userContent },
     ],
-    max_completion_tokens: 4096,
+    max_completion_tokens: opts?.maxTokens ?? 4096,
     temperature: 0.4,
     chat_template_kwargs: { thinking: false },
   })
 
   // Avoid hanging classroom workflows when Workers AI is slow/unavailable
+  const timeoutMs = opts?.timeoutMs ?? 20_000
   const timeout = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('AI request timed out')), 20_000)
+    setTimeout(() => reject(new Error('AI request timed out')), timeoutMs)
   })
 
   const result = await Promise.race([call, timeout])
@@ -102,6 +104,7 @@ function fallbackTaskContent(input: {
       id,
       type,
       topic,
+      learningObjective: `Demonstrate understanding of ${input.subject} related to: ${input.description.slice(0, 80)}`,
       prompt: `(${input.difficulty}) ${input.description} — question ${i + 1}`,
       marks: type === 'extended_written' ? 6 : 1,
     }
@@ -165,6 +168,7 @@ Return ONLY valid JSON matching this schema:
       "type": one of ${JSON.stringify(input.questionTypes)},
       "prompt": string,
       "topic": string,
+      "learningObjective": string,
       "options": string[] (for mcq/bloom),
       "correctAnswer": string | string[],
       "blanks": string[] (for cloze - answers in order),
@@ -176,7 +180,10 @@ Return ONLY valid JSON matching this schema:
     }
   ]
 }
-Every question MUST have a topic tag for analytics. Mark objective questions with correctAnswer.`
+Every question MUST have:
+- topic: a short skill tag (e.g. "relative clauses", "fractions")
+- learningObjective: one clear sentence stating what the question assesses
+Mark objective questions with correctAnswer.`
 
   const user = `Create a ${input.subtype ?? 'homework'} task.
 Subject: ${input.subject}
@@ -199,6 +206,9 @@ Student personalisation hints: ${JSON.stringify(input.studentProfiles ?? []).sli
       id: q.id || `q${i + 1}`,
       marks: q.marks ?? 1,
       topic: q.topic || input.subject,
+      learningObjective:
+        q.learningObjective ||
+        `Assess understanding of ${q.topic || input.subject} in this ${input.subtype ?? 'task'}.`,
     }))
     return parsed
   } catch (err) {
@@ -218,7 +228,14 @@ export async function markAttempt(
   score_pct: number
   feedback: Record<
     string,
-    { correct: boolean; feedback: string; topic: string; marksAwarded: number; marksPossible: number }
+    {
+      correct: boolean
+      feedback: string
+      topic: string
+      learningObjective?: string
+      marksAwarded: number
+      marksPossible: number
+    }
   >
   topic_tags: string[]
 }> {
@@ -231,15 +248,28 @@ Return ONLY valid JSON:
       "correct": boolean,
       "feedback": string,
       "topic": string,
+      "learningObjective": string,
       "marksAwarded": number,
       "marksPossible": number
     }
   ]
 }
-Be fair on open responses. Award partial credit where appropriate.`
+Be fair on open responses. Award partial credit where appropriate.
+Echo each question's topic and learningObjective in the feedback item so archives stay scannable.`
 
   const user = `Subject: ${input.subject}
-Questions: ${JSON.stringify(input.content.questions)}
+Questions: ${JSON.stringify(
+    input.content.questions.map((q) => ({
+      id: q.id,
+      type: q.type,
+      prompt: q.prompt,
+      topic: q.topic,
+      learningObjective: q.learningObjective,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      marks: q.marks,
+    })),
+  )}
 Student answers: ${JSON.stringify(input.answers)}`
 
   try {
@@ -250,6 +280,7 @@ Student answers: ${JSON.stringify(input.answers)}`
         correct: boolean
         feedback: string
         topic: string
+        learningObjective?: string
         marksAwarded: number
         marksPossible: number
       }>
@@ -257,14 +288,26 @@ Student answers: ${JSON.stringify(input.answers)}`
 
     const feedback: Record<
       string,
-      { correct: boolean; feedback: string; topic: string; marksAwarded: number; marksPossible: number }
+      {
+        correct: boolean
+        feedback: string
+        topic: string
+        learningObjective?: string
+        marksAwarded: number
+        marksPossible: number
+      }
     > = {}
     let awarded = 0
     let possible = 0
     const topic_tags: string[] = []
 
     for (const item of parsed.items ?? []) {
-      feedback[item.questionId] = item
+      const q = input.content.questions.find((x) => x.id === item.questionId)
+      feedback[item.questionId] = {
+        ...item,
+        topic: item.topic || q?.topic || input.subject,
+        learningObjective: item.learningObjective || q?.learningObjective,
+      }
       awarded += item.marksAwarded ?? 0
       possible += item.marksPossible ?? 1
       if (item.topic) topic_tags.push(item.topic)
@@ -276,6 +319,7 @@ Student answers: ${JSON.stringify(input.answers)}`
           correct: false,
           feedback: 'Not marked — please review.',
           topic: q.topic,
+          learningObjective: q.learningObjective,
           marksAwarded: 0,
           marksPossible: q.marks ?? 1,
         }
@@ -298,13 +342,27 @@ function localMark(input: {
   score_pct: number
   feedback: Record<
     string,
-    { correct: boolean; feedback: string; topic: string; marksAwarded: number; marksPossible: number }
+    {
+      correct: boolean
+      feedback: string
+      topic: string
+      learningObjective?: string
+      marksAwarded: number
+      marksPossible: number
+    }
   >
   topic_tags: string[]
 } {
   const feedback: Record<
     string,
-    { correct: boolean; feedback: string; topic: string; marksAwarded: number; marksPossible: number }
+    {
+      correct: boolean
+      feedback: string
+      topic: string
+      learningObjective?: string
+      marksAwarded: number
+      marksPossible: number
+    }
   > = {}
   let awarded = 0
   let possible = 0
@@ -329,6 +387,7 @@ function localMark(input: {
         correct: false,
         feedback: 'Recorded for teacher review (AI marker unavailable). Partial credit applied.',
         topic: q.topic,
+        learningObjective: q.learningObjective,
         marksAwarded: Math.ceil(marksPossible / 2),
         marksPossible,
       }
@@ -339,6 +398,7 @@ function localMark(input: {
       correct,
       feedback: correct ? 'Correct.' : 'Incorrect or incomplete.',
       topic: q.topic,
+      learningObjective: q.learningObjective,
       marksAwarded: correct ? marksPossible : 0,
       marksPossible,
     }
@@ -423,3 +483,89 @@ export async function generatePracticeOrFlashcards(
     }
   }
 }
+
+export type PinpointWeakspot = {
+  skill: string
+  objective: string
+  evidence: string
+  frequency: number | string
+  severity: 'low' | 'medium' | 'high' | string
+  remediation: string
+  /** Legacy-compatible alias for flashcards / tools */
+  topic?: string
+  count?: number
+}
+
+export async function pinpointWeakspotsFromArchives(
+  env: Env,
+  input: {
+    scope: 'student' | 'class'
+    name: string
+    archivesMarkdown: string
+  },
+): Promise<{ weakspots: PinpointWeakspot[]; summary: string }> {
+  const system = `You are Guidelight, an expert learning diagnostican.
+Analyse the attempt archives and return ONLY valid JSON:
+{
+  "summary": string,
+  "weakspots": [
+    {
+      "skill": string,
+      "objective": string,
+      "evidence": string,
+      "frequency": number | string,
+      "severity": "low" | "medium" | "high",
+      "remediation": string
+    }
+  ]
+}
+Focus on recurring skill gaps backed by incorrect answers and feedback.
+For class scope, prioritise shared / recurring gaps across students and note who is most affected in evidence.
+Return at most 8 weakspots, most important first.`
+
+  const user = `Scope: ${input.scope}
+Name: ${input.name}
+Attempt archives:
+${input.archivesMarkdown.slice(0, 95_000)}`
+
+  try {
+    const raw = await runChat(env, system, user, { timeoutMs: 55_000, maxTokens: 4096 })
+    const parsed = extractJson(raw) as {
+      summary?: string
+      weakspots?: PinpointWeakspot[]
+    }
+    const weakspots = (parsed.weakspots ?? []).slice(0, 8).map((w) => ({
+      ...w,
+      skill: w.skill || 'General',
+      topic: w.skill || w.topic || 'General',
+      objective: w.objective || '',
+      evidence: w.evidence || '',
+      frequency: w.frequency ?? 1,
+      severity: w.severity || 'medium',
+      remediation: w.remediation || '',
+      count: typeof w.frequency === 'number' ? w.frequency : Number(w.frequency) || 1,
+    }))
+    return {
+      summary: parsed.summary || 'Analysis complete.',
+      weakspots,
+    }
+  } catch (err) {
+    console.error('pinpointWeakspotsFromArchives falling back', err)
+    return {
+      summary: 'AI analysis unavailable — showing a basic fallback from archive keywords.',
+      weakspots: [
+        {
+          skill: 'Review marked feedback',
+          topic: 'Review marked feedback',
+          objective: 'Revisit incorrect responses in recent attempts',
+          evidence: 'Automated fallback when the model was unavailable',
+          frequency: 1,
+          count: 1,
+          severity: 'medium',
+          remediation: 'Ask the student to rework incorrect questions with teacher support.',
+        },
+      ],
+    }
+  }
+}
+

@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '@/components/PageHeader'
+import { WeakspotsPanel } from '@/components/WeakspotsPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -23,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { api, type ClassRow, type StudentRow } from '@/lib/api'
+import { api, type ClassRow, type StudentRow, type Weakspot } from '@/lib/api'
 
 export function InsightsPage() {
   const [scope, setScope] = useState<'class' | 'student'>('class')
@@ -35,11 +36,15 @@ export function InsightsPage() {
     scoreSeries: Array<{ date: string; value: number }>
     hwRate: number | null
     hwSeries: Array<{ date: string; value: number }>
-    weakspots: Array<{ topic: string; count: number }>
+    weakspots: Weakspot[]
+    weakspotsSummary?: string | null
+    weakspotsUpdatedAt?: string | null
   } | null>(null)
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
+  const [pinpointError, setPinpointError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pinpointBusy, setPinpointBusy] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -75,6 +80,32 @@ export function InsightsPage() {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function pinpoint() {
+    if (!id) return
+    setPinpointBusy(true)
+    setPinpointError('')
+    try {
+      const res =
+        scope === 'class'
+          ? await api.pinpointClassWeakspots(id)
+          : await api.pinpointStudentWeakspots(id)
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              weakspots: res.weakspots,
+              weakspotsSummary: res.summary,
+              weakspotsUpdatedAt: res.weakspotsUpdatedAt,
+            }
+          : prev,
+      )
+    } catch (err) {
+      setPinpointError(err instanceof Error ? err.message : 'Pinpoint failed')
+    } finally {
+      setPinpointBusy(false)
     }
   }
 
@@ -147,7 +178,7 @@ export function InsightsPage() {
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Avg % correct
             </div>
-            <div className="mt-2 font-display text-3xl font-semibold">
+            <div className="mt-2 font-display text-3xl font-semibold text-[hsl(var(--insight-score-fg))]">
               {data?.avgScore == null ? '—' : `${data.avgScore}%`}
             </div>
           </CardContent>
@@ -157,7 +188,7 @@ export function InsightsPage() {
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               HW submission rate
             </div>
-            <div className="mt-2 font-display text-3xl font-semibold">
+            <div className="mt-2 font-display text-3xl font-semibold text-[hsl(var(--insight-hw-fg))]">
               {data?.hwRate == null ? '—' : `${data.hwRate}%`}
             </div>
           </CardContent>
@@ -176,7 +207,13 @@ export function InsightsPage() {
               <YAxis domain={[0, 100]} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" name="% correct" stroke="hsl(var(--primary))" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                name="% correct"
+                stroke="hsl(var(--insight-score))"
+                strokeWidth={2.5}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -194,30 +231,28 @@ export function InsightsPage() {
               <YAxis domain={[0, 100]} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" name="submission %" stroke="hsl(var(--muted-foreground))" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                name="submission %"
+                stroke="hsl(var(--insight-hw))"
+                strokeWidth={2}
+                strokeOpacity={0.85}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Current weakspots</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data?.weakspots?.length ? (
-            <ul className="list-disc space-y-1 pl-5 text-sm">
-              {data.weakspots.map((w) => (
-                <li key={w.topic}>
-                  {w.topic} ({w.count} errors)
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No repeated weakspots yet.</p>
-          )}
-        </CardContent>
-      </Card>
+      <WeakspotsPanel
+        title={scope === 'class' ? 'Class weakspots' : 'Student weakspots'}
+        weakspots={data?.weakspots ?? []}
+        summary={data?.weakspotsSummary}
+        updatedAt={data?.weakspotsUpdatedAt}
+        busy={pinpointBusy}
+        error={pinpointError}
+        onPinpoint={() => void pinpoint()}
+      />
 
       <Card>
         <CardHeader>

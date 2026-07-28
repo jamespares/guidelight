@@ -33,6 +33,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { api, type ClassRow, type StudentRow, type TaskRow, type TaskSubtype } from '@/lib/api'
+import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 import { readPastPaperFile } from '@/lib/pastPaper'
 
 function TaskCreateForm({
@@ -492,7 +493,9 @@ function TaskList({
                 <TableCell>{t.class_name}</TableCell>
                 <TableCell>{t.subject}</TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{t.subtype || type}</Badge>
+                  <Badge className={taskTypeBadgeClass(type, t.subtype)}>
+                    {taskTypeLabel(type, t.subtype)}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <Badge variant={t.status === 'published' ? 'accent' : 'warn'}>{t.status}</Badge>

@@ -30,6 +30,8 @@ export interface Question {
   type: QuestionType
   prompt: string
   topic: string
+  /** One clear sentence: what this question assesses */
+  learningObjective?: string
   options?: string[]
   correctAnswer?: string | string[]
   blanks?: string[]

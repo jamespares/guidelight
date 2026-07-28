@@ -17,13 +17,26 @@ export interface ClassRow {
   student_count: number
 }
 
+export interface Weakspot {
+  topic?: string
+  skill?: string
+  count?: number
+  objective?: string
+  evidence?: string
+  frequency?: number | string
+  severity?: string
+  remediation?: string
+}
+
 export interface StudentRow {
   id: string
   class_id: string
   display_name: string
   interests: string
   career_ambitions: string
-  weakspots: Array<{ topic: string; count: number }>
+  weakspots: Weakspot[]
+  weakspots_updated_at?: string | null
+  weakspots_summary?: string | null
   username: string
   ai_summary: string
   class_name: string
@@ -57,6 +70,8 @@ export interface Question {
   type: QuestionType
   prompt: string
   topic: string
+  /** One clear sentence: what this question assesses */
+  learningObjective?: string
   options?: string[]
   correctAnswer?: string | string[]
   blanks?: string[]
@@ -188,8 +203,22 @@ export const api = {
       scoreSeries: Array<{ date: string; value: number }>
       hwRate: number | null
       hwSeries: Array<{ date: string; value: number }>
-      weakspots: Array<{ topic: string; count: number }>
+      weakspots: Weakspot[]
+      weakspotsSummary?: string | null
+      weakspotsUpdatedAt?: string | null
     }>(`/api/insights?scope=${scope}&id=${encodeURIComponent(id)}`),
+  pinpointStudentWeakspots: (studentId: string) =>
+    request<{
+      weakspots: Weakspot[]
+      summary: string
+      weakspotsUpdatedAt: string
+    }>(`/api/students/${studentId}/pinpoint-weakspots`, { method: 'POST', body: '{}' }),
+  pinpointClassWeakspots: (classId: string) =>
+    request<{
+      weakspots: Weakspot[]
+      summary: string
+      weakspotsUpdatedAt: string
+    }>(`/api/classes/${classId}/pinpoint-weakspots`, { method: 'POST', body: '{}' }),
   createReport: (body: {
     student_id?: string
     class_id?: string

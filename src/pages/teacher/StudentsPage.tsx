@@ -231,7 +231,9 @@ export function StudentsPage() {
                 <TableCell>{s.cefr_level || '—'}</TableCell>
                 <TableCell>{s.latest_wpm != null ? `${s.latest_wpm} wpm` : '—'}</TableCell>
                 <TableCell>
-                  {s.weakspots?.length ? s.weakspots.map((w) => w.topic).join(', ') : '—'}
+                  {s.weakspots?.length
+                    ? s.weakspots.map((w) => w.skill || w.topic).join(', ')
+                    : '—'}
                 </TableCell>
                 <TableCell>
                   {s.hw_completion_rate == null ? '—' : `${s.hw_completion_rate}%`}

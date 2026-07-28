@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { api, type Question, type TaskContent, type TaskRow } from '@/lib/api'
+import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 
 function speak(text: string) {
   if (!('speechSynthesis' in window)) return
@@ -154,7 +155,9 @@ export function StudentTasksPage() {
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.title}</TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{t.subtype || t.type}</Badge>
+                  <Badge className={taskTypeBadgeClass(t.type, t.subtype)}>
+                    {taskTypeLabel(t.type, t.subtype)}
+                  </Badge>
                 </TableCell>
                 <TableCell>{t.subject}</TableCell>
                 <TableCell>{t.last_score == null ? '—' : `${t.last_score}%`}</TableCell>
@@ -354,8 +357,12 @@ export function AttemptPage() {
           <CardHeader className="pb-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Question {i + 1} · {q.type} · {q.marks ?? 1} mark(s)
+              {q.topic ? ` · ${q.topic}` : ''}
             </p>
             <CardTitle className="text-base font-semibold">{q.prompt}</CardTitle>
+            {q.learningObjective ? (
+              <p className="text-sm font-normal text-muted-foreground">{q.learningObjective}</p>
+            ) : null}
           </CardHeader>
           <CardContent>
             <QuestionInput

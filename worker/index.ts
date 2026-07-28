@@ -15,7 +15,9 @@ import {
   generateTaskContent,
   describePastPaperImage,
   markAttempt,
+  pinpointWeakspotsFromArchives,
 } from './lib/ai'
+import { buildAttemptArchiveMd, truncateArchives } from './lib/attemptArchive'
 import { getSession, handleAuth, requireRole } from './lib/session'
 import {
   createSpecialTask,
@@ -78,6 +80,69 @@ async function recomputeWeakspots(env: Env, studentId: string) {
   await env.DB.prepare(`UPDATE students SET weakspots = ? WHERE id = ?`)
     .bind(JSON.stringify(weakspots), studentId)
     .run()
+}
+
+/** Rebuild attempt_archive_md when empty (idempotent). */
+async function ensureAttemptArchive(
+  env: Env,
+  row: {
+    id: string
+    attempt_archive_md: string | null
+    answers_json: string
+    feedback_json: string
+    score_pct: number | null
+    submitted_at: string | null
+    display_name: string
+    title: string
+    type: string
+    subtype: string | null
+    subject: string
+    content_json: string
+  },
+): Promise<string> {
+  if (row.attempt_archive_md && row.attempt_archive_md.trim()) {
+    return row.attempt_archive_md
+  }
+  let content: TaskContent = { title: '', instructions: '', questions: [] }
+  let answers: Record<string, unknown> = {}
+  let feedback: Record<string, unknown> = {}
+  try {
+    content = JSON.parse(row.content_json || '{}') as TaskContent
+  } catch {
+    /* ignore */
+  }
+  try {
+    answers = JSON.parse(row.answers_json || '{}') as Record<string, unknown>
+  } catch {
+    /* ignore */
+  }
+  try {
+    feedback = JSON.parse(row.feedback_json || '{}') as Record<string, unknown>
+  } catch {
+    /* ignore */
+  }
+
+  const md = buildAttemptArchiveMd({
+    studentName: row.display_name,
+    taskTitle: row.title || content.title || 'Untitled',
+    taskType: row.type,
+    subtype: row.subtype,
+    subject: row.subject,
+    submittedAt: row.submitted_at || '',
+    scorePct: row.score_pct,
+    content,
+    answers,
+    feedback: feedback as Parameters<typeof buildAttemptArchiveMd>[0]['feedback'],
+  })
+
+  await env.DB.prepare(`UPDATE attempts SET attempt_archive_md = ? WHERE id = ?`)
+    .bind(md, row.id)
+    .run()
+  return md
+}
+
+function weakspotLabel(w: { skill?: string; topic?: string }): string {
+  return w.skill || w.topic || 'Unknown'
 }
 
 async function hwCompletionRate(env: Env, studentId: string, classId: string): Promise<number | null> {
@@ -223,7 +288,7 @@ export default {
         if (user instanceof Response) return user
         const { results } = await env.DB.prepare(
           `SELECT s.id, s.class_id, s.display_name, s.interests, s.career_ambitions,
-                  s.weakspots, s.username, s.ai_summary, s.created_at,
+                  s.weakspots, s.weakspots_summary, s.weakspots_updated_at, s.username, s.ai_summary, s.created_at,
                   s.cefr_level, s.latest_wpm,
                   c.name as class_name, c.subject as class_subject
            FROM students s
@@ -239,6 +304,8 @@ export default {
             interests: string
             career_ambitions: string
             weakspots: string
+            weakspots_summary: string
+            weakspots_updated_at: string | null
             username: string
             ai_summary: string
             cefr_level: string | null
@@ -266,7 +333,7 @@ export default {
         const studentId = studentMatch[1]
         const s = await env.DB.prepare(
           `SELECT s.id, s.class_id, s.display_name, s.interests, s.career_ambitions,
-                  s.weakspots, s.username, s.ai_summary, s.created_at,
+                  s.weakspots, s.weakspots_summary, s.weakspots_updated_at, s.username, s.ai_summary, s.created_at,
                   s.cefr_level, s.latest_wpm,
                   c.name as class_name, c.subject as class_subject, c.teacher_id
            FROM students s JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
@@ -279,6 +346,8 @@ export default {
             interests: string
             career_ambitions: string
             weakspots: string
+            weakspots_summary: string
+            weakspots_updated_at: string | null
             username: string
             ai_summary: string
             cefr_level: string | null
@@ -771,8 +840,19 @@ export default {
 
         const task = await env.DB.prepare(`SELECT * FROM tasks WHERE id = ?`)
           .bind(attempt.task_id)
-          .first<{ subject: string; content_json: string; time_limit_seconds: number | null }>()
+          .first<{
+            subject: string
+            content_json: string
+            time_limit_seconds: number | null
+            title: string
+            type: string
+            subtype: string | null
+          }>()
         if (!task) return error('Task missing', 404)
+
+        const student = await env.DB.prepare(`SELECT display_name FROM students WHERE id = ?`)
+          .bind(user.id)
+          .first<{ display_name: string }>()
 
         const content = JSON.parse(task.content_json) as TaskContent
         const marked = await markAttempt(env, {
@@ -785,6 +865,20 @@ export default {
           body.duration_ms ??
           Math.max(0, Date.now() - new Date(attempt.started_at + 'Z').getTime())
 
+        const submittedAt = new Date().toISOString()
+        const archiveMd = buildAttemptArchiveMd({
+          studentName: student?.display_name ?? user.name,
+          taskTitle: task.title || content.title || 'Untitled',
+          taskType: task.type,
+          subtype: task.subtype,
+          subject: task.subject,
+          submittedAt,
+          scorePct: marked.score_pct,
+          content,
+          answers: body.answers ?? {},
+          feedback: marked.feedback,
+        })
+
         await env.DB.prepare(
           `UPDATE attempts SET
             submitted_at = datetime('now'),
@@ -793,6 +887,7 @@ export default {
             score_pct = ?,
             feedback_json = ?,
             topic_tags_json = ?,
+            attempt_archive_md = ?,
             status = 'submitted'
            WHERE id = ?`,
         )
@@ -802,6 +897,7 @@ export default {
             marked.score_pct,
             JSON.stringify(marked.feedback),
             JSON.stringify(marked.topic_tags),
+            archiveMd,
             attemptId,
           )
           .run()
@@ -882,10 +978,44 @@ export default {
               /* ignore */
             }
           }
-          const weakspots = Object.entries(topicErrors)
+          const weakspotsFallback = Object.entries(topicErrors)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10)
             .map(([topic, count]) => ({ topic, count }))
+
+          const classRow = cls as {
+            weakspots_json?: string
+            weakspots_summary?: string
+            weakspots_updated_at?: string | null
+          }
+          let weakspots = weakspotsFallback
+          let weakspotsSummary: string | null = null
+          let weakspotsUpdatedAt: string | null = null
+          try {
+            const stored = JSON.parse(classRow.weakspots_json || '[]') as Array<{
+              skill?: string
+              topic?: string
+              count?: number
+              frequency?: number | string
+            }>
+            if (stored.length) {
+              weakspots = stored.map((w) => ({
+                topic: weakspotLabel(w),
+                skill: w.skill || w.topic,
+                count:
+                  typeof w.count === 'number'
+                    ? w.count
+                    : typeof w.frequency === 'number'
+                      ? w.frequency
+                      : Number(w.frequency) || 1,
+                ...w,
+              })) as typeof weakspotsFallback
+              weakspotsSummary = classRow.weakspots_summary || null
+              weakspotsUpdatedAt = classRow.weakspots_updated_at ?? null
+            }
+          } catch {
+            /* use fallback */
+          }
 
           // Submission rate series: one point per submitted homework
           const hwSeries = (attempts.results ?? [])
@@ -901,6 +1031,8 @@ export default {
             hwRate,
             hwSeries,
             weakspots,
+            weakspotsSummary,
+            weakspotsUpdatedAt,
           })
         }
 
@@ -909,7 +1041,14 @@ export default {
           `SELECT s.*, c.teacher_id FROM students s JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
         )
           .bind(id)
-          .first<{ id: string; teacher_id: string; weakspots: string; class_id: string }>()
+          .first<{
+            id: string
+            teacher_id: string
+            weakspots: string
+            class_id: string
+            weakspots_summary?: string
+            weakspots_updated_at?: string | null
+          }>()
         if (!s || s.teacher_id !== user.id) return error('Not found', 404)
 
         const attempts = await env.DB.prepare(
@@ -943,6 +1082,8 @@ export default {
           hwRate,
           hwSeries,
           weakspots: JSON.parse(s.weakspots || '[]'),
+          weakspotsSummary: s.weakspots_summary || null,
+          weakspotsUpdatedAt: s.weakspots_updated_at ?? null,
         })
       }
 
@@ -1059,7 +1200,10 @@ export default {
           .first<{ weakspots: string; subject: string }>()
         if (!s) return error('Not found', 404)
 
-        const weakspots = JSON.parse(s.weakspots || '[]') as Array<{ topic: string }>
+        const weakspots = JSON.parse(s.weakspots || '[]') as Array<{
+          topic?: string
+          skill?: string
+        }>
         const recent = await env.DB.prepare(
           `SELECT feedback_json FROM attempts WHERE student_id = ? AND status = 'submitted'
            ORDER BY submitted_at DESC LIMIT 5`,
@@ -1069,10 +1213,173 @@ export default {
 
         const result = await generatePracticeOrFlashcards(env, body.mode, {
           subject: s.subject,
-          weakspots: weakspots.map((w) => w.topic),
+          weakspots: weakspots.map((w) => w.skill || w.topic || s.subject).filter(Boolean),
           recentErrors: recent.results ?? [],
         })
         return json({ result })
+      }
+
+      // —— Pinpoint weakspots ——
+      if (path.match(/^\/api\/students\/[^/]+\/pinpoint-weakspots$/) && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const studentId = path.split('/')[3]
+        const s = await env.DB.prepare(
+          `SELECT s.id, s.display_name, c.teacher_id FROM students s
+           JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
+        )
+          .bind(studentId)
+          .first<{ id: string; display_name: string; teacher_id: string }>()
+        if (!s || s.teacher_id !== user.id) return error('Not found', 404)
+
+        const attempts = await env.DB.prepare(
+          `SELECT a.id, a.attempt_archive_md, a.answers_json, a.feedback_json, a.score_pct,
+                  a.submitted_at, s.display_name, t.title, t.type, t.subtype, t.subject, t.content_json
+           FROM attempts a
+           JOIN students s ON s.id = a.student_id
+           JOIN tasks t ON t.id = a.task_id
+           WHERE a.student_id = ? AND a.status = 'submitted'
+           ORDER BY a.submitted_at DESC`,
+        )
+          .bind(studentId)
+          .all<{
+            id: string
+            attempt_archive_md: string | null
+            answers_json: string
+            feedback_json: string
+            score_pct: number | null
+            submitted_at: string | null
+            display_name: string
+            title: string
+            type: string
+            subtype: string | null
+            subject: string
+            content_json: string
+          }>()
+
+        const chunks: Array<{ label: string; md: string }> = []
+        for (const row of attempts.results ?? []) {
+          const md = await ensureAttemptArchive(env, row)
+          chunks.push({
+            label: `${row.title || 'Task'} · ${row.submitted_at || ''}`,
+            md,
+          })
+        }
+
+        if (!chunks.length) {
+          return error('No submitted attempts to analyse yet', 400)
+        }
+
+        const corpus = truncateArchives(chunks, 90_000)
+        const analysis = await pinpointWeakspotsFromArchives(env, {
+          scope: 'student',
+          name: s.display_name,
+          archivesMarkdown: corpus,
+        })
+
+        await env.DB.prepare(
+          `UPDATE students SET weakspots = ?, weakspots_summary = ?, weakspots_updated_at = datetime('now')
+           WHERE id = ?`,
+        )
+          .bind(JSON.stringify(analysis.weakspots), analysis.summary, studentId)
+          .run()
+
+        return json({
+          weakspots: analysis.weakspots,
+          summary: analysis.summary,
+          weakspotsUpdatedAt: new Date().toISOString(),
+        })
+      }
+
+      if (path.match(/^\/api\/classes\/[^/]+\/pinpoint-weakspots$/) && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const classId = path.split('/')[3]
+        const cls = await classOwned(env, classId, user.id)
+        if (!cls) return error('Not found', 404)
+
+        const className = (cls as { name?: string }).name || 'Class'
+
+        const attempts = await env.DB.prepare(
+          `SELECT a.id, a.attempt_archive_md, a.answers_json, a.feedback_json, a.score_pct,
+                  a.submitted_at, s.display_name, s.id as student_id, t.title, t.type, t.subtype,
+                  t.subject, t.content_json
+           FROM attempts a
+           JOIN students s ON s.id = a.student_id
+           JOIN tasks t ON t.id = a.task_id
+           WHERE s.class_id = ? AND a.status = 'submitted'
+           ORDER BY a.submitted_at DESC`,
+        )
+          .bind(classId)
+          .all<{
+            id: string
+            attempt_archive_md: string | null
+            answers_json: string
+            feedback_json: string
+            score_pct: number | null
+            submitted_at: string | null
+            display_name: string
+            student_id: string
+            title: string
+            type: string
+            subtype: string | null
+            subject: string
+            content_json: string
+          }>()
+
+        // Fair sample: round-robin by student so one learner cannot dominate
+        const byStudent = new Map<string, typeof attempts.results>()
+        for (const row of attempts.results ?? []) {
+          const list = byStudent.get(row.student_id) ?? []
+          list.push(row)
+          byStudent.set(row.student_id, list)
+        }
+        const interleaved: NonNullable<typeof attempts.results> = []
+        let idx = 0
+        let added = true
+        while (added && interleaved.length < 120) {
+          added = false
+          for (const list of byStudent.values()) {
+            if (idx < list.length) {
+              interleaved.push(list[idx])
+              added = true
+            }
+          }
+          idx += 1
+        }
+
+        const chunks: Array<{ label: string; md: string }> = []
+        for (const row of interleaved) {
+          const md = await ensureAttemptArchive(env, row)
+          chunks.push({
+            label: `${row.display_name} · ${row.title || 'Task'} · ${row.submitted_at || ''}`,
+            md,
+          })
+        }
+
+        if (!chunks.length) {
+          return error('No submitted attempts in this class yet', 400)
+        }
+
+        const corpus = truncateArchives(chunks, 100_000)
+        const analysis = await pinpointWeakspotsFromArchives(env, {
+          scope: 'class',
+          name: className,
+          archivesMarkdown: corpus,
+        })
+
+        await env.DB.prepare(
+          `UPDATE classes SET weakspots_json = ?, weakspots_summary = ?, weakspots_updated_at = datetime('now')
+           WHERE id = ?`,
+        )
+          .bind(JSON.stringify(analysis.weakspots), analysis.summary, classId)
+          .run()
+
+        return json({
+          weakspots: analysis.weakspots,
+          summary: analysis.summary,
+          weakspotsUpdatedAt: new Date().toISOString(),
+        })
       }
 
       // —— Task attempts for teacher (flags) ——

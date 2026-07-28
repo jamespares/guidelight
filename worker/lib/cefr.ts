@@ -427,6 +427,23 @@ export async function handleCefrApi(
       .run()
 
     if (attempt.attempt_id) {
+      const archiveMd = [
+        '# Attempt archive',
+        `- Student: ${user.name}`,
+        `- Task type: assessment`,
+        `- Subtype: reading_speed`,
+        `- Submitted: ${new Date().toISOString()}`,
+        `- WPM: ${attempt.wpm}`,
+        `- Spot checks: ${scored.correct}/${scored.total}`,
+        '',
+        '## Reading speed result',
+        `- Learning objective: Measure reading fluency (words per minute) with comprehension checks`,
+        `- Topic: reading_speed`,
+        `- Correct?: yes (passed spot checks)`,
+        `- Feedback: Recorded ${attempt.wpm} wpm with ${scored.correct}/${scored.total} checks correct`,
+        '',
+      ].join('\n')
+
       await env.DB.prepare(
         `UPDATE attempts SET
           submitted_at = datetime('now'),
@@ -434,6 +451,7 @@ export async function handleCefrApi(
           score_pct = ?,
           answers_json = ?,
           feedback_json = ?,
+          attempt_archive_md = ?,
           status = 'submitted'
          WHERE id = ?`,
       )
@@ -442,8 +460,16 @@ export async function handleCefrApi(
           Math.min(100, Math.round((attempt.wpm / 300) * 100)),
           JSON.stringify({ wpm: attempt.wpm, checks: scored }),
           JSON.stringify({
-            wpm: { correct: true, feedback: `${attempt.wpm} wpm`, topic: 'reading_speed', marksAwarded: attempt.wpm, marksPossible: attempt.wpm },
+            wpm: {
+              correct: true,
+              feedback: `${attempt.wpm} wpm`,
+              topic: 'reading_speed',
+              learningObjective: 'Measure reading fluency with comprehension checks',
+              marksAwarded: attempt.wpm,
+              marksPossible: attempt.wpm,
+            },
           }),
+          archiveMd,
           attempt.attempt_id,
         )
         .run()
@@ -647,6 +673,24 @@ export async function handleCefrApi(
         refreshed && refreshed.max_score > 0
           ? Math.round((100 * refreshed.total_score) / refreshed.max_score)
           : 0
+      const archiveMd = [
+        '# Attempt archive',
+        `- Student: ${user.name}`,
+        `- Task type: assessment`,
+        `- Subtype: english_level`,
+        `- Submitted: ${new Date().toISOString()}`,
+        `- Score: ${pct}%`,
+        `- CEFR level: ${finalLevel}`,
+        `- Total: ${refreshed?.total_score ?? totals.score}/${refreshed?.max_score ?? totals.max}`,
+        `- Overtime seconds: ${overtime}`,
+        '',
+        '## English level result',
+        `- Learning objective: Indicate overall English proficiency (CEFR) across skills`,
+        `- Topic: english_level`,
+        `- Feedback: Indicative CEFR ${finalLevel}; IELTS band ${ieltsBandForLevel(finalLevel as never)}`,
+        '',
+      ].join('\n')
+
       await env.DB.prepare(
         `UPDATE attempts SET
           submitted_at = datetime('now'),
@@ -654,6 +698,7 @@ export async function handleCefrApi(
           score_pct = ?,
           answers_json = ?,
           feedback_json = ?,
+          attempt_archive_md = ?,
           status = 'submitted'
          WHERE id = ?`,
       )
@@ -666,7 +711,10 @@ export async function handleCefrApi(
             total: refreshed?.total_score,
             max: refreshed?.max_score,
             overtime,
+            topic: 'english_level',
+            learningObjective: 'Indicate overall English proficiency (CEFR) across skills',
           }),
+          archiveMd,
           test.attempt_id,
         )
         .run()

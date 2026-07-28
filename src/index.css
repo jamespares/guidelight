@@ -59,6 +59,26 @@
   --glow-1: rgba(244, 247, 251, 0.08);
   --glow-2: rgba(197, 203, 214, 0.06);
   --glow-3: rgba(154, 163, 178, 0.05);
+
+  /* Assessment type colours (importance → saturation) */
+  --task-english-level-bg: 173 45% 18%;
+  --task-english-level-fg: 173 80% 78%;
+  --task-summative-bg: 239 40% 22%;
+  --task-summative-fg: 239 90% 88%;
+  --task-diagnostic-bg: 199 45% 20%;
+  --task-diagnostic-fg: 199 90% 82%;
+  --task-formative-bg: 38 40% 18%;
+  --task-formative-fg: 38 95% 78%;
+  --task-reading-speed-bg: 158 35% 16%;
+  --task-reading-speed-fg: 158 60% 72%;
+  --task-homework-bg: 215 18% 18%;
+  --task-homework-fg: 215 20% 78%;
+
+  /* Insights metric accents */
+  --insight-score: 199 78% 55%;
+  --insight-score-fg: 199 90% 82%;
+  --insight-hw: 158 45% 42%;
+  --insight-hw-fg: 158 50% 72%;
 }
 
 .light {
@@ -110,6 +130,25 @@
   --glow-1: rgba(16, 24, 40, 0.06);
   --glow-2: rgba(52, 64, 84, 0.05);
   --glow-3: rgba(102, 112, 133, 0.04);
+
+  /* Assessment type colours — richer on light backgrounds */
+  --task-english-level-bg: 173 55% 90%;
+  --task-english-level-fg: 173 72% 22%;
+  --task-summative-bg: 239 70% 92%;
+  --task-summative-fg: 239 70% 32%;
+  --task-diagnostic-bg: 199 70% 90%;
+  --task-diagnostic-fg: 199 80% 26%;
+  --task-formative-bg: 38 85% 90%;
+  --task-formative-fg: 32 85% 26%;
+  --task-reading-speed-bg: 158 45% 88%;
+  --task-reading-speed-fg: 158 60% 20%;
+  --task-homework-bg: 215 16% 90%;
+  --task-homework-fg: 215 18% 28%;
+
+  --insight-score: 199 78% 36%;
+  --insight-score-fg: 199 80% 24%;
+  --insight-hw: 158 45% 30%;
+  --insight-hw-fg: 158 50% 20%;
 }
 
 @theme inline {

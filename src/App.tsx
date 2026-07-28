@@ -20,6 +20,8 @@ import {
   ReadingMachineLibraryPage,
   ReadingMachineViewerPage,
 } from './pages/student/ReadingMachinePages'
+import { SettingsPage } from './pages/shared/SettingsPage'
+import { StudentGuidePage, TeacherGuidePage } from './pages/shared/GuidePages'
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -78,6 +80,8 @@ export default function App() {
         <Route path="tasks/:id" element={<TaskReviewPage />} />
         <Route path="insights" element={<InsightsPage />} />
         <Route path="reports/:id" element={<ReportPage />} />
+        <Route path="settings" element={<SettingsPage role="teacher" />} />
+        <Route path="guide" element={<TeacherGuidePage />} />
       </Route>
 
       <Route
@@ -98,6 +102,8 @@ export default function App() {
         <Route path="stories/:level" element={<StoriesLevelPage />} />
         <Route path="reading-machine" element={<ReadingMachineLibraryPage />} />
         <Route path="reading-machine/:materialId" element={<ReadingMachineViewerPage />} />
+        <Route path="settings" element={<SettingsPage role="student" />} />
+        <Route path="guide" element={<StudentGuidePage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
