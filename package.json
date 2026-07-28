@@ -10,6 +10,10 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "db:migrate": "wrangler d1 migrations apply guidelight --local",
+    "db:demo:seed": "node scripts/demo-data.mjs seed --remote",
+    "db:demo:seed:local": "node scripts/demo-data.mjs seed --local",
+    "db:demo:wipe": "node scripts/demo-data.mjs wipe --remote",
+    "db:demo:wipe:local": "node scripts/demo-data.mjs wipe --local",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
