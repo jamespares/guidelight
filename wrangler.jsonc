@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "guidelight",
-      "database_id": "local-guidelight-db",
+      "database_id": "42d1b3f3-9add-4b0d-ac44-2aa2df1ba5c8",
       "migrations_dir": "migrations"
     }
   ],
