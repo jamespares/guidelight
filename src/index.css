@@ -1,59 +1,115 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(:root:not(.light), .dark) *);
 
 /*
-  Soft sky / water theme — airy mist, soft sky primary, aqua accent.
-  Brand letters: sky / aqua / seafoam / periwinkle / mist (no navy, no amber).
+  Dark (default): navy field, silver/white north-star brand + buttons.
+  Light: silver field, navy brand + buttons.
 */
 :root {
   --radius: 0.625rem;
 
-  --background: 205 45% 97%; /* cloud mist */
-  --foreground: 210 28% 28%; /* soft slate */
+  /* Deep navy night sky */
+  --background: 222 47% 9%;
+  --foreground: 210 20% 96%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 210 28% 28%;
+  --card: 222 40% 12%;
+  --card-foreground: 210 20% 96%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 210 28% 28%;
+  --popover: 222 40% 12%;
+  --popover-foreground: 210 20% 96%;
 
-  --primary: 199 72% 52%; /* soft sky */
-  --primary-foreground: 0 0% 100%;
+  /* Silver / white primary (north star) */
+  --primary: 210 20% 94%;
+  --primary-foreground: 222 47% 11%;
 
-  --secondary: 200 40% 94%;
-  --secondary-foreground: 210 28% 28%;
+  --secondary: 222 32% 16%;
+  --secondary-foreground: 210 20% 92%;
 
-  --muted: 205 30% 94%;
-  --muted-foreground: 210 16% 46%;
+  --muted: 222 28% 16%;
+  --muted-foreground: 215 16% 68%;
 
-  --accent: 186 48% 78%; /* soft aqua */
-  --accent-foreground: 199 45% 28%;
+  --accent: 210 18% 88%;
+  --accent-foreground: 222 47% 11%;
 
-  --destructive: 0 65% 55%;
+  --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 205 28% 88%;
-  --input: 205 28% 88%;
-  --ring: 199 72% 52%;
+  --border: 222 24% 22%;
+  --input: 222 24% 22%;
+  --ring: 210 20% 90%;
 
-  /* Light misty sidebar — not navy */
-  --sidebar: 205 38% 95%;
-  --sidebar-foreground: 210 28% 28%;
-  --sidebar-muted: 210 16% 48%;
-  --sidebar-accent: 199 72% 52%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-border: 205 28% 88%;
+  --sidebar: 222 50% 7%;
+  --sidebar-foreground: 210 20% 96%;
+  --sidebar-muted: 215 14% 62%;
+  --sidebar-accent: 210 20% 94%;
+  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-border: 222 28% 16%;
 
-  /* Soft water brand colours — Guide / light wordmark */
-  --brand-guide: #6bb8ef;
-  --brand-light: #7dd3c0;
-  --brand-sky: #6bb8ef;
-  --brand-aqua: #7dd3c0;
-  --brand-seafoam: #9fd4c4;
-  --brand-periwinkle: #9bb4e8;
-  --brand-mist: #a8c5de;
+  /* North-star silver wordmark */
+  --brand-guide: #f4f7fb;
+  --brand-light: #c5cbd6;
+  --brand-shape-1: #e8eef6;
+  --brand-shape-2: #b8c0cc;
+  --brand-shape-3: #9aa3b2;
+  --brand-shape-4: #d7dee8;
+  --brand-shape-5: #aeb6c4;
+
+  --glow-1: rgba(244, 247, 251, 0.08);
+  --glow-2: rgba(197, 203, 214, 0.06);
+  --glow-3: rgba(154, 163, 178, 0.05);
+}
+
+.light {
+  --background: 210 25% 97%;
+  --foreground: 222 47% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  /* Navy primary */
+  --primary: 222 47% 14%;
+  --primary-foreground: 210 20% 96%;
+
+  --secondary: 210 22% 93%;
+  --secondary-foreground: 222 47% 14%;
+
+  --muted: 210 20% 94%;
+  --muted-foreground: 220 12% 42%;
+
+  --accent: 222 30% 88%;
+  --accent-foreground: 222 47% 14%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 214 20% 86%;
+  --input: 214 20% 86%;
+  --ring: 222 47% 20%;
+
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 47% 14%;
+  --sidebar-muted: 220 12% 42%;
+  --sidebar-accent: 222 47% 14%;
+  --sidebar-accent-foreground: 210 20% 96%;
+  --sidebar-border: 214 20% 88%;
+
+  /* Navy wordmark */
+  --brand-guide: #101828;
+  --brand-light: #344054;
+  --brand-shape-1: #101828;
+  --brand-shape-2: #1d2939;
+  --brand-shape-3: #344054;
+  --brand-shape-4: #475467;
+  --brand-shape-5: #667085;
+
+  --glow-1: rgba(16, 24, 40, 0.06);
+  --glow-2: rgba(52, 64, 84, 0.05);
+  --glow-3: rgba(102, 112, 133, 0.04);
 }
 
 @theme inline {
@@ -100,9 +156,9 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     background-image:
-      radial-gradient(900px 420px at 8% -8%, rgba(107, 184, 239, 0.18), transparent 55%),
-      radial-gradient(700px 380px at 100% 0%, rgba(125, 211, 192, 0.16), transparent 50%),
-      radial-gradient(600px 320px at 90% 100%, rgba(155, 180, 232, 0.14), transparent 45%);
+      radial-gradient(900px 420px at 12% -10%, var(--glow-1), transparent 55%),
+      radial-gradient(700px 380px at 100% 0%, var(--glow-2), transparent 50%),
+      radial-gradient(600px 320px at 80% 100%, var(--glow-3), transparent 45%);
     min-height: 100vh;
   }
 

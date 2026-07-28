@@ -176,7 +176,7 @@ export function InsightsPage() {
               <YAxis domain={[0, 100]} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" name="% correct" stroke="#6bb8ef" strokeWidth={2} />
+              <Line type="monotone" dataKey="value" name="% correct" stroke="hsl(var(--primary))" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -194,7 +194,7 @@ export function InsightsPage() {
               <YAxis domain={[0, 100]} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" name="submission %" stroke="#7dd3c0" strokeWidth={2} />
+              <Line type="monotone" dataKey="value" name="submission %" stroke="hsl(var(--muted-foreground))" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

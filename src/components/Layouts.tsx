@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { BrandMark } from '@/components/BrandMark'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
@@ -32,8 +33,9 @@ function AppShell({
   return (
     <div className="flex min-h-screen">
       <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-        <div className="border-b border-sidebar-border px-4 py-5">
+        <div className="flex items-start justify-between gap-2 border-b border-sidebar-border px-4 py-5">
           <BrandMark role={role} />
+          <ThemeToggle className="mt-0.5" />
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -46,7 +48,7 @@ function AppShell({
                   'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
                   isActive
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-muted hover:bg-primary/8 hover:text-sidebar-foreground',
+                    : 'text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
                 )
               }
             >
@@ -64,7 +66,7 @@ function AppShell({
           </div>
           <NavLink
             to={footerTo}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-muted transition-all hover:bg-primary/8 hover:text-sidebar-foreground"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-muted transition-all hover:bg-foreground/5 hover:text-sidebar-foreground"
           >
             <Home className="h-4 w-4" />
             {footerLabel}
@@ -72,7 +74,7 @@ function AppShell({
           <Button
             type="button"
             variant="ghost"
-            className="w-full justify-start text-sidebar-muted hover:bg-primary/8 hover:text-sidebar-foreground"
+            className="w-full justify-start text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground"
             onClick={() => void logout()}
           >
             <LogOut className="h-4 w-4" />

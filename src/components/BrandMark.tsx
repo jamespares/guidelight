@@ -1,12 +1,12 @@
 import { Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/** Two-tone wordmark: Guide + light. */
+/** Two-tone wordmark: Guide + light (silver in dark, navy in light). */
 export function GuidelightWordmark({ className }: { className?: string }) {
   return (
     <span className={cn('font-display font-semibold tracking-tight', className)} aria-label="Guidelight">
-      <span className="text-[var(--brand-guide)]">Guide</span>
-      <span className="text-[var(--brand-light)]">light</span>
+      <span style={{ color: 'var(--brand-guide)' }}>Guide</span>
+      <span style={{ color: 'var(--brand-light)' }}>light</span>
     </span>
   )
 }
