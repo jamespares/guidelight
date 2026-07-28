@@ -1,8 +1,12 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { lazy, Suspense, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { GraduationCap, LogIn, UserPlus, Users } from 'lucide-react'
 import { GuidelightWordmark } from '@/components/BrandMark'
 import { ThemeToggle } from '@/components/ThemeToggle'
+
+const NightGuideScene = lazy(() =>
+  import('@/components/NightGuideScene').then((m) => ({ default: m.NightGuideScene })),
+)
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,16 +18,11 @@ import { cn } from '@/lib/utils'
 function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6">
+      <Suspense fallback={null}>
+        <NightGuideScene className="z-0" />
+      </Suspense>
       <div className="absolute right-4 top-4 z-20">
-        <ThemeToggle />
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-40 items-end justify-center gap-3 px-6 opacity-80" aria-hidden>
-        <div className="h-28 w-24 rounded-[2rem] bg-[var(--brand-shape-1)]" />
-        <div className="h-20 w-28 rounded-[1.5rem] bg-[var(--brand-shape-2)]" />
-        <div className="mb-2 h-24 w-24 rounded-full bg-[var(--brand-shape-3)]" />
-        <div className="h-16 w-32 rounded-[2rem] bg-[var(--brand-shape-4)]" />
-        <div className="h-28 w-20 rounded-t-[3rem] bg-[var(--brand-shape-5)]" />
-        <div className="h-14 w-14 rounded-full bg-[var(--brand-shape-1)]" />
+        <ThemeToggle className="border-border/40 bg-card/30 shadow-sm backdrop-blur-xl hover:bg-card/45" />
       </div>
       <div className="relative z-10 w-full max-w-md">{children}</div>
     </div>
@@ -33,13 +32,13 @@ function AuthShell({ children }: { children: ReactNode }) {
 export function Landing() {
   return (
     <AuthShell>
-      <Card className="border-border/80 shadow-lg">
+      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl">
             <GuidelightWordmark />
           </CardTitle>
           <CardDescription className="text-base">
-            AI-infused homework and assessment for teachers, trainers, and learners.
+            Guide your students to excellence with AI-infused homework and assessment.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -91,7 +90,7 @@ export function TeacherAuth() {
 
   return (
     <AuthShell>
-      <Card className="shadow-lg">
+      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader>
           <CardTitle className="text-2xl">Teacher</CardTitle>
           <CardDescription>Email and password access to your dashboard.</CardDescription>
@@ -188,7 +187,7 @@ export function StudentAuth() {
 
   return (
     <AuthShell>
-      <Card className="shadow-lg">
+      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader>
           <CardTitle className="text-2xl">Student</CardTitle>
           <CardDescription>Use the username and password your teacher gave you.</CardDescription>
