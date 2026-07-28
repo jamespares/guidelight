@@ -1,24 +1,12 @@
 import { Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/** Soft sky / water multicolor wordmark. */
-const LETTER_COLORS = [
-  'var(--brand-sky)',
-  'var(--brand-aqua)',
-  'var(--brand-seafoam)',
-  'var(--brand-periwinkle)',
-  'var(--brand-mist)',
-]
-
+/** Two-tone wordmark: Guide + light. */
 export function GuidelightWordmark({ className }: { className?: string }) {
-  const letters = 'Guidelight'.split('')
   return (
     <span className={cn('font-display font-semibold tracking-tight', className)} aria-label="Guidelight">
-      {letters.map((ch, i) => (
-        <span key={`${ch}-${i}`} style={{ color: LETTER_COLORS[i % LETTER_COLORS.length] }}>
-          {ch}
-        </span>
-      ))}
+      <span className="text-[var(--brand-guide)]">Guide</span>
+      <span className="text-[var(--brand-light)]">light</span>
     </span>
   )
 }

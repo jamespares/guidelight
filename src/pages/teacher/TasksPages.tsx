@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Sparkles } from 'lucide-react'
+import { FileUp, Plus, Sparkles, X } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
@@ -26,6 +33,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { api, type ClassRow, type StudentRow, type TaskRow } from '@/lib/api'
+import { readPastPaperFile } from '@/lib/pastPaper'
 
 function TaskCreateForm({
   type,
@@ -46,6 +54,9 @@ function TaskCreateForm({
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [readingText, setReadingText] = useState('')
   const [pastPaper, setPastPaper] = useState('')
+  const [pastPaperImage, setPastPaperImage] = useState<string | undefined>()
+  const [uploadName, setUploadName] = useState<string | null>(null)
+  const [uploadBusy, setUploadBusy] = useState(false)
   const [subtype, setSubtype] = useState(defaultSubtype ?? null)
   const [timeLimit, setTimeLimit] = useState(type === 'assessment' ? 45 : 0)
   const [hasDiag, setHasDiag] = useState(true)
@@ -69,6 +80,28 @@ function TaskCreateForm({
     }
   }, [classId, classes, useClassSubject])
 
+  async function onUpload(file: File | null) {
+    if (!file) return
+    setUploadBusy(true)
+    setError('')
+    try {
+      const result = await readPastPaperFile(file)
+      setUploadName(result.fileName)
+      if (result.text) {
+        setPastPaper((prev) => (prev ? `${prev}\n\n${result.text}` : result.text!))
+        setPastPaperImage(undefined)
+      }
+      if (result.imageDataUrl) {
+        setPastPaperImage(result.imageDataUrl)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+      setUploadName(null)
+    } finally {
+      setUploadBusy(false)
+    }
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
@@ -84,6 +117,7 @@ function TaskCreateForm({
         question_count: questionCount,
         reading_text: readingText || undefined,
         past_paper_text: pastPaper || undefined,
+        past_paper_image: pastPaperImage || undefined,
         time_limit_seconds:
           type === 'assessment' ? timeLimit * 60 : timeLimit > 0 ? timeLimit * 60 : null,
         use_all_question_types: type === 'assessment',
@@ -97,8 +131,6 @@ function TaskCreateForm({
   }
 
   const needsDiag = subtype !== 'diagnostic' && !hasDiag
-  const selectClass =
-    'flex h-10 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
@@ -113,21 +145,23 @@ function TaskCreateForm({
 
       {type === 'assessment' ? (
         <div className="space-y-2">
-          <Label htmlFor="subtype">Assessment type</Label>
-          <select
-            id="subtype"
-            className={selectClass}
-            value={subtype ?? ''}
-            onChange={(e) =>
-              setSubtype((e.target.value || null) as 'diagnostic' | 'formative' | 'summative' | null)
+          <Label>Assessment type</Label>
+          <Select
+            value={subtype ?? undefined}
+            onValueChange={(v) =>
+              setSubtype(v as 'diagnostic' | 'formative' | 'summative')
             }
             required
           >
-            <option value="">Select…</option>
-            <option value="diagnostic">Diagnostic</option>
-            <option value="formative">Formative</option>
-            <option value="summative">Summative</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="diagnostic">Diagnostic</SelectItem>
+              <SelectItem value="formative">Formative</SelectItem>
+              <SelectItem value="summative">Summative</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       ) : (
         <div className="flex items-center gap-2">
@@ -144,33 +178,35 @@ function TaskCreateForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="class">Class</Label>
-          <select
-            id="class"
-            className={selectClass}
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            required
-          >
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.subject})
-              </option>
-            ))}
-          </select>
+          <Label>Class</Label>
+          <Select value={classId || undefined} onValueChange={setClassId} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select class…" />
+            </SelectTrigger>
+            <SelectContent>
+              {classes.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name} ({c.subject})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="difficulty">Difficulty</Label>
-          <select
-            id="difficulty"
-            className={selectClass}
+          <Label>Difficulty</Label>
+          <Select
             value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
+            onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}
           >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="easy">Easy</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="hard">Hard</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -246,12 +282,60 @@ function TaskCreateForm({
       </div>
 
       {type === 'assessment' ? (
-        <div className="space-y-2">
-          <Label htmlFor="past">Past paper style reference</Label>
-          <p className="text-xs text-muted-foreground">
-            Paste text from past papers (convert PDF to text first).
-          </p>
-          <Textarea id="past" value={pastPaper} onChange={(e) => setPastPaper(e.target.value)} />
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label>Past paper inspiration</Label>
+            <p className="text-xs text-muted-foreground">
+              Upload a PDF or image of a past paper, and/or paste extra notes. AI will mimic the style.
+            </p>
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-secondary/40 px-4 py-6 text-center transition-all hover:border-primary/40 hover:bg-secondary">
+              <FileUp className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">
+                {uploadBusy ? 'Reading file…' : 'Upload PDF or image'}
+              </span>
+              <span className="text-xs text-muted-foreground">PNG, JPG, WebP, or PDF</span>
+              <input
+                type="file"
+                accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
+                className="sr-only"
+                disabled={uploadBusy || busy}
+                onChange={(e) => void onUpload(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            {uploadName ? (
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                <span className="truncate">{uploadName}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    setUploadName(null)
+                    setPastPaperImage(undefined)
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : null}
+            {pastPaperImage ? (
+              <img
+                src={pastPaperImage}
+                alt="Past paper preview"
+                className="max-h-40 rounded-lg border border-border object-contain"
+              />
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="past">Additional text notes (optional)</Label>
+            <Textarea
+              id="past"
+              value={pastPaper}
+              onChange={(e) => setPastPaper(e.target.value)}
+              placeholder="Extracted PDF text appears here — you can edit it."
+            />
+          </div>
         </div>
       ) : null}
 
@@ -259,7 +343,7 @@ function TaskCreateForm({
       <p className="text-xs text-muted-foreground">
         Students in class: {students.filter((s) => s.class_id === classId).length}
       </p>
-      <Button type="submit" className="w-full" disabled={busy || needsDiag || !classId}>
+      <Button type="submit" className="w-full" disabled={busy || needsDiag || !classId || uploadBusy}>
         <Sparkles className="h-4 w-4" />
         {busy ? 'Generating with Kimi…' : 'Generate draft'}
       </Button>

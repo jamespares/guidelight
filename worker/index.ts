@@ -13,6 +13,7 @@ import {
   generateReport,
   generateStudentSummary,
   generateTaskContent,
+  describePastPaperImage,
   markAttempt,
 } from './lib/ai'
 import { getSession, handleAuth, requireRole } from './lib/session'
@@ -390,6 +391,7 @@ export default {
           question_count: number
           reading_text?: string
           past_paper_text?: string
+          past_paper_image?: string
           time_limit_seconds?: number | null
           use_all_question_types?: boolean
         }
@@ -416,6 +418,12 @@ export default {
           ? ALL_TYPES
           : PHASE2_TYPES
 
+        let pastPaperText = body.past_paper_text ?? ''
+        if (body.past_paper_image) {
+          const visionNotes = await describePastPaperImage(env, body.past_paper_image)
+          pastPaperText = [pastPaperText, visionNotes].filter(Boolean).join('\n\n')
+        }
+
         const content = await generateTaskContent(env, {
           subject,
           curriculum: (cls as { curriculum: string }).curriculum,
@@ -424,7 +432,7 @@ export default {
           questionCount: body.question_count || 8,
           ageRange: (cls as { age_range: string }).age_range,
           readingText: body.reading_text,
-          pastPaperText: body.past_paper_text,
+          pastPaperText,
           subtype: body.subtype,
           questionTypes,
           studentProfiles: (students.results ?? []).map((s) => ({
@@ -453,7 +461,7 @@ export default {
             body.time_limit_seconds ?? null,
             JSON.stringify(content),
             body.reading_text ?? '',
-            body.past_paper_text ?? '',
+            pastPaperText,
             user.id,
           )
           .run()

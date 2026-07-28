@@ -46,7 +46,9 @@
   --sidebar-accent-foreground: 0 0% 100%;
   --sidebar-border: 205 28% 88%;
 
-  /* Soft water brand letter colors */
+  /* Soft water brand colours — Guide / light wordmark */
+  --brand-guide: #6bb8ef;
+  --brand-light: #7dd3c0;
   --brand-sky: #6bb8ef;
   --brand-aqua: #7dd3c0;
   --brand-seafoam: #9fd4c4;

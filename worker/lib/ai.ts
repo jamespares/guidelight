@@ -25,11 +25,20 @@ function asText(result: unknown): string {
   return JSON.stringify(result)
 }
 
-async function runChat(env: Env, system: string, user: string): Promise<string> {
+async function runChat(
+  env: Env,
+  system: string,
+  user: string | Array<Record<string, unknown>>,
+): Promise<string> {
+  const userContent =
+    typeof user === 'string'
+      ? user
+      : user
+
   const call = env.AI.run(MODEL, {
     messages: [
       { role: 'system', content: system },
-      { role: 'user', content: user },
+      { role: 'user', content: userContent },
     ],
     max_completion_tokens: 4096,
     temperature: 0.4,
@@ -43,6 +52,35 @@ async function runChat(env: Env, system: string, user: string): Promise<string> 
 
   const result = await Promise.race([call, timeout])
   return asText(result)
+}
+
+/** Use vision to summarise a past-paper image into style notes for generation. */
+export async function describePastPaperImage(
+  env: Env,
+  imageDataUrl: string,
+): Promise<string> {
+  const match = imageDataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/)
+  if (!match) throw new Error('Invalid image data')
+
+  const system =
+    'You analyse exam past papers. Describe the question style, structure, topics, mark schemes cues, and wording patterns so another model can mimic them. Return plain text notes only.'
+
+  try {
+    const raw = await runChat(env, system, [
+      {
+        type: 'text',
+        text: 'Extract past-paper style notes from this image for generating a similar assessment.',
+      },
+      {
+        type: 'image_url',
+        image_url: { url: imageDataUrl },
+      },
+    ])
+    return raw.slice(0, 8000)
+  } catch (err) {
+    console.error('describePastPaperImage failed', err)
+    return 'Past paper image uploaded — mimic a formal exam layout with clear numbered questions, mark allocations, and subject-appropriate wording.'
+  }
 }
 
 /** Deterministic draft when Workers AI is unavailable — still editable by teacher. */

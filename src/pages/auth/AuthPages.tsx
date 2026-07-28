@@ -15,12 +15,12 @@ function AuthShell({ children }: { children: ReactNode }) {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6">
       {/* Soft water / sky shapes along the bottom */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-40 items-end justify-center gap-3 px-6 opacity-90" aria-hidden>
-        <div className="h-28 w-24 rounded-[2rem] bg-[var(--brand-sky)]" />
-        <div className="h-20 w-28 rounded-[1.5rem] bg-[var(--brand-aqua)]" />
+        <div className="h-28 w-24 rounded-[2rem] bg-[var(--brand-guide)]" />
+        <div className="h-20 w-28 rounded-[1.5rem] bg-[var(--brand-light)]" />
         <div className="mb-2 h-24 w-24 rounded-full bg-[var(--brand-seafoam)]" />
         <div className="h-16 w-32 rounded-[2rem] bg-[var(--brand-periwinkle)]" />
         <div className="h-28 w-20 rounded-t-[3rem] bg-[var(--brand-mist)]" />
-        <div className="h-14 w-14 rounded-full bg-[var(--brand-sky)]" />
+        <div className="h-14 w-14 rounded-full bg-[var(--brand-guide)]" />
       </div>
       <div className="relative z-10 w-full max-w-md">{children}</div>
     </div>

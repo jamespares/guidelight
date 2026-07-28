@@ -15,11 +15,15 @@ import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { api, type ClassRow, type StudentRow } from '@/lib/api'
-
-const selectClass =
-  'flex h-10 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 export function InsightsPage() {
   const [scope, setScope] = useState<'class' | 'student'>('class')
@@ -96,34 +100,43 @@ export function InsightsPage() {
         <CardContent className="grid gap-4 p-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Scope</Label>
-            <select
-              className={selectClass}
+            <Select
               value={scope}
-              onChange={(e) => {
-                const next = e.target.value as 'class' | 'student'
-                setScope(next)
-                setId(next === 'class' ? classes[0]?.id ?? '' : students[0]?.id ?? '')
+              onValueChange={(next) => {
+                const value = next as 'class' | 'student'
+                setScope(value)
+                setId(value === 'class' ? classes[0]?.id ?? '' : students[0]?.id ?? '')
               }}
             >
-              <option value="class">Whole class</option>
-              <option value="student">Individual student</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="class">Whole class</SelectItem>
+                <SelectItem value="student">Individual student</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>{scope === 'class' ? 'Class' : 'Student'}</Label>
-            <select className={selectClass} value={id} onChange={(e) => setId(e.target.value)}>
-              {scope === 'class'
-                ? classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))
-                : students.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.display_name} ({s.class_name})
-                    </option>
-                  ))}
-            </select>
+            <Select value={id || undefined} onValueChange={setId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select…" />
+              </SelectTrigger>
+              <SelectContent>
+                {scope === 'class'
+                  ? classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))
+                  : students.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.display_name} ({s.class_name})
+                      </SelectItem>
+                    ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
