@@ -24,6 +24,18 @@ function applyTheme(theme: Theme) {
   root.classList.toggle('light', theme === 'light')
   root.classList.toggle('dark', theme === 'dark')
   root.dataset.theme = theme
+
+  // Swap tab icon with the themed compass star
+  const href = theme === 'dark' ? '/favicon-dark.svg' : '/favicon-light.svg'
+  let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+  if (!link) {
+    link = document.createElement('link')
+    link.rel = 'icon'
+    link.type = 'image/svg+xml'
+    document.head.appendChild(link)
+  }
+  // Cache-bust so browsers actually refresh the favicon
+  link.href = `${href}?v=${theme}`
 }
 
 function readStoredTheme(): Theme {
