@@ -17,6 +17,11 @@ import {
   markAttempt,
 } from './lib/ai'
 import { getSession, handleAuth, requireRole } from './lib/session'
+import {
+  createSpecialTask,
+  handleCefrApi,
+  isSpecialAssessment,
+} from './lib/cefr'
 
 const PHASE2_TYPES = ['mcq', 'cloze', 'short_written', 'reading_comprehension']
 const ALL_TYPES = [
@@ -120,6 +125,19 @@ export default {
         if (res) return res
       }
 
+      // —— CEFR / reading / stories APIs ——
+      if (
+        path.startsWith('/api/reading/') ||
+        path.startsWith('/api/cefr/') ||
+        path.startsWith('/api/stories/')
+      ) {
+        const user = await getSession(env, request)
+        if (!user) return error('Unauthorized', 401)
+        const cefrRes = await handleCefrApi(request, env, path, user)
+        if (cefrRes) return cefrRes
+        return error('Not found', 404)
+      }
+
       // —— Classes ——
       if (path === '/api/classes' && request.method === 'GET') {
         const user = await requireRole(env, request, 'teacher')
@@ -206,6 +224,7 @@ export default {
         const { results } = await env.DB.prepare(
           `SELECT s.id, s.class_id, s.display_name, s.interests, s.career_ambitions,
                   s.weakspots, s.username, s.ai_summary, s.created_at,
+                  s.cefr_level, s.latest_wpm,
                   c.name as class_name, c.subject as class_subject
            FROM students s
            JOIN classes c ON c.id = s.class_id
@@ -222,6 +241,8 @@ export default {
             weakspots: string
             username: string
             ai_summary: string
+            cefr_level: string | null
+            latest_wpm: number | null
             class_name: string
             class_subject: string
           }>()
@@ -246,6 +267,7 @@ export default {
         const s = await env.DB.prepare(
           `SELECT s.id, s.class_id, s.display_name, s.interests, s.career_ambitions,
                   s.weakspots, s.username, s.ai_summary, s.created_at,
+                  s.cefr_level, s.latest_wpm,
                   c.name as class_name, c.subject as class_subject, c.teacher_id
            FROM students s JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
         )
@@ -259,6 +281,8 @@ export default {
             weakspots: string
             username: string
             ai_summary: string
+            cefr_level: string | null
+            latest_wpm: number | null
             class_name: string
             class_subject: string
             teacher_id: string
@@ -383,7 +407,7 @@ export default {
         if (user instanceof Response) return user
         const body = (await request.json()) as {
           type: 'homework' | 'assessment'
-          subtype?: 'diagnostic' | 'formative' | 'summative' | null
+          subtype?: 'diagnostic' | 'formative' | 'summative' | 'english_level' | 'reading_speed' | null
           class_id: string
           subject?: string
           description: string
@@ -394,6 +418,19 @@ export default {
           past_paper_image?: string
           time_limit_seconds?: number | null
           use_all_question_types?: boolean
+        }
+
+        if (body.subtype === 'english_level' || body.subtype === 'reading_speed') {
+          return createSpecialTask(env, user, {
+            type: body.type,
+            subtype: body.subtype,
+            class_id: body.class_id,
+            subject: body.subject,
+            description: body.description,
+            difficulty: body.difficulty,
+            reading_text: body.reading_text,
+            time_limit_seconds: body.time_limit_seconds,
+          })
         }
 
         const cls = await classOwned(env, body.class_id, user.id)
@@ -566,7 +603,11 @@ export default {
           }>()
         if (!task || task.teacher_id !== user.id) return error('Not found', 404)
 
-        if (task.subtype !== 'diagnostic' && !(await hasDiagnostic(env, task.class_id))) {
+        if (
+          task.subtype !== 'diagnostic' &&
+          !isSpecialAssessment(task.subtype) &&
+          !(await hasDiagnostic(env, task.class_id))
+        ) {
           return error('Publish a diagnostic assessment first.', 400)
         }
 

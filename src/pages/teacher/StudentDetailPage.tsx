@@ -93,12 +93,17 @@ export function StudentDetailPage() {
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
           {
             label: 'HW completion',
             value:
               student.hw_completion_rate == null ? '—' : `${student.hw_completion_rate}%`,
+          },
+          { label: 'English level', value: student.cefr_level || '—' },
+          {
+            label: 'Reading speed',
+            value: student.latest_wpm != null ? `${student.latest_wpm} wpm` : '—',
           },
           {
             label: 'Weakspots',

@@ -197,6 +197,8 @@ export function StudentsPage() {
             <TableHead>Name</TableHead>
             <TableHead>Class</TableHead>
             <TableHead>Subject(s)</TableHead>
+            <TableHead>English level</TableHead>
+            <TableHead>Reading speed</TableHead>
             <TableHead>Current Weakspots</TableHead>
             <TableHead>HW completion</TableHead>
             <TableHead>Interests</TableHead>
@@ -206,13 +208,13 @@ export function StudentsPage() {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground">
+              <TableCell colSpan={9} className="text-muted-foreground">
                 Loading…
               </TableCell>
             </TableRow>
           ) : students.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground">
+              <TableCell colSpan={9} className="text-muted-foreground">
                 No students yet. Add a class to get started.
               </TableCell>
             </TableRow>
@@ -226,6 +228,8 @@ export function StudentsPage() {
                 </TableCell>
                 <TableCell>{s.class_name}</TableCell>
                 <TableCell>{s.class_subject}</TableCell>
+                <TableCell>{s.cefr_level || '—'}</TableCell>
+                <TableCell>{s.latest_wpm != null ? `${s.latest_wpm} wpm` : '—'}</TableCell>
                 <TableCell>
                   {s.weakspots?.length ? s.weakspots.map((w) => w.topic).join(', ') : '—'}
                 </TableCell>

@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { api, type ClassRow, type StudentRow, type TaskRow } from '@/lib/api'
+import { api, type ClassRow, type StudentRow, type TaskRow, type TaskSubtype } from '@/lib/api'
 import { readPastPaperFile } from '@/lib/pastPaper'
 
 function TaskCreateForm({
@@ -41,7 +41,7 @@ function TaskCreateForm({
   onCreated,
 }: {
   type: 'homework' | 'assessment'
-  defaultSubtype?: 'diagnostic' | 'formative' | 'summative' | null
+  defaultSubtype?: TaskSubtype
   onCreated: (id: string) => void
 }) {
   const [classes, setClasses] = useState<ClassRow[]>([])
@@ -57,11 +57,13 @@ function TaskCreateForm({
   const [pastPaperImage, setPastPaperImage] = useState<string | undefined>()
   const [uploadName, setUploadName] = useState<string | null>(null)
   const [uploadBusy, setUploadBusy] = useState(false)
-  const [subtype, setSubtype] = useState(defaultSubtype ?? null)
+  const [subtype, setSubtype] = useState<TaskSubtype>(defaultSubtype ?? null)
   const [timeLimit, setTimeLimit] = useState(type === 'assessment' ? 45 : 0)
   const [hasDiag, setHasDiag] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  const isSpecial = subtype === 'english_level' || subtype === 'reading_speed'
 
   useEffect(() => {
     void (async () => {
@@ -112,15 +114,28 @@ function TaskCreateForm({
         subtype: type === 'assessment' ? subtype : subtype === 'diagnostic' ? 'diagnostic' : null,
         class_id: classId,
         subject,
-        description,
+        description:
+          description ||
+          (subtype === 'english_level'
+            ? 'English level (CEFR) diagnostic'
+            : subtype === 'reading_speed'
+              ? 'Reading speed assessment'
+              : ''),
         difficulty,
-        question_count: questionCount,
+        question_count: isSpecial ? 0 : questionCount,
         reading_text: readingText || undefined,
-        past_paper_text: pastPaper || undefined,
-        past_paper_image: pastPaperImage || undefined,
-        time_limit_seconds:
-          type === 'assessment' ? timeLimit * 60 : timeLimit > 0 ? timeLimit * 60 : null,
-        use_all_question_types: type === 'assessment',
+        past_paper_text: isSpecial ? undefined : pastPaper || undefined,
+        past_paper_image: isSpecial ? undefined : pastPaperImage || undefined,
+        time_limit_seconds: isSpecial
+          ? subtype === 'english_level'
+            ? timeLimit * 60 || 3600
+            : null
+          : type === 'assessment'
+            ? timeLimit * 60
+            : timeLimit > 0
+              ? timeLimit * 60
+              : null,
+        use_all_question_types: type === 'assessment' && !isSpecial,
       })
       onCreated(res.task.id)
     } catch (err) {
@@ -130,7 +145,7 @@ function TaskCreateForm({
     }
   }
 
-  const needsDiag = subtype !== 'diagnostic' && !hasDiag
+  const needsDiag = !isSpecial && subtype !== 'diagnostic' && !hasDiag
 
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
@@ -148,9 +163,12 @@ function TaskCreateForm({
           <Label>Assessment type</Label>
           <Select
             value={subtype ?? undefined}
-            onValueChange={(v) =>
-              setSubtype(v as 'diagnostic' | 'formative' | 'summative')
-            }
+            onValueChange={(v) => {
+              const next = v as TaskSubtype
+              setSubtype(next)
+              if (next === 'english_level') setTimeLimit(60)
+              if (next === 'reading_speed') setTimeLimit(0)
+            }}
             required
           >
             <SelectTrigger>
@@ -160,6 +178,8 @@ function TaskCreateForm({
               <SelectItem value="diagnostic">Diagnostic</SelectItem>
               <SelectItem value="formative">Formative</SelectItem>
               <SelectItem value="summative">Summative</SelectItem>
+              <SelectItem value="english_level">English level</SelectItem>
+              <SelectItem value="reading_speed">Reading speed</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -239,11 +259,18 @@ function TaskCreateForm({
           id="desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          required
-          placeholder="What should students practise or be assessed on?"
+          required={!isSpecial}
+          placeholder={
+            subtype === 'english_level'
+              ? 'Optional label — e.g. Term 1 English level check'
+              : subtype === 'reading_speed'
+                ? 'Optional label — e.g. September reading speed'
+                : 'What should students practise or be assessed on?'
+          }
         />
       </div>
 
+      {!isSpecial ? (
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="qcount">Number of questions</Label>
@@ -272,16 +299,44 @@ function TaskCreateForm({
           <div />
         )}
       </div>
+      ) : subtype === 'english_level' ? (
+        <div className="space-y-2">
+          <Label htmlFor="limit">Time limit (minutes)</Label>
+          <Input
+            id="limit"
+            type="number"
+            min={30}
+            value={timeLimit || 60}
+            onChange={(e) => setTimeLimit(Number(e.target.value))}
+            required
+          />
+          <p className="text-xs text-muted-foreground">
+            Full CEFR diagnostic (~66 questions). Default 60 minutes.
+          </p>
+        </div>
+      ) : null}
 
+      {subtype !== 'english_level' ? (
       <div className="space-y-2">
-        <Label htmlFor="reading">Optional reading text</Label>
+        <Label htmlFor="reading">
+          {subtype === 'reading_speed' ? 'Reading passage (required)' : 'Optional reading text'}
+        </Label>
         <p className="text-xs text-muted-foreground">
-          Paste plain text / markdown for comprehension-style questions.
+          {subtype === 'reading_speed'
+            ? 'Students read this at their natural pace; spot-checks verify they read it.'
+            : 'Paste plain text / markdown for comprehension-style questions.'}
         </p>
-        <Textarea id="reading" value={readingText} onChange={(e) => setReadingText(e.target.value)} />
+        <Textarea
+          id="reading"
+          value={readingText}
+          onChange={(e) => setReadingText(e.target.value)}
+          required={subtype === 'reading_speed'}
+          className={subtype === 'reading_speed' ? 'min-h-[180px]' : undefined}
+        />
       </div>
+      ) : null}
 
-      {type === 'assessment' ? (
+      {!isSpecial && type === 'assessment' ? (
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Past paper inspiration</Label>
@@ -344,8 +399,14 @@ function TaskCreateForm({
         Students in class: {students.filter((s) => s.class_id === classId).length}
       </p>
       <Button type="submit" className="w-full" disabled={busy || needsDiag || !classId || uploadBusy}>
-        <Sparkles className="h-4 w-4" />
-        {busy ? 'Generating with Kimi…' : 'Generate draft'}
+        {!isSpecial ? <Sparkles className="h-4 w-4" /> : null}
+        {busy
+          ? isSpecial
+            ? 'Creating…'
+            : 'Generating with Kimi…'
+          : isSpecial
+            ? 'Create assessment'
+            : 'Generate draft'}
       </Button>
     </form>
   )

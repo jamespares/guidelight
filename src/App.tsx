@@ -9,6 +9,17 @@ import { StudentsPage } from './pages/teacher/StudentsPage'
 import { AssessmentsPage, HomeworkPage } from './pages/teacher/TasksPages'
 import { TaskReviewPage } from './pages/teacher/TaskReviewPage'
 import { AttemptPage, StudentTasksPage, StudentToolsPage } from './pages/student/StudentPages'
+import { ReadingSpeedPage } from './pages/student/ReadingSpeedPage'
+import { EnglishLevelPage } from './pages/student/EnglishLevelPage'
+import {
+  StoriesHubPage,
+  StoriesLevelPage,
+  StoryReaderPage,
+} from './pages/student/StoriesPages'
+import {
+  ReadingMachineLibraryPage,
+  ReadingMachineViewerPage,
+} from './pages/student/ReadingMachinePages'
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -80,6 +91,13 @@ export default function App() {
         <Route path="tasks" element={<StudentTasksPage />} />
         <Route path="tools" element={<StudentToolsPage />} />
         <Route path="attempt/:taskId" element={<AttemptPage />} />
+        <Route path="reading-speed/:taskId" element={<ReadingSpeedPage />} />
+        <Route path="english-level/:taskId" element={<EnglishLevelPage />} />
+        <Route path="stories" element={<StoriesHubPage />} />
+        <Route path="stories/read/:slug" element={<StoryReaderPage />} />
+        <Route path="stories/:level" element={<StoriesLevelPage />} />
+        <Route path="reading-machine" element={<ReadingMachineLibraryPage />} />
+        <Route path="reading-machine/:materialId" element={<ReadingMachineViewerPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

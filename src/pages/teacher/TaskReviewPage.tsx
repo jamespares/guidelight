@@ -89,6 +89,12 @@ export function TaskReviewPage() {
 
   if (!task || !content) return <p className="text-muted-foreground">{error || 'Loading…'}</p>
 
+  const isSpecial =
+    task.subtype === 'english_level' ||
+    task.subtype === 'reading_speed' ||
+    content.kind === 'english_level' ||
+    content.kind === 'reading_speed'
+
   return (
     <div className="space-y-6">
       <div>
@@ -102,7 +108,7 @@ export function TaskReviewPage() {
           title={`Review: ${content.title || task.title}`}
           description={
             <>
-              Human-in-the-loop edit before setting ·{' '}
+              {isSpecial ? 'Specialised assessment · ' : 'Human-in-the-loop edit before setting · '}
               <Badge variant={task.status === 'published' ? 'accent' : 'warn'}>{task.status}</Badge>
               {task.subtype ? ` · ${task.subtype}` : ''}
             </>
@@ -133,10 +139,25 @@ export function TaskReviewPage() {
               onChange={(e) => setContent({ ...content, instructions: e.target.value })}
             />
           </div>
+          {task.subtype === 'reading_speed' && task.reading_text ? (
+            <div className="space-y-2">
+              <Label>Passage</Label>
+              <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-4 text-sm">
+                {task.reading_text}
+              </pre>
+            </div>
+          ) : null}
+          {task.subtype === 'english_level' ? (
+            <p className="text-sm text-muted-foreground">
+              Students take the full CEFR diagnostic (vocabulary, listening, reading, grammar,
+              writing). Results show an indicative CEFR level and IELTS band.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
-      {content.questions.map((q, i) => (
+      {!isSpecial
+        ? content.questions.map((q, i) => (
         <Card key={q.id}>
           <CardHeader className="pb-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -191,7 +212,8 @@ export function TaskReviewPage() {
             ) : null}
           </CardContent>
         </Card>
-      ))}
+      ))
+        : null}
 
       {task.status === 'draft' ? (
         <Card>

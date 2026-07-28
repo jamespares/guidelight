@@ -29,7 +29,17 @@ export interface StudentRow {
   class_name: string
   class_subject: string
   hw_completion_rate: number | null
+  cefr_level?: string | null
+  latest_wpm?: number | null
 }
+
+export type TaskSubtype =
+  | 'diagnostic'
+  | 'formative'
+  | 'summative'
+  | 'english_level'
+  | 'reading_speed'
+  | null
 
 export type QuestionType =
   | 'mcq'
@@ -68,12 +78,14 @@ export interface TaskContent {
   title: string
   instructions: string
   questions: Question[]
+  kind?: 'english_level' | 'reading_speed'
+  material_id?: string
 }
 
 export interface TaskRow {
   id: string
   type: 'homework' | 'assessment'
-  subtype: 'diagnostic' | 'formative' | 'summative' | null
+  subtype: TaskSubtype
   class_id: string
   subject: string
   title: string
@@ -81,6 +93,7 @@ export interface TaskRow {
   difficulty: string
   status: 'draft' | 'published'
   time_limit_seconds: number | null
+  reading_text?: string
   class_name?: string
   published_at?: string
   last_score?: number | null
@@ -194,5 +207,117 @@ export const api = {
     request<{ result: unknown }>('/api/student/tools/generate', {
       method: 'POST',
       body: JSON.stringify({ mode }),
+    }),
+
+  // Reading speed
+  readingSpeedStatus: (taskId: string) =>
+    request<{
+      phase: 'start' | 'reading' | 'checks' | 'result'
+      title: string
+      wordCount?: number
+      body?: string
+      attemptId?: string
+      attempt?: { wpm: number; flagged: number; checks_correct: number; checks_total: number }
+      checks?: Array<{ id: string; prompt: string; options: string[] }>
+      passNeed?: number
+    }>(`/api/reading/speed/${taskId}`),
+  readingSpeedStart: (taskId: string) =>
+    request<{ attemptId: string; body: string; wordCount: number }>(
+      `/api/reading/speed/${taskId}/start`,
+      { method: 'POST', body: '{}' },
+    ),
+  readingSpeedFinish: (taskId: string) =>
+    request<{ ok: boolean; next: string; wpm?: number }>(`/api/reading/speed/${taskId}/finish`, {
+      method: 'POST',
+      body: '{}',
+    }),
+  readingSpeedChecks: (taskId: string, answers: Record<string, string>) =>
+    request<{ ok: boolean; wpm: number }>(`/api/reading/speed/${taskId}/checks`, {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
+
+  // English level (CEFR)
+  cefrTaskStatus: (taskId: string) =>
+    request<{
+      phase: 'start' | 'test' | 'result'
+      title?: string
+      timeLimitSeconds?: number
+      testId?: string
+      startedAt?: string
+      secondsLeft?: number
+      items?: Array<Record<string, unknown>>
+      passages?: Record<string, string>
+      test?: {
+        cefr_level: string | null
+        total_score: number | null
+        max_score: number | null
+        over_time_seconds?: number | null
+      }
+      ieltsBand?: string | null
+    }>(`/api/cefr/tests/task/${taskId}`),
+  cefrStart: (taskId: string) =>
+    request<{ testId: string; resumed?: boolean }>(`/api/cefr/tests/task/${taskId}/start`, {
+      method: 'POST',
+      body: '{}',
+    }),
+  cefrGetTest: (testId: string) =>
+    request<{
+      phase: string
+      testId?: string
+      secondsLeft?: number
+      items?: Array<Record<string, unknown>>
+      passages?: Record<string, string>
+      test?: Record<string, unknown>
+      ieltsBand?: string | null
+    }>(`/api/cefr/tests/${testId}`),
+  cefrSubmit: (testId: string, answers: Record<string, string>) =>
+    request<{
+      cefr_level: string
+      total_score: number
+      max_score: number
+      ieltsBand: string
+      over_time_seconds: number
+    }>(`/api/cefr/tests/${testId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
+
+  // Reading machine
+  readingMaterials: () =>
+    request<{
+      classTexts: Array<{ id: string; title: string; word_count: number }>
+      myTexts: Array<{ id: string; title: string; word_count: number }>
+      latestWpm: number | null
+    }>('/api/reading/materials'),
+  readingMaterial: (id: string) =>
+    request<{
+      material: { id: string; title: string; body: string; word_count: number }
+      latestWpm: number | null
+    }>(`/api/reading/materials/${id}`),
+  createReadingMaterial: (body: { title: string; body: string }) =>
+    request<{ id: string }>('/api/reading/materials', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  deleteReadingMaterial: (id: string) =>
+    request(`/api/reading/materials/${id}`, { method: 'DELETE' }),
+  readingMachineSession: (body: {
+    material_id: string
+    wpm_setting: number
+    words_read: number
+    word_count: number
+    duration_seconds: number
+    completed?: boolean
+  }) =>
+    request<{ id: string }>('/api/reading/machine/session', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  storyEvent: (slug: string, event_type: 'open' | 'play') =>
+    request('/api/stories/event', {
+      method: 'POST',
+      body: JSON.stringify({ slug, event_type }),
     }),
 }

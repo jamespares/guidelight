@@ -1,0 +1,21 @@
+# The Town That Stopped the Cars
+*CEFR B2 · Story 2 of 2 · British English · ~695 words*
+*CEFR B2 · British English · ~695 words*
+
+Eighteen months ago, Millbrook, a market town in the north of England, did something most towns only talk about: it banned cars from its centre. Since then, the high street has been closed to traffic between half past eight in the morning and six in the evening. The change has had a significant impact on almost every part of town life. The scheme, which began as a local campaign, is now being watched closely by councils across the country.
+
+The idea grew out of a long debate about air pollution and road safety. For years, residents had complained that the centre was noisy, dirty and dangerous, and measurements showed that pollution levels were above the legal limit. Parents established the Streets for People campaign, and after two years of public meetings, the council finally agreed to act. Access for buses, bicycles and delivery vehicles was kept, but private cars were banned completely.
+
+The transformation of the town centre is still going on. The high street is currently being repaved with pale stone, and the narrow pavements are being widened. The council has had the old market fountain restored, and more than forty trees have been planted around the main square. New benches have been installed, and bicycle racks have been provided. Later this year, the disused bus station is being converted into a covered market for local farmers.
+
+The results of the scheme so far have been striking. Pollution in the centre has fallen considerably; consequently, the air smells cleaner and more people choose to sit outside the cafés. The quieter the streets have become, the more families have returned to them. The elderly say they feel safer when they cross the road, and the young have gained a place to meet that costs nothing. As a result, the town feels more alive in the evenings than it did before.
+
+Supporters of the scheme say the benefits are obvious. Shopkeepers in the centre report that sales have been boosted, and several new businesses have opened since the traffic disappeared. "It is simply a more pleasant place to spend time," said Anna Whitfield, who runs a bookshop on the square. "People stay longer, and therefore they spend more." A local doctor added that walking and cycling were being encouraged, which was clearly beneficial to public health.
+
+However, not everyone in the town is convinced that the experiment has worked. Some shopkeepers on the edge of the centre claim that trade has moved to the retail park, where parking is free. Taxi drivers complain that journeys around the centre have become longer and more expensive. Deliveries have also proved challenging: shop stock must now be collected before half past eight or carried in by hand. "The scheme looks lovely," said one butcher, "but my back is not getting any younger."
+
+Serious questions about access have been raised as well. Blue badge holders can still park close to the shops, but some disabled residents say the new layout has made essential journeys harder. The council has responded that the needs of the disabled were considered at every stage, and has promised to evaluate the scheme properly. A full assessment of the first eighteen months is currently being conducted by a university in the neighbouring city. Its findings will be published in the autumn.
+
+Councillor Sarah Devlin, who led the initiative, admits that mistakes were made. "We should have got the delivery system sorted out before we started," she said. "But look at what has been achieved here in eighteen months. The centre is as busy now as it ever was, and it is far more attractive." She believes the scheme will have to adapt as new problems arise, and she points out that other urban areas are already copying it.
+
+Millbrook has not become perfect, and the argument about its experiment is unlikely to end soon. One thing, however, is clear: the town has demonstrated something important. When traffic is removed, a centre can be given back to the people who live in it. Nobody knows yet whether other towns will show the same commitment, but for now, Millbrook is enjoying its quiet revolution.

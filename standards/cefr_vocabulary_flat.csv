@@ -1,0 +1,841 @@
+level,pos,word,gloss,example
+A1,noun,mother,your female parent,My mother cooks dinner.
+A1,noun,father,your male parent,My father is a doctor.
+A1,noun,brother,your male sibling,My brother is ten years old.
+A1,noun,sister,your female sibling,Her sister likes cats.
+A1,noun,baby,a very young child,The baby is sleeping.
+A1,noun,family,parents and their children,My family lives in London.
+A1,noun,friend,a person you like,Tom is my best friend.
+A1,noun,boy,a male child,The boy has a red ball.
+A1,noun,girl,a female child,The girl has a red bag.
+A1,noun,man,an adult male person,The man is tall.
+A1,noun,woman,an adult female person,That woman is my teacher.
+A1,noun,name,the word that identifies a person,My name is Anna.
+A1,noun,house,a building people live in,Our house is big.
+A1,noun,room,a part of a house,This room is small.
+A1,noun,door,a barrier you open to enter,Please close the door.
+A1,noun,table,furniture with a flat top,The books are on the table.
+A1,noun,chair,a seat for one person,"Sit on the chair, please."
+A1,noun,bed,furniture for sleeping on,I go to bed at ten.
+A1,noun,water,the clear liquid you drink,I drink water every day.
+A1,noun,milk,a white drink from cows,The baby drinks milk.
+A1,noun,bread,baked food made from flour,We eat bread for breakfast.
+A1,noun,egg,an oval food from hens,I have an egg for breakfast.
+A1,noun,apple,a round red or green fruit,She eats an apple every day.
+A1,noun,dog,a common pet animal,Our dog is black and white.
+A1,noun,cat,a small furry pet animal,The cat sleeps on my bed.
+A1,noun,grass,the green plant covering ground,The grass is green.
+A1,noun,school,a place for learning,My school is near my house.
+A1,noun,teacher,a person who teaches students,Our teacher is very nice.
+A1,noun,book,pages with words to read,I read this book at home.
+A1,noun,pen,a tool for writing,I write with a blue pen.
+A1,noun,bag,a container for carrying things,Her bag is red.
+A1,noun,money,coins and notes for buying,I have some money in my bag.
+A1,noun,car,a motor vehicle for people,My father has a new car.
+A1,noun,bus,a large public road vehicle,I go to school by bus.
+A1,noun,morning,the early part of day,I get up at seven in the morning.
+A1,noun,blue,the colour of the sky,My pen is blue.
+A1,noun,green,the colour of grass,The trees are green.
+A1,noun,yellow,the colour of the sun,The bus is yellow.
+A1,noun,Monday,the day after Sunday,I go to school on Monday.
+A1,noun,son,a male child of parents,Their son is five years old.
+A1,noun,daughter,a female child of parents,Her daughter likes milk.
+A1,noun,husband,the man she is married to,Her husband works in a shop.
+A1,noun,wife,the woman he is married to,His wife is a teacher.
+A1,noun,rice,small white grains for eating,Rice is white.
+A1,noun,juice,a drink made from fruit,I drink orange juice.
+A1,noun,coffee,a hot brown morning drink,My father drinks coffee.
+A1,noun,tea,a hot drink from leaves,Would you like some tea?
+A1,noun,kitchen,the room for cooking food,My mother is in the kitchen.
+A1,noun,window,a glass opening in a wall,"Open the window, please."
+A1,noun,day,from morning to night,Today is a good day.
+A1,verb,be,to exist or describe identity,She is a student.
+A1,verb,have,to own or possess something,I have two brothers.
+A1,verb,do,to perform an action,What do you do on Sundays?
+A1,verb,go,to move or travel somewhere,We go home at five.
+A1,verb,come,to move towards the speaker,"Come here, please."
+A1,verb,get,to receive or obtain something,I get a present from my friend.
+A1,verb,like,to enjoy or find pleasant,I like apples.
+A1,verb,want,to wish for something,She wants a new bag.
+A1,verb,need,to require something,We need some milk.
+A1,verb,love,to like very much,I love my family.
+A1,verb,live,to have your home somewhere,They live in a big house.
+A1,verb,work,to do a job,She works in a school.
+A1,verb,play,to take part in games,The children play in the park.
+A1,verb,eat,to take food into your mouth,I eat bread every morning.
+A1,verb,drink,to take liquid into your mouth,She drinks tea in the morning.
+A1,verb,sleep,to rest with eyes closed,The baby sleeps in my room.
+A1,verb,sit,to rest on a seat,Please sit on this chair.
+A1,verb,walk,to move on foot,We walk to school.
+A1,verb,run,to move fast on foot,The boys run in the park.
+A1,verb,read,to look at written words,I read a book at night.
+A1,verb,write,to make words on paper,She writes her name.
+A1,verb,speak,to say words,They speak English.
+A1,verb,listen,to give attention to sounds,Listen to the teacher.
+A1,verb,see,to use your eyes,I see a bird in the tree.
+A1,verb,watch,to look at something carefully,We watch TV in the evening.
+A1,verb,open,to make not closed,"Open your books, please."
+A1,verb,close,to shut something,The shops close at six.
+A1,verb,give,to hand something to someone,"Give me your pen, please."
+A1,verb,take,to carry something away,Take this bag to your room.
+A1,verb,make,to create or produce something,I make a cake for you.
+A1,verb,ask,to say a question,Ask me a question.
+A1,verb,answer,to reply to a question,"Answer the question, please."
+A1,verb,buy,to get something with money,I buy bread every morning.
+A1,verb,help,to make things easier for someone,I help my mother at home.
+A1,verb,learn,to get new knowledge,We learn English at school.
+A1,verb,talk,to say words to someone,I talk to my friend.
+A1,verb,teach,to give lessons to learners,She teaches English to children.
+A1,verb,thank,to say thank you,Thank your teacher for the book.
+A1,verb,use,to work with something for a purpose,I use a pen in class.
+A1,verb,wash,to clean with water,I wash my hands every day.
+A1,adjective,big,large in size,Our house is big.
+A1,adjective,small,little in size,The cat is small.
+A1,adjective,good,of high quality,This book is very good.
+A1,adjective,bad,of poor quality,The weather is bad today.
+A1,adjective,hot,with a high temperature,The tea is hot.
+A1,adjective,cold,with a low temperature,The milk is cold.
+A1,adjective,new,recently made or bought,I have a new pen.
+A1,adjective,old,not new or young,My car is very old.
+A1,adjective,young,not old; early in life,My sister is young.
+A1,adjective,happy,feeling or showing pleasure,The children are happy.
+A1,adjective,sad,not happy; feeling sorrow,She is sad today.
+A1,adjective,nice,pleasant or kind,Our teacher is nice.
+A1,adjective,long,having great length,Her hair is long.
+A1,adjective,short,having small length,The days are short in winter.
+A1,adjective,easy,not difficult to do,This question is easy.
+A1,adjective,difficult,hard to do,This question is difficult.
+A1,adjective,hungry,wanting to eat food,The baby is hungry.
+A1,adjective,tired,needing sleep or rest,I am tired in the evening.
+A1,adjective,fine,well or acceptable,"I am fine, thank you."
+A1,adjective,beautiful,very attractive to see,Your house is beautiful.
+A1,adjective,little,small in size,The little dog is black.
+A1,adjective,great,very good or large,This is a great day.
+A1,adjective,black,the darkest colour,My bag is black.
+A1,adjective,white,the lightest colour,Her cat is white.
+A1,adjective,red,the colour of blood,The apple is red.
+A1,adjective,clean,not dirty; free from dirt,The room is clean.
+A1,adjective,fast,moving or going quickly,The car is fast.
+A1,adjective,slow,not fast; moving slowly,The bus is slow today.
+A1,adjective,full,containing all it can,The bag is full.
+A1,adjective,favourite,liked more than others,Blue is my favourite colour.
+A1,adverb,here,in or at this place,"Sit here, please."
+A1,adverb,there,in or at that place,My bag is there.
+A1,adverb,now,at this moment,We go home now.
+A1,adverb,then,at that time,"We eat, and then we play."
+A1,adverb,today,on this day,Today is Monday.
+A1,adverb,tomorrow,the day after today,Tomorrow is Tuesday.
+A1,adverb,yesterday,the day before today,Yesterday is the day before today.
+A1,adverb,very,to a high degree,The tea is very hot.
+A1,adverb,too,also; more than enough,I am tired too.
+A1,adverb,also,in addition to something,She also likes cats.
+A1,adverb,always,at all times,He always drinks tea in the morning.
+A1,adverb,never,at no time,I never drink coffee.
+A1,adverb,often,many times; frequently,We often play in the park.
+A1,adverb,again,one more time,"Say it again, please."
+A1,adverb,well,in a good way,She speaks English well.
+A1,adverb,usually,most times; normally,I usually get up at seven.
+A1,adverb,sometimes,on some occasions,We sometimes watch TV.
+A1,adverb,slowly,in a slow way,The bus goes slowly.
+A1,adverb,quickly,in a fast way,Run quickly to the bus.
+A1,adverb,together,with each other,We play together at school.
+A2,noun,airport,place where planes arrive and leave,We went to the airport by taxi.
+A2,noun,autumn,the season between summer and winter,The leaves fall in autumn.
+A2,noun,beach,sand or stones next to the sea,We played on the beach.
+A2,noun,bicycle,a vehicle with two wheels,She rides her bicycle to school.
+A2,noun,bill,a paper asking for payment,He paid the bill in the restaurant.
+A2,noun,birthday,the day each year you were born,My birthday is in June.
+A2,noun,biscuit,a small flat sweet baked food,She ate a biscuit with her tea.
+A2,noun,blanket,a warm cover for a bed,Put a blanket on the bed.
+A2,noun,blog,a personal online diary or journal,She writes a blog about food.
+A2,noun,boat,a small vehicle for water travel,They crossed the river by boat.
+A2,noun,boss,the person who manages workers,Her boss is very friendly.
+A2,noun,bottle,a container for holding liquids,He drank a bottle of water.
+A2,noun,bridge,a structure over a river or road,The bridge is very old.
+A2,noun,camera,a device for taking photographs,I took my camera on holiday.
+A2,noun,campsite,a place where people camp,We stayed at a campsite near the sea.
+A2,noun,career,the jobs you do in your life,She wants a career in music.
+A2,noun,carpet,a soft covering for floors,The carpet in the room is red.
+A2,noun,castle,a large strong old building,We visited a castle in Spain.
+A2,noun,cereal,a breakfast food made from grains,I eat cereal for breakfast.
+A2,noun,channel,a television or radio station,"Change the channel, please."
+A2,noun,college,a place of higher education,My brother studies at college.
+A2,noun,engineer,a person who designs machines or structures,Her father is an engineer.
+A2,noun,envelope,a paper cover for a letter,Put the letter in the envelope.
+A2,noun,entrance,the door or way into a place,Wait for me at the entrance.
+A2,noun,equipment,the things needed for an activity,We bought new sports equipment.
+A2,noun,event,something that happens or is organised,The concert was a big event.
+A2,noun,exam,a formal test of knowledge,I passed my English exam.
+A2,noun,exhibition,a public show of art or objects,We saw an exhibition of old photos.
+A2,noun,experience,something you have done or lived through,The trip was a great experience.
+A2,noun,factory,a building where things are made,He works in a car factory.
+A2,noun,farm,land for growing food or animals,My uncle has a big farm.
+A2,noun,festival,a celebration with music or events,The town has a music festival.
+A2,noun,hobby,an activity you enjoy in free time,Her hobby is swimming.
+A2,noun,hotel,a place where travellers pay to sleep,They stayed in a small hotel.
+A2,noun,journalist,a person who writes news stories,The journalist asked me three questions.
+A2,noun,adult,a fully grown person,The tickets cost ten pounds for adults.
+A2,noun,animal,"a living thing, not a plant",What is your favourite animal?
+A2,noun,bank,a place that keeps money safe,The bank opens at nine.
+A2,noun,bathroom,a room with a bath or shower,The bathroom is upstairs.
+A2,noun,cinema,a place where you watch films,We saw a film at the cinema.
+A2,noun,driver,a person who drives a vehicle,The bus driver was very kind.
+A2,noun,flat,a set of rooms for living in,They live in a small flat.
+A2,noun,garden,land with plants around a house,The children are playing in the garden.
+A2,noun,hour,a period of sixty minutes,The film lasts two hours.
+A2,noun,internet,the world computer network,I looked for the information on the internet.
+A2,noun,letter,a written message sent to someone,She wrote a letter to her grandmother.
+A2,noun,meal,food eaten at one time,Dinner is my favourite meal.
+A2,noun,museum,a building with interesting old things,The museum is free on Sundays.
+A2,noun,newspaper,paper with daily news stories,He buys a newspaper every day.
+A2,noun,ticket,a paper that lets you travel or enter,I bought two tickets for the concert.
+A2,verb,bake,to cook food in an oven,She baked a cake for my birthday.
+A2,verb,become,to begin to be something,He became a doctor last year.
+A2,verb,begin,to start doing something,The film begins at eight.
+A2,verb,believe,to think something is true,I believe his story.
+A2,verb,belong,to be in the right place or group,This book belongs to me.
+A2,verb,boil,to heat liquid until it bubbles,Boil some water for the tea.
+A2,verb,borrow,"to take and use, then return",Can I borrow your pen?
+A2,verb,bother,to annoy someone or make effort,Don't bother to cook tonight.
+A2,verb,break,to damage something into pieces,"Be careful, don't break the glass."
+A2,verb,bring,to carry something here,Bring your books to class tomorrow.
+A2,verb,build,to make by putting parts together,They built a new bridge.
+A2,verb,camp,to sleep outside in a tent,We camped near the lake.
+A2,verb,carry,to hold and take something,He carried the bags upstairs.
+A2,verb,catch,to take hold of something moving,She caught the ball with one hand.
+A2,verb,change,to make or become different,I changed my clothes after school.
+A2,verb,earn,to get money for work,She earns money in a shop.
+A2,verb,enjoy,to get pleasure from something,We enjoyed the concert very much.
+A2,verb,enter,to go into a place,Enter the room quietly.
+A2,verb,explain,to make something clear,The teacher explained the exercise.
+A2,verb,explore,to travel and discover a place,We explored the old town.
+A2,verb,fail,to not pass a test,He failed his driving test.
+A2,verb,fill,to make something full,Fill the bottle with water.
+A2,verb,improve,to make or become better,Her English improved this year.
+A2,verb,include,to have as a part,The price includes breakfast.
+A2,verb,invite,to ask someone to come,She invited me to her party.
+A2,verb,join,to become a member or take part,He joined the football team.
+A2,verb,keep,to continue to have something,You can keep the pen.
+A2,verb,laugh,to make happy sounds,The film made us laugh.
+A2,verb,lend,to give something for a time,I lent my bike to my friend.
+A2,verb,agree,to have the same opinion,I agree with you.
+A2,verb,arrive,to reach a place,The train arrived at ten.
+A2,verb,choose,to pick from options,Choose a colour you like.
+A2,verb,dance,to move your body to music,They danced all evening.
+A2,verb,decide,to make a choice,We decided to stay at home.
+A2,verb,drive,to control a motor vehicle,She drives to work every day.
+A2,verb,forget,to not remember something,Don't forget your keys.
+A2,verb,hope,to want something to happen,I hope you feel better soon.
+A2,verb,leave,to go away from a place,We leave home at eight.
+A2,verb,remember,to keep something in your mind,I remember my first day at school.
+A2,verb,visit,to go to see a person or place,We visited our grandmother on Sunday.
+A2,adjective,attractive,pleasant or beautiful to look at,The hotel has an attractive garden.
+A2,adjective,available,free to be used or bought,Tickets are available online.
+A2,adjective,awesome,extremely good or impressive,The view from the bridge was awesome.
+A2,adjective,awful,very bad or unpleasant,The weather was awful yesterday.
+A2,adjective,bored,feeling tired of inactivity,The children were bored at home.
+A2,adjective,boring,not interesting or exciting,The lesson was boring.
+A2,adjective,brave,ready to face danger without fear,The brave girl climbed the wall.
+A2,adjective,brilliant,extremely good or clever,That's a brilliant idea.
+A2,adjective,broken,damaged and not working,My bike is broken.
+A2,adjective,busy,having a lot to do,The street is very busy today.
+A2,adjective,careful,taking care to avoid problems,Be careful with that glass.
+A2,adjective,empty,with nothing inside,The bottle is empty.
+A2,adjective,excellent,extremely good; of very high quality,The meal was excellent.
+A2,adjective,excited,feeling happy about something coming,The children are excited about the trip.
+A2,adjective,exciting,making you feel excited,It was an exciting match.
+A2,adjective,expensive,costing a lot of money,This camera is too expensive.
+A2,adjective,famous,known by many people,The castle is very famous.
+A2,adjective,fantastic,extremely good; wonderful,We had a fantastic holiday.
+A2,adjective,ill,not in good health,My brother is ill today.
+A2,adjective,important,having great value or effect,This exam is very important.
+A2,adjective,interested,wanting to know more,She is interested in music.
+A2,adjective,interesting,keeping your attention,The museum is interesting.
+A2,adjective,lucky,having good luck,I was lucky and won a prize.
+A2,adjective,married,having a husband or wife,They got married last year.
+A2,adjective,noisy,making a lot of noise,The street is too noisy at night.
+A2,adjective,afraid,feeling fear; frightened,The little girl is afraid of dogs.
+A2,adjective,cheap,not costing much money,The tickets were very cheap.
+A2,adjective,cloudy,covered with clouds,It is cloudy and cold today.
+A2,adjective,dark,with little or no light,It gets dark early in winter.
+A2,adjective,friendly,kind and pleasant to people,The people in the shop are friendly.
+A2,adverb,away,to or at another place,The station is two kilometres away.
+A2,adverb,badly,in a bad way,He played badly and lost the game.
+A2,adverb,carefully,in a careful way,"Drive carefully, the roads are wet."
+A2,adverb,certainly,without any doubt,I will certainly come to your party.
+A2,adverb,easily,in an easy way,She passed the exam easily.
+A2,adverb,especially,more than usual or others,"I love fruit, especially apples."
+A2,adverb,everywhere,in all places,We looked for the keys everywhere.
+A2,adverb,exactly,in an exact way; precisely,The train left at exactly nine.
+A2,adverb,finally,after a long time; at last,The bus finally arrived at six.
+A2,adverb,immediately,at once; without delay,Come here immediately.
+A2,adverb,instead,in place of something else,"There was no tea, so I drank coffee instead."
+A2,adverb,maybe,"possibly, but not certainly",Maybe it will rain tomorrow.
+A2,adverb,nearly,almost but not quite,It is nearly ten o'clock.
+A2,adverb,quite,fairly; to some degree,The film was quite good.
+A2,adverb,soon,in a short time,See you soon.
+A2,adverb,already,before now or before expected,"When I arrived, he was already there."
+A2,adverb,around,in or to many places; about,We walked around the old town.
+A2,adverb,ever,at any time,Do you ever go to the beach?
+A2,adverb,still,continuing until now,It is still raining.
+A2,adverb,yet,until now; up to this time,Is the shop open yet?
+B1,noun,advantage,something that helps you succeed,Speaking English is a big advantage when you travel.
+B1,noun,adventure,an exciting and sometimes dangerous experience,They had many adventures during their trip across Africa.
+B1,noun,advertisement,a notice that tries to sell something,I saw an advertisement for a new phone on television.
+B1,noun,apology,words you say to show you are sorry,He wrote her an apology after their argument.
+B1,noun,appearance,the way that someone or something looks,She cares a lot about her appearance.
+B1,noun,appointment,a planned meeting at a fixed time,I have a doctor's appointment on Tuesday morning.
+B1,noun,argument,an angry discussion between people who disagree,They had an argument about money last night.
+B1,noun,arrangement,a plan or preparation for something,We made arrangements to meet outside the cinema.
+B1,noun,atmosphere,the feeling of a place or situation,The restaurant has a warm and friendly atmosphere.
+B1,noun,audience,the people who watch or listen to a show,The audience clapped loudly at the end of the concert.
+B1,noun,award,a prize given for doing something well,She won an award for her first novel.
+B1,noun,background,"a person's family, education and experience",The course is open to people from all backgrounds.
+B1,noun,behaviour,the way someone acts or does things,His behaviour at school has improved this year.
+B1,noun,benefit,a good or helpful result of something,Regular exercise has many benefits for your health.
+B1,noun,colleague,a person you work with,My colleagues and I often have lunch together.
+B1,noun,community,the people living in the same area,The whole community helped to clean the park.
+B1,noun,competition,a contest to find the best person or team,She entered a singing competition at school.
+B1,noun,confidence,belief in yourself or in your abilities,He has the confidence to speak in public.
+B1,noun,crime,an illegal action or activity,Crime in the city centre has fallen this year.
+B1,noun,culture,"the customs, arts and beliefs of a society",I love learning about the culture of other countries.
+B1,noun,decision,a choice you make after thinking,"It was a difficult decision, but the right one."
+B1,noun,development,the process of growing or improving,The development of the new town centre took five years.
+B1,noun,disadvantage,something that makes success more difficult,The main disadvantage of the job is the long journey.
+B1,noun,discount,a reduction in the usual price,Students get a ten per cent discount at this shop.
+B1,noun,environment,the natural world around us,We must do more to protect the environment.
+B1,noun,evidence,facts showing that something is true,There is no evidence that he stole the money.
+B1,noun,experiment,a scientific test to discover something,The students did an experiment in the chemistry lab.
+B1,noun,friendship,the relationship between friends,Their friendship began at primary school.
+B1,noun,government,the group of people who govern a country,The government plans to build more affordable houses.
+B1,noun,habit,something you do regularly without thinking,Biting your nails is a bad habit.
+B1,noun,opportunity,a chance to do something you want,This job is a great opportunity for you.
+B1,noun,permission,allowing someone to do something,You need permission to park here.
+B1,noun,pollution,damage to the environment from harmful substances,Air pollution is a serious problem in big cities.
+B1,noun,pressure,stress caused by demands or worries,He works well under pressure.
+B1,noun,responsibility,a duty to deal with something or someone,It is my responsibility to lock the office at night.
+B1,noun,ability,the power or skill to do something,She has the ability to learn languages quickly.
+B1,noun,attention,notice or interest given to something,Please pay attention to what the teacher says.
+B1,noun,cause,the thing that makes something happen,The cause of the fire is still unknown.
+B1,noun,century,a period of one hundred years,The castle is more than three centuries old.
+B1,noun,character,the qualities that make up a person's nature,He has a strong and honest character.
+B1,noun,choice,the act of choosing between possibilities,You have a choice between two courses.
+B1,noun,condition,the state that something is in,The old house is in very good condition.
+B1,noun,danger,the possibility of harm or death,The climbers were in serious danger.
+B1,noun,demand,a strong request or need for something,There is a growing demand for cheap flights.
+B1,noun,difficulty,a problem or something hard to do,I had difficulty understanding his accent.
+B1,noun,effect,a change that results from something,The new law had an immediate effect.
+B1,noun,knowledge,what a person knows about something,Her knowledge of history is impressive.
+B1,noun,opinion,what you think or believe about something,Everyone has a different opinion about the film.
+B1,noun,purpose,the reason something is done or exists,The purpose of the meeting is to discuss prices.
+B1,noun,success,achieving what you wanted to achieve,Hard work is the key to success.
+B1,verb,accept,to agree to take something offered,She accepted the job offer immediately.
+B1,verb,advise,to tell someone what they should do,The doctor advised him to rest for a week.
+B1,verb,apologize,to say you are sorry for something,He apologized for arriving late to the meeting.
+B1,verb,arrange,to plan or organize something,We arranged a surprise party for her birthday.
+B1,verb,avoid,to stay away from something or someone,I try to avoid driving in the city centre.
+B1,verb,cancel,to decide that something will not happen,They cancelled the match because of the rain.
+B1,verb,compare,to examine things to see how they differ,Compare the prices before you buy anything.
+B1,verb,complain,to say that you are not satisfied,Customers complained about the slow service.
+B1,verb,consider,to think about something carefully,We are considering moving to a bigger flat.
+B1,verb,describe,to say what something or someone is like,Can you describe the man you saw?
+B1,verb,destroy,to damage something so badly it cannot be used,The fire destroyed most of the old building.
+B1,verb,develop,to grow or make something grow,The company plans to develop a new product.
+B1,verb,disagree,to have a different opinion,I disagree with you about the new rules.
+B1,verb,disappear,to become impossible to see or find,My keys have disappeared from my bag.
+B1,verb,discover,to find something for the first time,Scientists have discovered a new kind of plant.
+B1,verb,discuss,to talk about something with other people,We discussed the problem for over an hour.
+B1,verb,encourage,to give someone confidence to do something,My parents always encouraged me to study music.
+B1,verb,expect,to think that something will happen,I expect the train will be late again.
+B1,verb,express,to show your thoughts or feelings in words,She expressed her thanks with a card.
+B1,verb,imagine,to form a picture in your mind,Imagine living on an island in the sea.
+B1,verb,increase,to become or make something larger,Prices have increased by ten per cent this year.
+B1,verb,manage,to succeed in doing something difficult,We managed to finish the work on time.
+B1,verb,persuade,to make someone agree by giving reasons,She persuaded me to join the gym with her.
+B1,verb,prefer,to like one thing more than another,I prefer tea to coffee in the morning.
+B1,verb,prevent,to stop something from happening,Good locks can prevent most burglaries.
+B1,verb,promise,to say you will certainly do something,He promised to help me with my homework.
+B1,verb,protect,to keep someone or something safe,This cream protects your skin from the sun.
+B1,verb,realize,to suddenly understand or become aware,I realized that I had left my phone at home.
+B1,verb,recommend,to say that something is good or suitable,Can you recommend a good restaurant near here?
+B1,verb,refuse,to say no to something offered or asked,He refused to answer any questions.
+B1,verb,add,to put something together with something else,Add some salt to the soup and stir.
+B1,verb,deal,to take action to handle a problem,Our staff will deal with your complaint quickly.
+B1,verb,depend,to be decided by something else,The price depends on the size of the room.
+B1,verb,exist,to be present in the real world,Many people believe that ghosts do not exist.
+B1,verb,mention,to speak about something briefly,She mentioned that she might change jobs.
+B1,verb,mind,to feel unhappy or annoyed about something,I don't mind waiting a few minutes.
+B1,verb,remain,to stay in the same place or state,Please remain seated until the plane stops.
+B1,verb,replace,to put something new in place of something,We need to replace the old washing machine.
+B1,verb,solve,to find an answer to a problem,They solved the problem by working together.
+B1,verb,suppose,to think that something is probably true,I suppose she will arrive on the next train.
+B1,adjective,amazed,very surprised by something,I was amazed by how much the town had changed.
+B1,adjective,amazing,causing great surprise or wonder,The view from the mountain was amazing.
+B1,adjective,anxious,worried and nervous about something,She felt anxious before the exam.
+B1,adjective,ashamed,feeling guilty about something you did,He was ashamed of his behaviour at the party.
+B1,adjective,aware,knowing about a situation or fact,Are you aware of the new parking rules?
+B1,adjective,calm,peaceful and not worried or excited,Try to stay calm during the interview.
+B1,adjective,confident,sure about your own abilities,She feels confident about passing the test.
+B1,adjective,curious,wanting to know or learn something,I'm curious about what happened next.
+B1,adjective,disabled,having a condition that limits physical or mental activities,The hotel has good facilities for disabled guests.
+B1,adjective,disappointed,sad because something was not as expected,He was disappointed with his exam results.
+B1,adjective,familiar,well known or easy to recognise,"Her face looks familiar, but I can't remember her name."
+B1,adjective,fascinating,so interesting that it holds your attention,The museum has a fascinating collection of old coins.
+B1,adjective,formal,official or following accepted rules,You should wear formal clothes to the interview.
+B1,adjective,grateful,feeling or showing thanks,I'm very grateful for all your help.
+B1,adjective,honest,always telling the truth,An honest person will return lost money.
+B1,adjective,huge,extremely large in size or amount,They live in a huge house near the park.
+B1,adjective,independent,not depending on other people,She is very independent for her age.
+B1,adjective,intelligent,able to learn and understand quickly,Dolphins are very intelligent animals.
+B1,adjective,nervous,worried or afraid about something,I always feel nervous before flying.
+B1,adjective,obvious,easy to see or understand,It was obvious that he was telling a lie.
+B1,adjective,ordinary,not special or unusual,It was just an ordinary day at work.
+B1,adjective,pleasant,nice and enjoyable,We had a pleasant evening with old friends.
+B1,adjective,polite,having good manners,The staff were polite and helpful.
+B1,adjective,reliable,able to be trusted or depended on,This car is old but very reliable.
+B1,adjective,unexpected,not expected and surprising,His sudden resignation was completely unexpected.
+B1,adjective,certain,"sure about something, or particular but unnamed",I'm certain that I locked the door.
+B1,adjective,natural,"existing in nature, not made by people",The country is rich in natural beauty.
+B1,adjective,patient,able to wait calmly without getting angry,You need to be patient with young children.
+B1,adjective,recent,having happened not long ago,There has been a lot of recent interest in the story.
+B1,adjective,typical,having the usual qualities of a type,It was a typical English summer: wet and cold.
+B1,adverb,abroad,in or to another country,She lived abroad for five years.
+B1,adverb,absolutely,completely and totally,The meal was absolutely delicious.
+B1,adverb,completely,in every way or to the full degree,I completely forgot about the meeting.
+B1,adverb,definitely,without any doubt,I will definitely be there on Saturday.
+B1,adverb,directly,in a direct line or way,The bus goes directly to the airport.
+B1,adverb,eventually,"in the end, after a long time",He eventually found a job he enjoyed.
+B1,adverb,fairly,to a moderate degree; quite,The test was fairly easy.
+B1,adverb,fortunately,in a lucky way,"Fortunately, nobody was hurt in the accident."
+B1,adverb,hardly,almost not; barely,I hardly know anyone at this party.
+B1,adverb,however,used to introduce a contrast,"The hotel was expensive; however, it was very comfortable."
+B1,adverb,mainly,for the most part,The audience was mainly young people.
+B1,adverb,obviously,in a way that is easy to see,"Obviously, we can't afford a new car this year."
+B1,adverb,rather,to some degree; quite,The film was rather boring.
+B1,adverb,somehow,in some way that is not clear,We somehow got lost on the way home.
+B1,adverb,suddenly,quickly and unexpectedly,It suddenly started to rain heavily.
+B1,adverb,extremely,to a very high degree,The exam was extremely difficult.
+B1,adverb,generally,usually or in most cases,The weather here is generally mild.
+B1,adverb,normally,in the usual way,I normally walk to work.
+B1,adverb,particularly,especially or more than usual,I particularly enjoyed the last chapter.
+B1,adverb,possibly,perhaps; used to show something might be true,Could you possibly help me with this box?
+B2,noun,access,the ability or right to use or reach something,Students have access to the library at all times.
+B2,noun,achievement,something done successfully with effort or skill,Finishing the marathon was her greatest achievement.
+B2,noun,analysis,careful study of something to understand it,The analysis of the results took several weeks.
+B2,noun,anxiety,a strong feeling of worry or fear,Waiting for exam results can cause a lot of anxiety.
+B2,noun,applicant,"a person who formally requests something, such as a job",There were over fifty applicants for the position.
+B2,noun,approach,a way of dealing with something,We need a new approach to this problem.
+B2,noun,aspect,one part or feature of a situation,Safety is the most important aspect of the job.
+B2,noun,asset,something valuable that a person or company owns,Her experience is a real asset to the team.
+B2,noun,assumption,something accepted as true without proof,His argument is based on a false assumption.
+B2,noun,awareness,knowledge or understanding of a subject,The campaign raised awareness of the disease.
+B2,noun,bias,an unfair preference for or against something,The report showed a clear bias against young workers.
+B2,noun,campaign,a planned series of activities to achieve something,They launched a campaign to save the local hospital.
+B2,noun,capacity,the amount something can hold or produce,The stadium has a capacity of forty thousand people.
+B2,noun,circumstance,a condition or fact connected with an event,Under no circumstances should you open the door.
+B2,noun,commitment,a promise to do something; dedication,Learning a language requires time and commitment.
+B2,noun,concept,an idea or abstract principle,The concept of freedom means different things to different people.
+B2,noun,conflict,a serious disagreement or struggle,The conflict between the two departments lasted months.
+B2,noun,consideration,careful thought about something,"After careful consideration, we accepted their offer."
+B2,noun,contribution,something given to help achieve a result,She made an important contribution to the project.
+B2,noun,controversy,public disagreement about something,The new law has caused a lot of controversy.
+B2,noun,criterion,a standard used to judge or decide something,Cost is the main criterion for choosing a supplier.
+B2,noun,deadline,a time by which something must be finished,The deadline for applications is next Friday.
+B2,noun,debt,money that is owed to someone,He is trying to pay off his debts.
+B2,noun,democracy,a system in which people elect their government,Free elections are essential to democracy.
+B2,noun,emphasis,special importance given to something,The school puts a lot of emphasis on languages.
+B2,noun,estimate,a rough calculation of value or amount,The final cost was much higher than the original estimate.
+B2,noun,exposure,the state of being affected by something,Too much exposure to the sun can damage your skin.
+B2,noun,foundation,the base on which something is built,The course provides a solid foundation in statistics.
+B2,noun,framework,a basic structure that supports a system,The agreement provides a framework for future talks.
+B2,noun,guideline,a general rule or piece of advice,Follow the safety guidelines when using this machine.
+B2,noun,habitat,the natural home of a plant or animal,Cutting down forests destroys the habitat of many species.
+B2,noun,hypothesis,an idea that is tested through investigation,The experiment did not support his original hypothesis.
+B2,noun,impact,a strong effect or influence,The internet has had a huge impact on education.
+B2,noun,implication,a possible result or effect of an action,The implications of the decision are still unclear.
+B2,noun,incentive,something that encourages you to do something,Tax cuts give companies an incentive to invest.
+B2,noun,agency,an organisation providing a particular service,She found a job through an employment agency.
+B2,noun,assessment,the process of judging quality or value,The course includes a written assessment at the end.
+B2,noun,authority,the power to make decisions and give orders,Only the manager has the authority to sign the contract.
+B2,noun,consequence,a result of a particular action,He must now face the consequences of his decision.
+B2,noun,debate,a formal discussion of an issue,There has been much debate about the new tax.
+B2,noun,distinction,a clear difference between similar things,There is an important distinction between the two terms.
+B2,noun,element,a basic or essential part of something,Trust is an essential element of any relationship.
+B2,noun,facility,a building or service provided for a purpose,The sports facilities at the university are excellent.
+B2,noun,generation,people of about the same age group,The younger generation uses technology very differently.
+B2,noun,initiative,a new plan or action to solve a problem,The government has launched an initiative to reduce waste.
+B2,noun,insight,a deep understanding of a complicated situation,Her book gives a fascinating insight into rural life.
+B2,noun,outcome,the final result of a process or action,The outcome of the election surprised everyone.
+B2,noun,priority,something considered more important than other things,Reducing costs is our top priority this year.
+B2,noun,procedure,the official way of doing something,What is the correct procedure for making a complaint?
+B2,noun,regulation,an official rule controlling an activity,New safety regulations came into force last month.
+B2,verb,achieve,to succeed in doing something by effort,She achieved her ambition of becoming a doctor.
+B2,verb,adapt,to change in order to suit new conditions,Animals must adapt to survive in a changing climate.
+B2,verb,adjust,to change something slightly to improve it,You can adjust the seat to make it more comfortable.
+B2,verb,adopt,to formally accept or start using something,The company has adopted a more flexible approach.
+B2,verb,anticipate,to expect something and prepare for it,We anticipate that sales will rise next year.
+B2,verb,assess,to judge the value or quality of something,Teachers assess the students' progress every term.
+B2,verb,assign,to give someone a task or duty,Each student was assigned a different topic.
+B2,verb,ban,to officially forbid something,The government plans to ban smoking in public places.
+B2,verb,boost,to increase or improve something,The new advertising campaign boosted sales considerably.
+B2,verb,claim,to state that something is true,He claims that he never received the letter.
+B2,verb,clarify,to make something clearer or easier to understand,Could you clarify what you mean by 'urgent'?
+B2,verb,commit,to promise or dedicate yourself to something,The government has committed more money to health care.
+B2,verb,comprise,to consist of; to be made up of,The team comprises experts from five countries.
+B2,verb,conduct,to organise and carry out an activity,They conducted a survey of two thousand households.
+B2,verb,consist,to be composed or made up of something,The course consists of six modules.
+B2,verb,contribute,to give something to help achieve a result,Everyone contributed ideas to the discussion.
+B2,verb,convince,to make someone believe something is true,She finally convinced him to see a doctor.
+B2,verb,demonstrate,to show clearly by giving proof or examples,The study demonstrates the benefits of regular exercise.
+B2,verb,deny,to state that something is not true,He denied stealing the money.
+B2,verb,deserve,to have earned something by your actions,She deserves a holiday after all that work.
+B2,verb,distinguish,to recognise the difference between things,It is difficult to distinguish between the twins.
+B2,verb,emphasize,to give special importance to something,The report emphasizes the need for more research.
+B2,verb,enable,to make something possible,The new software enables us to work much faster.
+B2,verb,encounter,to meet or experience something unexpectedly,We encountered several problems during the project.
+B2,verb,enhance,to improve the quality or value of something,Good lighting can enhance the appearance of a room.
+B2,verb,ensure,to make certain that something happens,Please ensure that all windows are closed.
+B2,verb,establish,to start or create something that lasts,The company was established in 1985.
+B2,verb,evaluate,to judge the value or quality of something,We need to evaluate the results of the survey.
+B2,verb,tend,to be likely to do something,People tend to drive more carefully in bad weather.
+B2,verb,undergo,to experience or be subjected to something,The building is undergoing major repairs.
+B2,verb,acquire,to gain or come to possess something,She acquired a good knowledge of French while working in Paris.
+B2,verb,address,to deal with a problem or issue,The government must address the problem of unemployment.
+B2,verb,analyse,to examine something carefully and in detail,Scientists analysed the data from the experiment.
+B2,verb,arise,to begin to exist or happen,Problems often arise when communication is poor.
+B2,verb,assume,to accept something as true without proof,I assumed that the meeting had been cancelled.
+B2,verb,conclude,to decide something after careful thought,The report concluded that the policy had failed.
+B2,verb,consult,to ask someone for advice or information,You should consult a lawyer before signing the contract.
+B2,verb,define,to state the exact meaning of something,It is difficult to define what makes a good leader.
+B2,verb,detect,to discover or notice something hidden,The tests detected a small amount of pollution in the water.
+B2,verb,emerge,to appear or become known,New evidence emerged during the investigation.
+B2,adjective,absolute,total and complete; not limited,What he said was absolute nonsense.
+B2,adjective,abstract,based on ideas rather than physical things,The course covers some highly abstract concepts.
+B2,adjective,adequate,good enough for a particular purpose,"The salary is adequate, but not generous."
+B2,adjective,aggressive,behaving in an angry or violent way,His aggressive behaviour alarmed his colleagues.
+B2,adjective,apparent,easy to see or understand; obvious,It soon became apparent that something was wrong.
+B2,adjective,appropriate,suitable for a particular situation,Jeans are not appropriate for a formal dinner.
+B2,adjective,artificial,"made by people, not natural",This drink contains no artificial colours.
+B2,adjective,astonishing,very surprising and difficult to believe,The team achieved an astonishing victory.
+B2,adjective,authentic,"real and genuine, not a copy",The restaurant serves authentic Italian food.
+B2,adjective,awkward,difficult or embarrassing to deal with,There was an awkward silence during the meal.
+B2,adjective,balanced,considering all sides fairly; stable,The report gives a balanced view of the situation.
+B2,adjective,beneficial,producing good or helpful effects,Regular exercise is beneficial to your health.
+B2,adjective,bold,brave and confident; not afraid of risk,It was a bold decision to change careers at fifty.
+B2,adjective,brief,lasting only a short time,She gave a brief summary of the report.
+B2,adjective,broad,wide; covering many different things,The course offers a broad range of subjects.
+B2,adjective,capable,having the ability to do something well,She is a highly capable manager.
+B2,adjective,casual,relaxed and informal,The office has a casual dress code on Fridays.
+B2,adjective,challenging,difficult but in an interesting way,Teaching teenagers can be very challenging.
+B2,adjective,commercial,related to buying and selling; for profit,The film was a huge commercial success.
+B2,adjective,complex,consisting of many connected parts,The brain is an extremely complex organ.
+B2,adjective,comprehensive,including everything that is needed,The report provides a comprehensive review of the data.
+B2,adjective,compulsory,required by law or rules,Maths and English are compulsory subjects.
+B2,adjective,essential,completely necessary and extremely important,Good communication is essential in any team.
+B2,adjective,inevitable,certain to happen; unavoidable,Some job losses now seem inevitable.
+B2,adjective,urban,relating to a town or city,Urban populations are growing faster than rural ones.
+B2,adjective,accurate,correct in all details,The report must be accurate and up to date.
+B2,adjective,considerable,"large in size, amount or importance",The project required considerable time and effort.
+B2,adjective,distinct,clearly different or separate,There are two distinct types of learner.
+B2,adjective,initial,happening at the beginning,My initial reaction was one of surprise.
+B2,adjective,significant,important or large enough to be noticed,There has been a significant increase in sales.
+B2,adverb,accurately,in a way that is correct in all details,The map accurately shows the position of the islands.
+B2,adverb,additionally,as an extra thing; also,"Additionally, we offer free parking to all guests."
+B2,adverb,adequately,well enough for a particular purpose,The problem was not adequately explained.
+B2,adverb,apparently,according to what you have heard; seemingly,"Apparently, the meeting has been postponed."
+B2,adverb,approximately,about; not exactly but close,The journey takes approximately three hours.
+B2,adverb,barely,only just; hardly,She was so tired she could barely speak.
+B2,adverb,briefly,for a short time,He spoke briefly about his time in India.
+B2,adverb,broadly,"in a general way, without details",The two plans are broadly similar.
+B2,adverb,consequently,as a result; therefore,He missed the train and consequently arrived late.
+B2,adverb,currently,at the present time,She is currently studying for her final exams.
+B2,adverb,firmly,in a strong or definite way,He firmly believes that he made the right choice.
+B2,adverb,formerly,in earlier times; previously,The building was formerly a school.
+B2,adverb,hence,for this reason; therefore,"The cost of transport is rising, hence the higher prices."
+B2,adverb,increasingly,more and more over time,It is becoming increasingly difficult to find cheap housing.
+B2,adverb,virtually,almost completely; nearly,The two products are virtually identical.
+B2,adverb,considerably,by a notably large amount,House prices have risen considerably in recent years.
+B2,adverb,essentially,in the most important respects; basically,The two plans are essentially the same.
+B2,adverb,gradually,"slowly, over a period of time",The weather is gradually getting warmer.
+B2,adverb,highly,to a great degree; very,She is a highly respected scientist.
+B2,adverb,relatively,in comparison with other things,The exam was relatively easy this year.
+C1,noun,abundance,a very large quantity of something,The region enjoys an abundance of natural resources.
+C1,noun,accountability,the obligation to explain one's actions,The report calls for greater accountability in public spending.
+C1,noun,acquisition,the act of obtaining or gaining something,The company announced the acquisition of a smaller rival.
+C1,noun,advocacy,public support for a cause or policy,Her advocacy of prison reform influenced national policy.
+C1,noun,alliance,a formal agreement between groups or nations,The two parties formed an alliance to contest the election.
+C1,noun,ambiguity,the quality of having several possible meanings,The ambiguity of the clause led to conflicting interpretations.
+C1,noun,aspiration,a strong desire to achieve something,She has a longstanding aspiration to become a surgeon.
+C1,noun,assertion,a confident statement of fact or belief,His assertion that the data were flawed provoked debate.
+C1,noun,autonomy,the right or condition of self-government,The region was granted considerable autonomy from central government.
+C1,noun,betrayal,the act of breaking trust or loyalty,The disclosure of confidential files was seen as a betrayal.
+C1,noun,breakthrough,a sudden important discovery or development,The treatment represents a major breakthrough in cancer research.
+C1,noun,bureaucracy,a complex system of administrative rules,Excessive bureaucracy delayed the approval of the project.
+C1,noun,catastrophe,a sudden event causing great damage,The earthquake was a catastrophe of unprecedented scale.
+C1,noun,coalition,a temporary alliance of political parties,The coalition collapsed after months of internal disputes.
+C1,noun,coherence,the quality of being logical and consistent,The argument lacks coherence and supporting evidence.
+C1,noun,collaboration,the act of working jointly with others,The study was a collaboration between three universities.
+C1,noun,compassion,sympathetic concern for others' suffering,The volunteers treated the refugees with genuine compassion.
+C1,noun,competence,the ability to do something successfully,The job demands a high level of technical competence.
+C1,noun,complexity,the state of being intricate or complicated,The complexity of the tax system frustrates most citizens.
+C1,noun,compliance,"conformity with rules, laws or requests",All construction work must be carried out in compliance with safety regulations.
+C1,noun,compromise,an agreement reached through mutual concessions,"After lengthy negotiations, both sides accepted a compromise."
+C1,noun,conscience,an inner sense of right and wrong,He was troubled by his conscience after lying to her.
+C1,noun,consensus,general agreement among a group,There is a broad scientific consensus on climate change.
+C1,noun,consent,permission or agreement for something to happen,The surgery cannot proceed without the patient's consent.
+C1,noun,constraint,a limitation or restriction on something,Budget constraints forced the council to cut services.
+C1,noun,contempt,a feeling of complete disrespect or scorn,She spoke of the corrupt officials with undisguised contempt.
+C1,noun,contradiction,a combination of statements that conflict,There is an obvious contradiction between his words and actions.
+C1,noun,conviction,a firmly held belief or opinion,She spoke with conviction about the need for reform.
+C1,noun,correlation,a mutual relationship between two variables,The study found a strong correlation between diet and health.
+C1,noun,corruption,dishonest or fraudulent conduct by officials,The investigation exposed widespread corruption in the ministry.
+C1,noun,credibility,the quality of being trusted and believed,The scandal seriously damaged the newspaper's credibility.
+C1,noun,custody,the protective care or guardianship of someone,"After the divorce, she was granted custody of the children."
+C1,noun,deficiency,a lack or shortage of something essential,Vitamin deficiency can lead to serious health problems.
+C1,noun,deficit,the amount by which spending exceeds income,The government pledged to reduce the budget deficit.
+C1,noun,dignity,the quality of deserving respect or honour,She bore her illness with remarkable courage and dignity.
+C1,noun,allegation,an unproven claim or accusation,The minister resigned following allegations of financial misconduct.
+C1,noun,aftermath,the consequences following a disastrous event,"In the aftermath of the war, millions faced starvation."
+C1,noun,anomaly,something that deviates from the norm,The scientists struggled to explain the anomaly in the data.
+C1,noun,dilemma,a difficult choice between two alternatives,The government faces a dilemma over healthcare funding.
+C1,noun,discrepancy,an unexpected difference between two things,The audit revealed a significant discrepancy in the accounts.
+C1,noun,escalation,a rapid increase in intensity or severity,Diplomats warned that escalation of the conflict was likely.
+C1,noun,feasibility,the practicality of a proposed plan,Engineers are assessing the feasibility of the tunnel project.
+C1,noun,hierarchy,a system organised by rank or status,She rose rapidly through the corporate hierarchy.
+C1,noun,ideology,a system of political or economic beliefs,The party's ideology emphasises individual liberty and free markets.
+C1,noun,infrastructure,basic physical systems serving a country,The government invested heavily in transport infrastructure.
+C1,noun,integrity,honesty and strong moral principles,Her professional integrity has never been questioned.
+C1,noun,intervention,deliberate action to alter a situation,Military intervention failed to stabilise the region.
+C1,noun,legitimacy,lawfulness or validity of authority,Opposition parties challenged the legitimacy of the election.
+C1,noun,mandate,official authority to carry out policy,The new government claimed a clear mandate for reform.
+C1,noun,momentum,the driving force gained by movement,The campaign gathered momentum in the final weeks.
+C1,verb,abolish,to formally end a law or institution,Parliament voted to abolish the outdated tax.
+C1,verb,accelerate,to make something happen more quickly,The new measures should accelerate economic recovery.
+C1,verb,accumulate,to gather gradually in increasing quantity,Evidence against the suspect continued to accumulate.
+C1,verb,adhere,to stick firmly to rules or beliefs,All members must adhere to the code of conduct.
+C1,verb,advocate,to publicly support a cause or policy,Many doctors advocate a ban on tobacco advertising.
+C1,verb,alleviate,to make suffering or problems less severe,The aid programme aims to alleviate rural poverty.
+C1,verb,articulate,to express thoughts clearly in words,She struggled to articulate her objections to the plan.
+C1,verb,assert,to state something firmly and confidently,He asserted his innocence throughout the trial.
+C1,verb,attain,to succeed in achieving a goal,Few athletes attain such a high standard.
+C1,verb,eliminate,to completely remove or get rid of,The vaccination campaign eliminated the disease from the region.
+C1,verb,breach,"to break a law, agreement or boundary",The company was fined for breaching data protection rules.
+C1,verb,cease,to come to an end or stop,The factory ceased production after fifty years.
+C1,verb,collaborate,to work jointly with others,The two laboratories collaborated on the research project.
+C1,verb,combat,to fight against something harmful,New legislation was introduced to combat organised crime.
+C1,verb,commemorate,to honour the memory of someone,A ceremony was held to commemorate the victims of the disaster.
+C1,verb,commence,to begin or start formally,The inquiry will commence next month.
+C1,verb,compel,to force someone to do something,The court can compel witnesses to testify.
+C1,verb,compensate,to make amends for loss or damage,The airline compensated passengers for the delay.
+C1,verb,conceive,to form an idea in the mind,It is difficult to conceive of a world without electricity.
+C1,verb,condemn,to express strong disapproval of something,World leaders condemned the terrorist attack.
+C1,verb,confront,to face a problem or person directly,The government must confront the crisis honestly.
+C1,verb,deem,to consider or judge something formally,The proposal was deemed too risky to approve.
+C1,verb,deteriorate,to become progressively worse in quality,Relations between the two countries deteriorated rapidly.
+C1,verb,embark,to begin a new course of action,She embarked on a career in journalism.
+C1,verb,endorse,to give official approval or support,The committee endorsed the findings of the report.
+C1,verb,facilitate,to make a process easier or possible,The new software facilitates communication between departments.
+C1,verb,flourish,to develop successfully and thrive,The arts flourished under the new patronage system.
+C1,verb,grasp,to understand something fully or seize,She quickly grasped the significance of the discovery.
+C1,verb,strive,to make great effort toward a goal,The company strives to exceed customer expectations.
+C1,verb,yield,to produce a result or give way,The investigation yielded some surprising results.
+C1,verb,allocate,to distribute resources for a purpose,The council allocated additional funds to primary schools.
+C1,verb,avert,to prevent something bad from happening,Swift diplomatic action averted a potential crisis.
+C1,verb,concede,to admit reluctantly that something is true,The minister conceded that mistakes had been made.
+C1,verb,contemplate,to consider something carefully and deeply,The board is contemplating a merger with its rival.
+C1,verb,deploy,to position resources for effective use,Troops were deployed along the disputed border.
+C1,verb,enforce,to compel observance of laws or rules,The agency is responsible for enforcing environmental regulations.
+C1,verb,foster,to encourage the development of something,The programme fosters cooperation between local businesses.
+C1,verb,incur,to bring something unpleasant upon oneself,The company incurred heavy losses during the recession.
+C1,verb,scrutinise,to examine something very carefully,Every claim in the report was carefully scrutinised.
+C1,verb,undermine,to gradually weaken confidence or authority,Constant criticism undermined her confidence in the project.
+C1,adjective,abrupt,sudden and unexpected in manner,The negotiations came to an abrupt end.
+C1,adjective,absurd,completely ridiculous or illogical,It is absurd to blame one individual for the crisis.
+C1,adjective,acute,"severe, intense or highly developed",The hospital is facing an acute shortage of nurses.
+C1,adjective,adverse,unfavourable or harmful in effect,The drug can cause adverse side effects.
+C1,adjective,aesthetic,concerned with beauty or artistic taste,The building was restored for aesthetic as well as practical reasons.
+C1,adjective,alleged,claimed but not yet proven,The alleged offences took place over several years.
+C1,adjective,ambiguous,having more than one possible meaning,His reply was deliberately ambiguous.
+C1,adjective,anonymous,having an unknown or unnamed identity,The donation was made by an anonymous benefactor.
+C1,adjective,assertive,confident in stating opinions or rights,She became more assertive after the management course.
+C1,adjective,autonomous,having the freedom to govern itself,The region is largely autonomous in economic matters.
+C1,adjective,bleak,offering little hope or encouragement,The economic outlook remains bleak for small businesses.
+C1,adjective,blunt,direct and uncompromising in speech,Her blunt assessment of the proposal surprised everyone.
+C1,adjective,brutal,"extremely harsh, violent or severe",The regime was notorious for its brutal repression of dissent.
+C1,adjective,coherent,logical and clearly organised in thought,She presented a coherent argument for reforming the system.
+C1,adjective,compelling,powerfully convincing or attention-grabbing,There is compelling evidence that the policy is failing.
+C1,adjective,competent,having the necessary skill or knowledge,She is a highly competent and experienced surgeon.
+C1,adjective,concise,expressing much in few words,The report gives a concise summary of the main findings.
+C1,adjective,consecutive,following one after another in order,The team won five consecutive matches.
+C1,adjective,credible,believable and worthy of trust,The opposition must offer a credible alternative to the government.
+C1,adjective,crude,"rough, unrefined or lacking sophistication",The early estimates were crude but broadly accurate.
+C1,adjective,cynical,distrustful of others' motives or sincerity,Voters have grown cynical about politicians' promises.
+C1,adjective,profound,"very great, deep or intense",The war had a profound effect on an entire generation.
+C1,adjective,substantial,"large in size, amount or importance",The project will require a substantial investment.
+C1,adjective,subtle,"delicate, understated and not obvious",There are subtle differences between the two dialects.
+C1,adjective,widespread,found or occurring over a large area,The floods caused widespread damage across the county.
+C1,adjective,accountable,required to explain and justify actions,Senior officials must be held accountable for the failure.
+C1,adjective,affluent,wealthy and enjoying a high standard of living,The suburb is one of the most affluent in the country.
+C1,adjective,detrimental,causing harm or damage to something,Excessive regulation can be detrimental to innovation.
+C1,adjective,imminent,about to happen very soon,The residents were warned that flooding was imminent.
+C1,adjective,unprecedented,never having happened or existed before,The pandemic posed an unprecedented challenge to health services.
+C1,adverb,accordingly,in a way appropriate to the circumstances,The rules have changed and we must act accordingly.
+C1,adverb,allegedly,according to claims not yet proven,He allegedly accepted bribes from several contractors.
+C1,adverb,arguably,possibly true and defensible by argument,She is arguably the finest novelist of her generation.
+C1,adverb,collectively,as a group acting together,The staff collectively rejected the proposed pay cut.
+C1,adverb,comparatively,in relation to something else being compared,The region remains comparatively prosperous despite the downturn.
+C1,adverb,continually,repeatedly over a period of time,The software is continually updated to meet new threats.
+C1,adverb,correspondingly,in a way that matches or parallels,"As wages rise, prices tend to increase correspondingly."
+C1,adverb,crucially,in a way that is critically important,"Crucially, the witnesses gave conflicting accounts of the incident."
+C1,adverb,distinctly,in a clear and unmistakable way,I distinctly remember locking the door before leaving.
+C1,adverb,dramatically,in a sudden and striking manner,House prices have risen dramatically in the past decade.
+C1,adverb,drastically,in an extreme and far-reaching way,The budget for research was drastically reduced.
+C1,adverb,duly,in the proper or expected manner,The treaty was duly signed by both heads of state.
+C1,adverb,earnestly,in a serious and sincere manner,The committee earnestly debated the proposal for several hours.
+C1,adverb,nonetheless,in spite of what has been said,"The task was difficult; nonetheless, she completed it on time."
+C1,adverb,thereby,by that means or as a result,"He resigned his post, thereby avoiding a formal inquiry."
+C1,adverb,abruptly,suddenly and without warning,The meeting ended abruptly when the minister walked out.
+C1,adverb,adversely,in a harmful or unfavourable way,The new tax will adversely affect small businesses.
+C1,adverb,inadvertently,accidentally and without intention,He inadvertently revealed the location of the hideout.
+C1,adverb,inherently,as a natural and inseparable quality,The system is inherently unfair to younger workers.
+C1,adverb,overwhelmingly,to a very great or dominant degree,Voters overwhelmingly rejected the constitutional amendment.
+C2,noun,aberration,a departure from what is normal,The outlier in the results was dismissed as an aberration.
+C2,noun,acumen,keen and shrewd judgement in practice,Her business acumen transformed the fortunes of the firm.
+C2,noun,adversity,a state of serious difficulty or misfortune,He showed remarkable courage in the face of adversity.
+C2,noun,allegory,a story with a hidden moral meaning,The novel functions as an allegory of political oppression.
+C2,noun,allure,the quality of being powerfully attractive,The allure of city life drew her away from the village.
+C2,noun,ambivalence,the state of having mixed feelings,She viewed the promotion with considerable ambivalence.
+C2,noun,animosity,strong hostility or active hatred,Decades of animosity divided the two communities.
+C2,noun,antipathy,a deep-seated feeling of dislike,His antipathy towards modern technology was well known.
+C2,noun,apathy,"lack of interest, concern or enthusiasm",Voter apathy reached record levels at the local elections.
+C2,noun,apex,the highest point of something,"At the apex of his career, he commanded enormous influence."
+C2,noun,archetype,the original model of which others are copies,The tragic hero is a classic archetype of Greek drama.
+C2,noun,audacity,boldness bordering on impudence or recklessness,She had the audacity to challenge the chairman's authority.
+C2,noun,aura,a distinctive atmosphere surrounding a person,An aura of mystery surrounded the reclusive author.
+C2,noun,aversion,a strong feeling of dislike or opposition,He has a lifelong aversion to any form of confrontation.
+C2,noun,bravado,bold behaviour intended to conceal fear,His confident manner was largely a show of bravado.
+C2,noun,brevity,concise and exact use of words,The brevity of her speech surprised the assembled delegates.
+C2,noun,candour,the quality of being open and honest,He answered the committee's questions with refreshing candour.
+C2,noun,clout,"power and influence, especially political",The union still carries considerable clout in negotiations.
+C2,noun,composure,calm self-control under pressure,She maintained her composure throughout the hostile interview.
+C2,noun,conjecture,an opinion formed without firm evidence,The cause of the collapse remains a matter of conjecture.
+C2,noun,connoisseur,an expert judge in matters of taste,She is a connoisseur of eighteenth-century porcelain.
+C2,noun,dearth,a scarcity or lack of something,There is a dearth of reliable research on the subject.
+C2,noun,decorum,behaviour in keeping with good taste,The debate was conducted with admirable decorum.
+C2,noun,deference,humble respect shown to a superior,He touched his cap in deference to the magistrate.
+C2,noun,demeanour,"outward behaviour, manner or bearing",Her calm demeanour reassured the anxious passengers.
+C2,noun,derision,contemptuous ridicule or mockery,His proposal was greeted with howls of derision.
+C2,noun,dexterity,skill and grace in physical movement,The surgeon's dexterity was admired by her colleagues.
+C2,noun,dichotomy,a division into two contrasting parts,The essay explores the dichotomy between duty and desire.
+C2,noun,discernment,the ability to judge people or things well,She read poetry with great sensitivity and discernment.
+C2,noun,disdain,the feeling that something is unworthy,He regarded the tabloid press with open disdain.
+C2,noun,disparity,a great and unfair difference,The report highlights the disparity in wealth between regions.
+C2,noun,dissent,disagreement with an official or majority opinion,The regime tolerated no dissent of any kind.
+C2,noun,duplicity,deceitfulness in speech or conduct,His duplicity was eventually exposed by the investigation.
+C2,noun,eloquence,"fluent, forceful and persuasive expression",Her eloquence held the audience spellbound.
+C2,noun,enigma,a person or thing that is mysterious,The artist remained an enigma even to his closest friends.
+C2,noun,accolade,an award or mark of honour,The film received the festival's highest accolade.
+C2,noun,acrimony,bitterness and ill will between people,The negotiations broke down amid considerable acrimony.
+C2,noun,alacrity,brisk and cheerful readiness to act,She accepted the challenge with unexpected alacrity.
+C2,noun,antithesis,the direct opposite of something,His ruthless pragmatism is the antithesis of idealism.
+C2,noun,cacophony,a harsh discordant mixture of sounds,A cacophony of car horns filled the narrow street.
+C2,noun,catharsis,the release of strong repressed emotions,"For many veterans, the memoir provided a form of catharsis."
+C2,noun,debacle,a sudden and utter failure or collapse,The product launch was a debacle from start to finish.
+C2,noun,epitome,a perfect example of a quality,The butler was the epitome of discretion and loyalty.
+C2,noun,gravitas,dignity of manner that commands respect,The role requires an actor of considerable gravitas.
+C2,noun,harbinger,a sign that announces something's approach,The falling sales figures were a harbinger of worse to come.
+C2,noun,hubris,excessive pride leading to a downfall,His hubris blinded him to the risks of the venture.
+C2,noun,impasse,a deadlock from which no progress is possible,The talks reached an impasse after three weeks.
+C2,noun,malaise,a vague sense of unease or decline,A general malaise settled over the struggling economy.
+C2,noun,nemesis,a long-standing agent of someone's downfall,The injury proved to be the champion's nemesis.
+C2,noun,panacea,a supposed remedy for all problems,Technology alone is not a panacea for educational failure.
+C2,verb,abate,to become less intense or widespread,The storm finally abated towards dawn.
+C2,verb,acquiesce,to accept reluctantly without protest,She acquiesced to her parents' wishes and studied law.
+C2,verb,admonish,to reprimand firmly but gently,The judge admonished the witness for evading the question.
+C2,verb,allay,"to diminish fear, worry or suspicion",The minister sought to allay public fears about the vaccine.
+C2,verb,allude,to refer to something indirectly,She alluded to the scandal without ever naming it.
+C2,verb,ameliorate,to make something bad slightly better,Foreign aid did little to ameliorate the famine.
+C2,verb,appease,to pacify by granting concessions,The government attempted to appease its critics with minor reforms.
+C2,verb,ascertain,to find out something for certain,Investigators are still trying to ascertain the cause of the fire.
+C2,verb,assuage,to relieve or ease an unpleasant feeling,Nothing could assuage her grief at the loss.
+C2,verb,belie,to give a false impression of something,Her calm voice belied the turmoil she felt inside.
+C2,verb,censure,to express severe formal disapproval,The senator was formally censured for his misconduct.
+C2,verb,circumvent,to find a way around an obstacle,Companies found ingenious ways to circumvent the sanctions.
+C2,verb,coerce,to compel through force or threats,The prisoners were coerced into signing false confessions.
+C2,verb,concur,to agree with an opinion or decision,I concur entirely with the committee's conclusions.
+C2,verb,condone,to accept or overlook wrong behaviour,The school does not condone bullying in any form.
+C2,verb,confound,to surprise and confuse completely,The results confounded the expectations of the experts.
+C2,verb,corroborate,to confirm with supporting evidence,Two independent witnesses corroborated her account of events.
+C2,verb,covet,to desire something belonging to another,The award is coveted by chefs across the world.
+C2,verb,debunk,to expose the falseness of a myth,The article debunks several popular myths about nutrition.
+C2,verb,decry,to publicly denounce as worthless,Critics decried the decision as a betrayal of the fans.
+C2,verb,delineate,to describe or mark out precisely,The treaty clearly delineates the border between the two states.
+C2,verb,deplete,to reduce seriously in quantity,Years of overfishing have depleted stocks in the North Sea.
+C2,verb,elicit,to draw out a response or information,The questionnaire was designed to elicit honest answers.
+C2,verb,elucidate,to make something clear by explaining,The professor was asked to elucidate her theory.
+C2,verb,exacerbate,to make a bad situation worse,The drought was exacerbated by years of poor land management.
+C2,verb,fathom,to understand something deeply or fully,No one could fathom her reasons for resigning.
+C2,verb,flout,to openly disregard a rule or convention,The company openly flouted environmental regulations.
+C2,verb,juxtapose,to place side by side for contrast,The exhibition juxtaposes ancient and modern sculpture.
+C2,verb,quell,to suppress or put an end to,Police were called in to quell the disturbance.
+C2,verb,relinquish,to give up possession or control,He was forced to relinquish control of the company.
+C2,verb,absolve,to declare free from blame or guilt,The inquiry absolved the pilot of any responsibility for the crash.
+C2,verb,accede,to agree to a demand or request,The king reluctantly acceded to the rebels' demands.
+C2,verb,beseech,to beg urgently and earnestly,She beseeched the court to show mercy on her son.
+C2,verb,castigate,to criticise someone harshly and publicly,The press castigated the government for its sluggish response.
+C2,verb,eschew,to deliberately avoid or abstain from,He eschews publicity and rarely gives interviews.
+C2,verb,espouse,to adopt or support a cause,The candidate espoused a radical programme of land reform.
+C2,verb,exhort,to urge someone strongly and earnestly,The captain exhorted his troops to hold the line.
+C2,verb,extol,to praise someone or something enthusiastically,The brochure extols the virtues of island life.
+C2,verb,lambaste,to criticise fiercely and at length,Reviewers lambasted the play for its pretentious dialogue.
+C2,verb,vilify,to speak of someone as vile,She was vilified in the press for her controversial remarks.
+C2,adjective,abhorrent,inspiring disgust and moral revulsion,Torture is abhorrent to every civilised society.
+C2,adjective,abject,"extremely bad, hopeless or humiliating",The refugees lived in conditions of abject poverty.
+C2,adjective,adamant,refusing to be persuaded or change one's mind,She was adamant that the meeting be postponed.
+C2,adjective,aloof,"distant, detached and not friendly",He remained aloof from the office politics.
+C2,adjective,arcane,mysterious and understood by very few,The tax code is full of arcane provisions.
+C2,adjective,arduous,requiring great and prolonged effort,The expedition faced an arduous journey across the desert.
+C2,adjective,astute,clever at judging situations and people,She made an astute observation about the market.
+C2,adjective,audacious,showing a daring willingness to take risks,The raid was an audacious attack on enemy headquarters.
+C2,adjective,banal,so lacking originality as to be boring,The conversation was disappointingly banal.
+C2,adjective,belligerent,"hostile, aggressive and eager to fight",His belligerent tone made negotiation impossible.
+C2,adjective,benign,"gentle, kind or medically harmless","Fortunately, the tumour proved to be benign."
+C2,adjective,blatant,done openly and unashamedly,The referee missed a blatant foul on the striker.
+C2,adjective,brazen,bold and shameless in behaviour,The thieves carried out a brazen daylight robbery.
+C2,adjective,callous,showing cruel disregard for others' feelings,His callous remarks deeply offended the grieving family.
+C2,adjective,candid,truthful and straightforward in speech,She gave a candid account of her struggles with addiction.
+C2,adjective,caustic,severely critical and sharply sarcastic,His caustic wit made him many enemies.
+C2,adjective,clandestine,"kept secret, often for illicit purposes",The two spies held a clandestine meeting in Vienna.
+C2,adjective,cogent,"clear, logical and thoroughly convincing",She put forward a cogent case for electoral reform.
+C2,adjective,complacent,smugly satisfied and unaware of danger,We cannot afford to be complacent about security.
+C2,adjective,convoluted,extremely complex and difficult to follow,The plot of the novel is unnecessarily convoluted.
+C2,adjective,copious,"existing in large, abundant quantities",She took copious notes during the lecture.
+C2,adjective,cryptic,mysterious and deliberately obscure in meaning,He left a cryptic message on her answering machine.
+C2,adjective,meticulous,showing great attention to detail,The restoration was carried out with meticulous care.
+C2,adjective,ostentatious,designed to impress through showiness,He drove an ostentatious gold sports car.
+C2,adjective,superfluous,unnecessary because more than enough,Further explanation would be entirely superfluous.
+C2,adjective,abstruse,difficult to understand because of obscurity,The philosopher's abstruse arguments baffled his students.
+C2,adjective,acerbic,sharp and bitter in tone or temper,Her acerbic reviews were feared throughout the theatre world.
+C2,adjective,erudite,showing deep and extensive learning,The lecture was erudite yet surprisingly accessible.
+C2,adjective,indefatigable,never tiring or giving up,She was an indefatigable campaigner for human rights.
+C2,adjective,sardonic,"mocking in a scornful, cynical way",He raised a sardonic eyebrow at the suggestion.
+C2,adverb,aptly,in a manner suitable to the circumstances,The novel is aptly titled 'A Season of Loss'.
+C2,adverb,belatedly,later than should have been the case,The government belatedly acknowledged the scale of the crisis.
+C2,adverb,blatantly,in an open and shameless manner,The regime blatantly ignored the ceasefire agreement.
+C2,adverb,candidly,in an open and honest way,She spoke candidly about her time in prison.
+C2,adverb,copiously,in large and abundant amounts,He wept copiously at his mother's funeral.
+C2,adverb,deftly,"with quick, skilful, neat movements",The chef deftly filleted the fish in seconds.
+C2,adverb,diligently,"with steady, careful and persistent effort",The students worked diligently on their research projects.
+C2,adverb,doggedly,"with stubborn, tenacious determination",She doggedly pursued the story for over a year.
+C2,adverb,eloquently,in a fluent and persuasive manner,He spoke eloquently on behalf of the displaced families.
+C2,adverb,emphatically,"in a forceful, definite way",The prime minister emphatically denied the allegations.
+C2,adverb,erratically,in an irregular and unpredictable manner,The old car had been running erratically for weeks.
+C2,adverb,fervently,with passionate intensity of feeling,She fervently believed in the power of education.
+C2,adverb,flagrantly,in a shockingly open and obvious way,The company flagrantly violated safety regulations.
+C2,adverb,ostensibly,apparently true but perhaps not actually,He was ostensibly on a business trip.
+C2,adverb,vehemently,with strong and passionate intensity,She vehemently opposed the construction of the motorway.
+C2,adverb,furtively,"in a secretive, stealthy manner",He glanced furtively at the sealed envelope.
+C2,adverb,incessantly,continuing without pause or interruption,The phone rang incessantly throughout the morning.
+C2,adverb,laconically,using very few words in reply,"'Perhaps,' he remarked laconically, and turned back to his newspaper."
+C2,adverb,surreptitiously,in a secret and stealthy manner,She surreptitiously slipped the letter into her pocket.
+C2,adverb,wryly,"in a dry, mocking, humorous way",He smiled wryly at the memory of his earlier optimism.

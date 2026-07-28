@@ -164,7 +164,13 @@ export function StudentTasksPage() {
                   ) : (
                     <Link
                       className="font-semibold underline-offset-4 hover:underline"
-                      to={`/student/attempt/${t.id}`}
+                      to={
+                        t.subtype === 'reading_speed'
+                          ? `/student/reading-speed/${t.id}`
+                          : t.subtype === 'english_level'
+                            ? `/student/english-level/${t.id}`
+                            : `/student/attempt/${t.id}`
+                      }
                     >
                       {t.attempt_status === 'in_progress' ? 'Continue' : 'Start'}
                     </Link>
@@ -399,25 +405,73 @@ export function StudentToolsPage() {
       : null
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Tools"
-        description="Revision utilities powered by your weakspots and recent mistakes."
+        description="Practise any time — stories, focused reading, revision utilities, and Exam Dojo."
       />
-      <div className="mb-6 flex flex-wrap gap-2">
-        <Button type="button" disabled={busy} onClick={() => void generate('flashcards')}>
-          <Sparkles className="h-4 w-4" />
-          Flashcards from weakspots
-        </Button>
-        <Button
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link
+          to="/student/stories"
+          className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
+        >
+          <h2 className="text-lg font-semibold">A1–C2 English Stories</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Twelve graded stories to listen, copy, and read along — always available.
+          </p>
+        </Link>
+
+        <Link
+          to="/student/reading-machine"
+          className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
+        >
+          <h2 className="text-lg font-semibold">(RSVP) Focused Reading Machine</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Class texts and your uploads — RSVP practice at a speed you choose.
+          </p>
+        </Link>
+
+        <div className="rounded-xl border border-dashed border-border bg-secondary/40 p-5 opacity-90">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Exam Dojo</h2>
+            <Badge variant="warn">Coming soon</Badge>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Generate realistic past papers for the exams you are studying, track your scores, and
+            see exactly what average you need across N papers for an X% chance of hitting your
+            target grade — a data-driven guaranteed-pass exam system.
+          </p>
+        </div>
+
+        <button
           type="button"
-          variant="outline"
+          disabled={busy}
+          onClick={() => void generate('flashcards')}
+          className="rounded-xl border border-border bg-card p-5 text-left transition-all hover:border-primary/40 hover:shadow-sm disabled:opacity-55"
+        >
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Sparkles className="h-4 w-4" />
+            Flashcards from weakspots
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            AI flashcards from your weakspots and recent mistakes.
+          </p>
+        </button>
+
+        <button
+          type="button"
           disabled={busy}
           onClick={() => void generate('practice')}
+          className="rounded-xl border border-border bg-card p-5 text-left transition-all hover:border-primary/40 hover:shadow-sm disabled:opacity-55"
         >
-          Practice quiz
-        </Button>
+          <h2 className="text-lg font-semibold">Practice quiz</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            A short quiz generated from your weakspots.
+          </p>
+        </button>
       </div>
+
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {busy ? <p className="text-sm text-muted-foreground">Generating with Kimi…</p> : null}
 
