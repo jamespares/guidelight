@@ -1,0 +1,244 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+import { PageHeader } from '@/components/PageHeader'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { api, type StudentRow } from '@/lib/api'
+
+export function StudentsPage() {
+  const [students, setStudents] = useState<StudentRow[]>([])
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [credentials, setCredentials] = useState<
+    Array<{ display_name: string; username: string; password: string }> | null
+  >(null)
+
+  const [name, setName] = useState('')
+  const [subject, setSubject] = useState('')
+  const [curriculum, setCurriculum] = useState('')
+  const [ageRange, setAgeRange] = useState('')
+  const [namesText, setNamesText] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function load() {
+    setLoading(true)
+    try {
+      const res = await api.students()
+      setStudents(res.students)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void load()
+  }, [])
+
+  async function onCreate(e: FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      const res = await api.createClass({
+        name,
+        subject,
+        curriculum,
+        age_range: ageRange,
+        names_text: namesText,
+      })
+      setCredentials(res.credentials)
+      setOpen(false)
+      setName('')
+      setSubject('')
+      setCurriculum('')
+      setAgeRange('')
+      setNamesText('')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Students"
+        description={`${students.length} learner${students.length === 1 ? '' : 's'} · names stored as first name + surname initial`}
+        action={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button type="button">
+                <Plus className="h-4 w-4" />
+                Add class
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Add class</DialogTitle>
+                <DialogDescription>
+                  Create a class and student logins. Paste names as text — convert PDFs to markdown
+                  or plain text first.
+                </DialogDescription>
+              </DialogHeader>
+              <form className="space-y-4" onSubmit={(e) => void onCreate(e)}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="class-name">Class name</Label>
+                    <Input
+                      id="class-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      placeholder="Year 10 Biology A"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      id="subject"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      required
+                      placeholder="Biology"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="age">Age range</Label>
+                    <Input
+                      id="age"
+                      value={ageRange}
+                      onChange={(e) => setAgeRange(e.target.value)}
+                      placeholder="14–15"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="curriculum">Curriculum / syllabus notes</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Text only — convert PDFs to markdown or plain text and paste here.
+                  </p>
+                  <Textarea
+                    id="curriculum"
+                    value={curriculum}
+                    onChange={(e) => setCurriculum(e.target.value)}
+                    placeholder="Paste curriculum outcomes, topics, exam board notes…"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="names">Student names</Label>
+                  <p className="text-xs text-muted-foreground">
+                    One per line or comma-separated. We store only first name + second initial.
+                  </p>
+                  <Textarea
+                    id="names"
+                    value={namesText}
+                    onChange={(e) => setNamesText(e.target.value)}
+                    required
+                    placeholder={'Ava Chen\nNoah Patel\nMia Rossi'}
+                  />
+                </div>
+                {error && open ? <p className="text-sm text-destructive">{error}</p> : null}
+                <Button type="submit" className="w-full" disabled={saving}>
+                  {saving ? 'Creating…' : 'Create class & student logins'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+      />
+
+      {error && !open ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
+
+      {credentials ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Student logins</CardTitle>
+            <p className="text-sm text-muted-foreground">Save now — passwords are shown once.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <pre className="max-h-72 overflow-auto rounded-lg border border-border bg-secondary p-4 font-mono text-xs text-foreground">
+              {credentials.map((c) => `${c.display_name} — ${c.username} / ${c.password}`).join('\n')}
+            </pre>
+            <Button type="button" variant="outline" onClick={() => setCredentials(null)}>
+              Dismiss
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Class</TableHead>
+            <TableHead>Subject(s)</TableHead>
+            <TableHead>Current Weakspots</TableHead>
+            <TableHead>HW completion</TableHead>
+            <TableHead>Interests</TableHead>
+            <TableHead>Career Ambitions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-muted-foreground">
+                Loading…
+              </TableCell>
+            </TableRow>
+          ) : students.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-muted-foreground">
+                No students yet. Add a class to get started.
+              </TableCell>
+            </TableRow>
+          ) : (
+            students.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell>
+                  <Link className="font-semibold text-foreground underline-offset-4 hover:underline" to={`/teacher/students/${s.id}`}>
+                    {s.display_name}
+                  </Link>
+                </TableCell>
+                <TableCell>{s.class_name}</TableCell>
+                <TableCell>{s.class_subject}</TableCell>
+                <TableCell>
+                  {s.weakspots?.length ? s.weakspots.map((w) => w.topic).join(', ') : '—'}
+                </TableCell>
+                <TableCell>
+                  {s.hw_completion_rate == null ? '—' : `${s.hw_completion_rate}%`}
+                </TableCell>
+                <TableCell>{s.interests || '—'}</TableCell>
+                <TableCell>{s.career_ambitions || '—'}</TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}

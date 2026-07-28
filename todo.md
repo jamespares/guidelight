@@ -1,0 +1,3 @@
+- [x] use icons for tabs to aid comprehension
+- [x] ensure the tick box stays inline with related text box
+- [x] softer sky/water colour scheme (no navy/amber)
