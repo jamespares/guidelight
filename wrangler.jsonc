@@ -3,6 +3,11 @@
   "name": "guidelight",
   "compatibility_date": "2026-07-03",
   "main": "./worker/index.ts",
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "getguidelight.com", "custom_domain": true },
+    { "pattern": "www.getguidelight.com", "custom_domain": true }
+  ],
   "assets": {
     "not_found_handling": "single-page-application",
     "binding": "ASSETS",
