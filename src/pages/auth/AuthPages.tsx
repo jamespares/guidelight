@@ -33,7 +33,7 @@ export function Landing() {
   return (
     <AuthShell>
       <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
-        <CardHeader className="text-center">
+        <CardHeader className="space-y-4 px-6 pb-6 pt-4 text-center">
           <CardTitle className="flex justify-center text-3xl">
             <GuidelightWordmark />
           </CardTitle>

@@ -56,7 +56,10 @@ export function BrandStar({ className }: { className?: string }) {
   return <GuidelightStar className={cn('text-[var(--brand-guide)]', className)} />
 }
 
-/** Wordmark with logo star — single colour, tight professional lockup. */
+/** Wordmark with logo star — single colour, tight professional lockup.
+ * When showStar is true, the star hangs left of the text so centering parents
+ * align on "Guidelight", not on the midpoint of [star + text].
+ */
 export function GuidelightWordmark({
   className,
   showStar = true,
@@ -67,14 +70,14 @@ export function GuidelightWordmark({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-display font-semibold tracking-tight text-[var(--brand-guide)]',
+        'relative inline-flex items-center font-display font-semibold tracking-tight text-[var(--brand-guide)]',
         className,
       )}
       aria-label="Guidelight"
     >
       {showStar ? (
-        // Cap-height match; slight optical nudge for Fraunces baseline
-        <BrandStar className="relative top-[0.02em] block h-[0.92em] w-[0.92em] shrink-0" />
+        // Cap-height match; hangs left so the text alone is the centering box
+        <BrandStar className="absolute right-full top-[0.02em] mr-1.5 block h-[0.92em] w-[0.92em] shrink-0" />
       ) : null}
       <span className="leading-none">Guidelight</span>
     </span>
