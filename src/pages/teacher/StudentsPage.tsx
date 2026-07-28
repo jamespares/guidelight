@@ -195,8 +195,10 @@ export function StudentsPage() {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Username</TableHead>
             <TableHead>Class</TableHead>
             <TableHead>Subject(s)</TableHead>
+            <TableHead>Avg score</TableHead>
             <TableHead>English level</TableHead>
             <TableHead>Reading speed</TableHead>
             <TableHead>Current Weakspots</TableHead>
@@ -208,13 +210,13 @@ export function StudentsPage() {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-muted-foreground">
+              <TableCell colSpan={11} className="text-muted-foreground">
                 Loading…
               </TableCell>
             </TableRow>
           ) : students.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-muted-foreground">
+              <TableCell colSpan={11} className="text-muted-foreground">
                 No students yet. Add a class to get started.
               </TableCell>
             </TableRow>
@@ -226,8 +228,12 @@ export function StudentsPage() {
                     {s.display_name}
                   </Link>
                 </TableCell>
+                <TableCell className="font-mono text-xs">{s.username}</TableCell>
                 <TableCell>{s.class_name}</TableCell>
                 <TableCell>{s.class_subject}</TableCell>
+                <TableCell className="font-semibold text-[hsl(var(--insight-score-fg))]">
+                  {s.avg_score == null ? '—' : `${s.avg_score}%`}
+                </TableCell>
                 <TableCell>{s.cefr_level || '—'}</TableCell>
                 <TableCell>{s.latest_wpm != null ? `${s.latest_wpm} wpm` : '—'}</TableCell>
                 <TableCell>

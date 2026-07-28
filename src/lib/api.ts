@@ -42,6 +42,7 @@ export interface StudentRow {
   class_name: string
   class_subject: string
   hw_completion_rate: number | null
+  avg_score?: number | null
   cefr_level?: string | null
   latest_wpm?: number | null
 }
@@ -158,8 +159,15 @@ export const api = {
   students: () => request<{ students: StudentRow[] }>('/api/students'),
   student: (id: string) =>
     request<{ student: StudentRow; attempts: unknown[] }>(`/api/students/${id}`),
-  updateStudent: (id: string, body: { interests?: string; career_ambitions?: string }) =>
-    request(`/api/students/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  updateStudent: (
+    id: string,
+    body: { interests?: string; career_ambitions?: string; username?: string },
+  ) => request(`/api/students/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  resetStudentPassword: (id: string, body?: { password?: string }) =>
+    request<{ password: string }>(`/api/students/${id}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify(body ?? {}),
+    }),
   refreshSummary: (id: string) =>
     request<{ summary: string }>(`/api/students/${id}/summary`, { method: 'POST' }),
   diagnosticStatus: (classId: string) =>

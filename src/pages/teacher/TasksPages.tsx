@@ -176,13 +176,17 @@ function TaskCreateForm({
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="diagnostic">Diagnostic</SelectItem>
-              <SelectItem value="formative">Formative</SelectItem>
-              <SelectItem value="summative">Summative</SelectItem>
-              <SelectItem value="english_level">English level</SelectItem>
-              <SelectItem value="reading_speed">Reading speed</SelectItem>
+              <SelectItem value="diagnostic">Diagnostic (class subject)</SelectItem>
+              <SelectItem value="formative">Formative (class subject)</SelectItem>
+              <SelectItem value="summative">Summative (class subject)</SelectItem>
+              <SelectItem value="english_level">English level (literacy — not class subject)</SelectItem>
+              <SelectItem value="reading_speed">Reading speed (literacy — not class subject)</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            Diagnostic, formative, and summative tests cover your class subject. English level and
+            Reading speed measure general English proficiency and literacy — not your class topic.
+          </p>
         </div>
       ) : (
         <div className="flex items-center gap-2">

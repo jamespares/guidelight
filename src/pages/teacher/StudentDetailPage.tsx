@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { FileText, RefreshCw, Save } from 'lucide-react'
+import { FileText, KeyRound, RefreshCw, Save } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { WeakspotsPanel, weakspotLabel } from '@/components/WeakspotsPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { api, type StudentRow, type Weakspot } from '@/lib/api'
@@ -25,6 +26,11 @@ export function StudentDetailPage() {
   const [weakspots, setWeakspots] = useState<Weakspot[]>([])
   const [weakspotsSummary, setWeakspotsSummary] = useState<string | null>(null)
   const [weakspotsUpdatedAt, setWeakspotsUpdatedAt] = useState<string | null>(null)
+  const [username, setUsername] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [revealedPassword, setRevealedPassword] = useState<string | null>(null)
+  const [credBusy, setCredBusy] = useState(false)
+  const [credError, setCredError] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -39,6 +45,7 @@ export function StudentDetailPage() {
         setWeakspots(res.student.weakspots ?? [])
         setWeakspotsSummary(res.student.weakspots_summary ?? null)
         setWeakspotsUpdatedAt(res.student.weakspots_updated_at ?? null)
+        setUsername(res.student.username)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed')
       }
@@ -84,6 +91,39 @@ export function StudentDetailPage() {
     }
   }
 
+  async function saveCredentials(e: FormEvent) {
+    e.preventDefault()
+    if (!id) return
+    setCredBusy(true)
+    setCredError('')
+    try {
+      await api.updateStudent(id, { username: username.trim().toLowerCase() })
+      setStudent((prev) => (prev ? { ...prev, username: username.trim().toLowerCase() } : prev))
+    } catch (err) {
+      setCredError(err instanceof Error ? err.message : 'Failed to save username')
+    } finally {
+      setCredBusy(false)
+    }
+  }
+
+  async function resetPassword() {
+    if (!id) return
+    setCredBusy(true)
+    setCredError('')
+    try {
+      const res = await api.resetStudentPassword(
+        id,
+        newPassword.trim() ? { password: newPassword.trim() } : undefined,
+      )
+      setRevealedPassword(res.password)
+      setNewPassword('')
+    } catch (err) {
+      setCredError(err instanceof Error ? err.message : 'Failed to reset password')
+    } finally {
+      setCredBusy(false)
+    }
+  }
+
   async function pinpoint() {
     if (!id) return
     setPinpointBusy(true)
@@ -112,14 +152,19 @@ export function StudentDetailPage() {
         </Link>
         <PageHeader
           title={student.display_name}
-          description={`${student.class_name} · ${student.class_subject} · @${student.username}`}
+          description={`${student.class_name} · ${student.class_subject}`}
         />
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         {[
+          {
+            label: 'Avg score',
+            value: student.avg_score == null ? '—' : `${student.avg_score}%`,
+            className: 'text-[hsl(var(--insight-score-fg))]',
+          },
           {
             label: 'HW completion',
             value:
@@ -143,11 +188,79 @@ export function StudentDetailPage() {
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {s.label}
               </div>
-              <div className="mt-2 font-display text-2xl font-semibold">{s.value}</div>
+              <div className={`mt-2 font-display text-2xl font-semibold ${'className' in s ? s.className : ''}`}>
+                {s.value}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5" />
+            Login credentials
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Students sign in with username and password. Passwords are stored securely — you can only
+            see them when first created or after a reset below.
+          </p>
+          {credError ? <p className="text-sm text-destructive">{credError}</p> : null}
+          <form className="space-y-4" onSubmit={(e) => void saveCredentials(e)}>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                pattern="[a-z0-9]{3,32}"
+                title="3–32 lowercase letters or numbers"
+                required
+              />
+            </div>
+            <Button type="submit" variant="outline" disabled={credBusy}>
+              <Save className="h-4 w-4" />
+              {credBusy ? 'Saving…' : 'Save username'}
+            </Button>
+          </form>
+          <div className="space-y-2 border-t border-border pt-4">
+            <Label htmlFor="new-password">Set or reset password</Label>
+            <p className="text-xs text-muted-foreground">
+              Leave blank to generate a random password, or type one (4–64 characters).
+            </p>
+            <Input
+              id="new-password"
+              type="text"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Optional custom password"
+              autoComplete="new-password"
+            />
+            <Button type="button" disabled={credBusy} onClick={() => void resetPassword()}>
+              {credBusy ? 'Resetting…' : 'Reset password'}
+            </Button>
+          </div>
+          {revealedPassword ? (
+            <div className="rounded-lg border border-border bg-secondary p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                New password — save now
+              </p>
+              <p className="mt-2 font-mono text-lg font-semibold">{revealedPassword}</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3"
+                onClick={() => setRevealedPassword(null)}
+              >
+                Dismiss
+              </Button>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <WeakspotsPanel
         weakspots={weakspots}

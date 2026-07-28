@@ -168,6 +168,30 @@ async function hwCompletionRate(env: Env, studentId: string, classId: string): P
   return Math.round(((submitted?.c ?? 0) / total) * 1000) / 10
 }
 
+/** Latest submitted score per completed assigned task (HW + assessments), averaged. */
+async function avgTaskScore(env: Env, studentId: string, classId: string): Promise<number | null> {
+  const row = await env.DB.prepare(
+    `SELECT AVG(latest.score_pct) as avg FROM (
+       SELECT a.score_pct
+       FROM tasks t
+       JOIN task_assignments ta ON ta.task_id = t.id
+       JOIN attempts a ON a.task_id = t.id AND a.student_id = ?
+       WHERE t.class_id = ? AND t.status = 'published'
+         AND (ta.student_id IS NULL OR ta.student_id = ?)
+         AND a.status = 'submitted' AND a.score_pct IS NOT NULL
+         AND a.submitted_at = (
+           SELECT MAX(a2.submitted_at) FROM attempts a2
+           WHERE a2.task_id = t.id AND a2.student_id = ? AND a2.status = 'submitted'
+         )
+     ) latest`,
+  )
+    .bind(studentId, classId, studentId, studentId)
+    .first<{ avg: number | null }>()
+
+  if (row?.avg == null) return null
+  return Math.round(row.avg * 10) / 10
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -316,11 +340,15 @@ export default {
 
         const students = []
         for (const s of results ?? []) {
-          const rate = await hwCompletionRate(env, s.id, s.class_id)
+          const [rate, avgScore] = await Promise.all([
+            hwCompletionRate(env, s.id, s.class_id),
+            avgTaskScore(env, s.id, s.class_id),
+          ])
           students.push({
             ...s,
             weakspots: JSON.parse(s.weakspots || '[]'),
             hw_completion_rate: rate,
+            avg_score: avgScore,
           })
         }
         return json({ students })
@@ -366,7 +394,10 @@ export default {
           .bind(studentId)
           .all()
 
-        const rate = await hwCompletionRate(env, s.id, s.class_id)
+        const [rate, avgScore] = await Promise.all([
+          hwCompletionRate(env, s.id, s.class_id),
+          avgTaskScore(env, s.id, s.class_id),
+        ])
         const { teacher_id: _teacherId, ...safe } = s
         void _teacherId
         return json({
@@ -374,6 +405,7 @@ export default {
             ...safe,
             weakspots: JSON.parse(s.weakspots || '[]'),
             hw_completion_rate: rate,
+            avg_score: avgScore,
           },
           attempts: attempts.results,
         })
@@ -394,14 +426,62 @@ export default {
         const body = (await request.json()) as {
           interests?: string
           career_ambitions?: string
+          username?: string
         }
-        await env.DB.prepare(
-          `UPDATE students SET interests = COALESCE(?, interests),
-           career_ambitions = COALESCE(?, career_ambitions) WHERE id = ?`,
-        )
-          .bind(body.interests ?? null, body.career_ambitions ?? null, studentId)
-          .run()
+
+        if (body.username !== undefined) {
+          const username = body.username.trim().toLowerCase()
+          if (!/^[a-z0-9]{3,32}$/.test(username)) {
+            return error('Username must be 3–32 letters or numbers', 400)
+          }
+          const clash = await env.DB.prepare(
+            `SELECT id FROM students WHERE username = ? AND id != ?`,
+          )
+            .bind(username, studentId)
+            .first()
+          if (clash) return error('Username already taken', 409)
+          await env.DB.prepare(`UPDATE students SET username = ? WHERE id = ?`)
+            .bind(username, studentId)
+            .run()
+        }
+
+        if (body.interests !== undefined || body.career_ambitions !== undefined) {
+          await env.DB.prepare(
+            `UPDATE students SET interests = COALESCE(?, interests),
+             career_ambitions = COALESCE(?, career_ambitions) WHERE id = ?`,
+          )
+            .bind(body.interests ?? null, body.career_ambitions ?? null, studentId)
+            .run()
+        }
         return json({ ok: true })
+      }
+
+      if (path.match(/^\/api\/students\/[^/]+\/reset-password$/) && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const studentId = path.split('/')[3]
+        const owned = await env.DB.prepare(
+          `SELECT s.id FROM students s JOIN classes c ON c.id = s.class_id
+           WHERE s.id = ? AND c.teacher_id = ?`,
+        )
+          .bind(studentId, user.id)
+          .first()
+        if (!owned) return error('Not found', 404)
+
+        const body = (await request.json().catch(() => ({}))) as { password?: string }
+        let password = body.password?.trim() ?? ''
+        if (password) {
+          if (password.length < 4 || password.length > 64) {
+            return error('Password must be 4–64 characters', 400)
+          }
+        } else {
+          password = randomPassword(8)
+        }
+        const password_hash = await hashPassword(password)
+        await env.DB.prepare(`UPDATE students SET password_hash = ? WHERE id = ?`)
+          .bind(password_hash, studentId)
+          .run()
+        return json({ password })
       }
 
       if (path.match(/^\/api\/students\/[^/]+\/summary$/) && request.method === 'POST') {

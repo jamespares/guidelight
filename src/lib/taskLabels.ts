@@ -78,11 +78,34 @@ export function taskTypeBadgeClass(
 }
 
 /** Ordered kinds for colour legends on How-to pages. */
-export const TASK_KIND_LEGEND: Array<{ kind: TaskKind; description: string }> = [
-  { kind: 'english_level', description: 'Highest-stakes placement assessment' },
-  { kind: 'summative', description: 'High-stakes exam-like assessment' },
-  { kind: 'diagnostic', description: 'Baseline assessment — unlocks personalisation' },
-  { kind: 'formative', description: 'Ongoing checks for learning' },
-  { kind: 'reading_speed', description: 'Reading fluency skill metric' },
-  { kind: 'homework', description: 'Practice assignments' },
+const KIND_DESCRIPTIONS: Record<TaskKind, string> = {
+  homework: 'Practice assignments on your class subject',
+  diagnostic: 'Baseline check on your class subject — unlocks personalisation',
+  formative: 'Ongoing checks for learning on your class subject',
+  summative: 'High-stakes exam-like assessment on your class subject',
+  english_level: 'General English proficiency (CEFR) — not tied to class subject',
+  reading_speed: 'Reading fluency and comprehension — not tied to class subject',
+}
+
+/** Grouped for legends: subject-linked vs literacy skills. */
+export const TASK_KIND_GROUPS: Array<{
+  title: string
+  note: string
+  kinds: TaskKind[]
+}> = [
+  {
+    title: 'Class subject',
+    note: 'Homework and these assessments cover the class subject (or the subject you pick when creating the task).',
+    kinds: ['homework', 'diagnostic', 'formative', 'summative'],
+  },
+  {
+    title: 'English & literacy',
+    note: 'These measure general English level and reading skills — not Biology, History, or your class topic.',
+    kinds: ['english_level', 'reading_speed'],
+  },
 ]
+
+export const TASK_KIND_LEGEND: Array<{ kind: TaskKind; description: string }> =
+  TASK_KIND_GROUPS.flatMap((g) =>
+    g.kinds.map((kind) => ({ kind, description: KIND_DESCRIPTIONS[kind] })),
+  )
