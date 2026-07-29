@@ -38,7 +38,7 @@ export function Landing() {
             <GuidelightWordmark />
           </CardTitle>
           <CardDescription className="text-base">
-            Lead your students to greatness with AI-powered homework and assessments
+            Lead your students to excellence with AI-powered homework and assessments
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:justify-center">
