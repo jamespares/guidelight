@@ -118,6 +118,15 @@ export function TeacherGuidePage() {
       <Section title="Settings">
         <p>Use Settings to switch between light and dark theme. Your choice is stored on this device.</p>
       </Section>
+
+      <Section title="Teacher account">
+        <p>
+          Register with your email and password. Guidelight emails a verification link — you must
+          confirm before signing in. Forgotten passwords use a reset link; you can also choose{' '}
+          <strong className="text-foreground">Email me a sign-in link</strong> for password-free
+          access.
+        </p>
+      </Section>
     </div>
   )
 }

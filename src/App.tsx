@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { TeacherLayout, StudentLayout } from './components/Layouts'
 import { useAuth } from './lib/auth'
-import { Landing, StudentAuth, TeacherAuth } from './pages/auth/AuthPages'
+import { Landing, StudentAuth, TeacherAuth, VerifyEmailPage, ResetPasswordPage } from './pages/auth/AuthPages'
 import { InsightsPage, ReportPage } from './pages/teacher/InsightsPage'
 import { StudentDetailPage } from './pages/teacher/StudentDetailPage'
 import { StudentsPage } from './pages/teacher/StudentsPage'
@@ -64,6 +64,8 @@ export default function App() {
       />
       <Route path="/login/teacher" element={<TeacherAuth />} />
       <Route path="/login/student" element={<StudentAuth />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route
         path="/teacher"

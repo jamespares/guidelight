@@ -74,19 +74,23 @@ export function parseCookies(header: string | null): Record<string, string> {
   )
 }
 
-export function sessionCookie(id: string, expiresAt: string): string {
+export function sessionCookie(id: string, expiresAt: string, secure = false): string {
   // Secure only on HTTPS so local Vite/HTTP sessions still work
-  return [
+  const parts = [
     `session=${encodeURIComponent(id)}`,
     `Path=/`,
     `HttpOnly`,
     `SameSite=Lax`,
     `Expires=${new Date(expiresAt).toUTCString()}`,
-  ].join('; ')
+  ]
+  if (secure) parts.push('Secure')
+  return parts.join('; ')
 }
 
-export function clearSessionCookie(): string {
-  return 'session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'
+export function clearSessionCookie(secure = false): string {
+  const parts = ['session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0']
+  if (secure) parts.push('Secure')
+  return parts.join('; ')
 }
 
 /** Minimise PII: "James Pares" → "James P." */

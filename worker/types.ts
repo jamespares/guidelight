@@ -1,7 +1,21 @@
+/** Cloudflare Email Sending binding (Email Service). */
+export interface SendEmailBinding {
+  send(message: {
+    to: string | string[]
+    from: string
+    subject: string
+    html?: string
+    text?: string
+  }): Promise<{ messageId: string }>
+}
+
 export interface Env {
   DB: D1Database
   AI: Ai
   ASSETS: Fetcher
+  EMAIL: SendEmailBinding
+  APP_URL?: string
+  AUTH_FROM_EMAIL?: string
 }
 
 export type Role = 'teacher' | 'student'

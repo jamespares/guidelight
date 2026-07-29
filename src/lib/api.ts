@@ -127,7 +127,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error || `Request failed (${res.status})`)
+    const err = data as { error?: string; code?: string; message?: string }
+    const message = err.message || err.error || `Request failed (${res.status})`
+    const e = new Error(message) as Error & { code?: string; status?: number }
+    e.code = err.code
+    e.status = res.status
+    throw e
   }
   return data as T
 }
@@ -136,15 +141,51 @@ export const api = {
   me: () => request<{ user: User | null }>('/api/auth/me'),
   logout: () => request('/api/auth/logout', { method: 'POST' }),
   teacherRegister: (body: { email: string; password: string; name: string }) =>
-    request<{ user: User }>('/api/auth/teacher/register', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
+    request<{ ok: true; needsVerification: boolean; message: string }>(
+      '/api/auth/teacher/register',
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+    ),
   teacherLogin: (body: { email: string; password: string }) =>
     request<{ user: User }>('/api/auth/teacher/login', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  teacherResendVerification: (body: { email: string }) =>
+    request<{ ok: true; message: string }>('/api/auth/teacher/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  teacherVerifyEmail: (body: { token: string }) =>
+    request<{ user: User }>('/api/auth/teacher/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  teacherMagicLink: (body: { email: string }) =>
+    request<{ ok: true; message: string }>('/api/auth/teacher/magic-link', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  teacherConsumeMagicLink: (body: { token: string }) =>
+    request<{ user: User }>('/api/auth/teacher/magic-link/consume', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  teacherForgotPassword: (body: { email: string }) =>
+    request<{ ok: true; message: string }>('/api/auth/teacher/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  teacherResetPassword: (body: { token: string; password: string }) =>
+    request<{ user?: User; ok?: boolean; message?: string }>(
+      '/api/auth/teacher/reset-password',
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+    ),
   studentLogin: (body: { username: string; password: string }) =>
     request<{ user: User }>('/api/auth/student/login', {
       method: 'POST',

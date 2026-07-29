@@ -24,5 +24,14 @@
   "ai": {
     "binding": "AI",
     "remote": true
+  },
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  "vars": {
+    "APP_URL": "https://getguidelight.com",
+    "AUTH_FROM_EMAIL": "auth@getguidelight.com"
   }
 }
