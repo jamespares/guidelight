@@ -18,3 +18,5 @@ Create a remote D1 database, put its id in `wrangler.jsonc`, then:
 npx wrangler d1 migrations apply guidelight --remote
 npm run deploy
 ```
+
+Deployed via Cloudflare Workers CI (builds on push to `main`).
