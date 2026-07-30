@@ -19,18 +19,19 @@ import { TRUST_LANDING } from '@/lib/trustCopy'
 import { cn } from '@/lib/utils'
 
 function AuthLegalFooter() {
+  // Light text always — auth sits on the dark ocean scene in both themes.
   return (
-    <footer className="mt-6 space-y-1 text-center text-xs text-muted-foreground">
+    <footer className="mt-6 space-y-1 text-center text-xs text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
       <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <Link to="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
+        <Link to="/terms" className="underline-offset-4 hover:text-white hover:underline">
           Terms
         </Link>
         <span aria-hidden>·</span>
-        <Link to="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
+        <Link to="/privacy" className="underline-offset-4 hover:text-white hover:underline">
           Privacy
         </Link>
         <span aria-hidden>·</span>
-        <a href={SUPPORT_MAILTO} className="underline-offset-4 hover:text-foreground hover:underline">
+        <a href={SUPPORT_MAILTO} className="underline-offset-4 hover:text-white hover:underline">
           Contact
         </a>
       </nav>
@@ -65,9 +66,8 @@ export function Landing() {
             <GuidelightWordmark />
           </CardTitle>
           <CardDescription className="text-base">
-            Lead your students to excellence with AI-powered homework and assessments
+            Lead your students to excellence with AI-powered lesson planning, assessments and insights.
           </CardDescription>
-          <p className="text-sm text-muted-foreground">{TRUST_LANDING}</p>
           <p className="text-xs text-muted-foreground">
             No subscription — teachers pay only for the AI they use.
           </p>
