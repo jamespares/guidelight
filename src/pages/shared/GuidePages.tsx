@@ -150,8 +150,35 @@ export function TeacherGuidePage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="How to use Guidelight"
-        description="A quick guide to the teacher portal — classes, tasks, insights, and pinpointing weakspots."
+        description="A clear walkthrough of the teacher portal — classes, lessons, tasks, Exam Dojo, and insights."
       />
+
+      <Section title="Quick start">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            Open <strong className="text-foreground">Students</strong> and press{' '}
+            <strong className="text-foreground">Add class</strong>. Share each student&apos;s
+            username and password (shown once).
+          </li>
+          <li>
+            In <strong className="text-foreground">Assessments</strong>, create a{' '}
+            <strong className="text-foreground">Diagnostic</strong> for that class, review it, then
+            publish. This unlocks personalised homework and later assessments.
+          </li>
+          <li>
+            Create <strong className="text-foreground">Homework</strong> or further assessments,
+            review every question, assign, and publish.
+          </li>
+          <li>
+            Optional: plan a syllabus in <strong className="text-foreground">Lessons</strong>, or
+            upload practice papers in <strong className="text-foreground">Exam Dojo</strong>.
+          </li>
+          <li>
+            Use <strong className="text-foreground">Insights</strong> for scores, submission rates,
+            weakspots, and parent reports.
+          </li>
+        </ol>
+      </Section>
 
       <Section title="Your workspace">
         <p>
@@ -160,9 +187,10 @@ export function TeacherGuidePage() {
           <strong className="text-foreground">Homework</strong>,{' '}
           <strong className="text-foreground">Assessments</strong>,{' '}
           <strong className="text-foreground">Exam Dojo</strong>, and{' '}
-          <strong className="text-foreground">Insights</strong>. Settings and this guide sit below
-          them. The sidebar also shows your{' '}
-          <strong className="text-foreground">AI usage dial</strong> for this month.
+          <strong className="text-foreground">Insights</strong>.{' '}
+          <strong className="text-foreground">Settings</strong> and this guide sit below them. The
+          sidebar also shows your <strong className="text-foreground">AI usage dial</strong> for
+          this month.
         </p>
       </Section>
 
@@ -172,68 +200,140 @@ export function TeacherGuidePage() {
 
       <Section title="Students">
         <p>
-          Create classes and enrol students. The spreadsheet shows each learner&apos;s username,
-          average score across completed homework and assessments (a guideline figure for overall
-          ability), English level, reading speed, and more.
+          Press <strong className="text-foreground">Add class</strong>. Enter the class name,
+          subject, age range, optional curriculum notes, and student names (one per line or
+          separated by commas). Guidelight creates a login for each student.
         </p>
         <p>
-          Open a student profile to{' '}
-          <strong className="text-foreground">view and edit login credentials</strong> (username and
-          password). Passwords are only shown when first created or after you reset them — use the{' '}
-          <strong className="text-foreground">Login credentials</strong> card on their profile page.
-          You can set a custom password or generate a new one.
+          <strong className="text-foreground">Copy usernames and passwords straight away</strong> —
+          passwords are shown only when first created or after you reset them.
         </p>
         <p>
-          From the profile you can also edit interests and career ambitions, refresh their AI
-          introduction, generate a parent report, see{' '}
-          <strong className="text-foreground">Exam Dojo scores</strong>, or run{' '}
-          <strong className="text-foreground">Pinpoint weakspots</strong> on their full attempt
-          history (homework plus Exam Dojo archives).
+          The roster shows username, class, subject, average score, English level, reading speed
+          (WPM), weakspots, homework completion, interests, and career ambitions.
+        </p>
+        <p>Open a student to:</p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            Edit <strong className="text-foreground">Login credentials</strong> — change the
+            username, set a custom password, or generate a new one.
+          </li>
+          <li>Edit interests and career ambitions, then save.</li>
+          <li>Refresh their AI introduction.</li>
+          <li>
+            View <strong className="text-foreground">Exam Dojo scores</strong>.
+          </li>
+          <li>
+            Run <strong className="text-foreground">Pinpoint weakspots</strong> across homework and
+            Exam Dojo attempts.
+          </li>
+          <li>
+            Add notes and generate a <strong className="text-foreground">parent report</strong>.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="Lessons">
+        <p>
+          Press <strong className="text-foreground">Plan lessons</strong>. Choose the class,
+          subject (or keep the class subject), curriculum, lesson duration, days of the week, start
+          date, syllabus length (1–12 weeks), and resources (whiteboard, iPads, and so on).
+        </p>
+        <p>
+          Guidelight drafts a batch of lesson plans in a Presentation / Practice / Production (PPP)
+          format — a mix of traditional and communicative activities. Generation can take a minute;
+          wait for it to finish.
+        </p>
+        <p>Then:</p>
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            Switch between <strong className="text-foreground">Calendar</strong> and{' '}
+            <strong className="text-foreground">List</strong> views.
+          </li>
+          <li>Open a lesson to edit title, objectives, materials, PPP stages, and notes.</li>
+          <li>
+            Press <strong className="text-foreground">Save</strong> after edits.
+          </li>
+          <li>
+            Export the whole batch as <strong className="text-foreground">DOCX</strong> or{' '}
+            <strong className="text-foreground">CSV</strong>, or delete the batch if you no longer
+            need it.
+          </li>
+        </ol>
+      </Section>
+
+      <Section title="Homework & Assessments">
+        <p>
+          Open <strong className="text-foreground">Homework</strong> or{' '}
+          <strong className="text-foreground">Assessments</strong>, create a draft with AI, then
+          open it to review.
+        </p>
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            Check every question. Keep a short <strong className="text-foreground">topic</strong>{' '}
+            and a clear <strong className="text-foreground">learning objective</strong> on each one.
+          </li>
+          <li>
+            Under <strong className="text-foreground">Assign & publish</strong>, choose the whole
+            class or selected students.
+          </li>
+          <li>
+            Press <strong className="text-foreground">Save draft</strong> or{' '}
+            <strong className="text-foreground">Publish to students</strong>.
+          </li>
+          <li>
+            After publish, review attempts — score, time taken, status, and any flags if a student
+            left the page.
+          </li>
+        </ol>
+        <p>Coloured badges show the task kind:</p>
+        <ColourLegend />
+        <p>
+          For subject assessments you can upload a past paper (PDF or image) and optional notes so
+          the draft matches that style. You can also set a hard time limit. Reading speed needs a
+          reading passage; other tasks can include optional reading text.
+        </p>
+        <p>
+          Subject-linked homework and assessments usually need a{' '}
+          <strong className="text-foreground">Diagnostic</strong> first for that class — this unlocks
+          personalisation. <strong className="text-foreground">English level</strong> and{' '}
+          <strong className="text-foreground">Reading speed</strong> skip that gate and use their own
+          student flows.
         </p>
       </Section>
 
       <Section title="Exam Dojo">
         <p>
-          Upload a past paper with subject, curriculum, and syllabus code. Guidelight drafts a{' '}
-          <strong className="text-foreground">passable practice paper</strong> once — it is labelled
-          and never regenerated. Review and edit questions, then publish to the class. Students sit
-          the interactive version; scores and full attempt archives land on their profile for later
-          insight.
+          Filter by class, then upload a past paper with subject, curriculum, and syllabus code.
+          Guidelight drafts a <strong className="text-foreground">passable practice paper</strong>{' '}
+          once — it is labelled and never regenerated.
         </p>
-      </Section>
-
-      <Section title="Homework & Assessments">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Review and edit the title, instructions, and questions.</li>
+          <li>Save your edits, then publish to the class.</li>
+        </ol>
         <p>
-          Create drafts with AI, review every question (human-in-the-loop), then publish to the whole
-          class or selected students. Coloured badges show the task kind:
-        </p>
-        <ColourLegend />
-        <p>
-          Subject-linked assessments (diagnostic, formative, summative) and homework use your class
-          subject. English level and Reading speed are literacy checks only — they do not test class
-          content.
-        </p>
-        <p>
-          Subject-linked assessments usually need a diagnostic first for that class — this unlocks
-          personalisation. English level and Reading speed skip the diagnostic gate and use
-          specialised student flows.
-        </p>
-        <p>
-          Each question should carry a short <strong className="text-foreground">topic</strong> tag
-          and a clear <strong className="text-foreground">learning objective</strong> so feedback and
-          weakspot analysis stay precise.
+          Students sit the interactive version. Scores and full attempt archives appear on their
+          profiles for later insight.
         </p>
       </Section>
 
       <Section title="Insights">
         <p>
-          View average % correct and homework submission rates for a class or one student. Charts use
-          matching colours: stronger sky for scores, quieter emerald for homework rates.
+          Choose <strong className="text-foreground">Whole class</strong> or{' '}
+          <strong className="text-foreground">Individual student</strong>. You will see average %
+          correct, homework submission rate, and charts over time.
         </p>
         <p>
-          <strong className="text-foreground">Pinpoint weakspots</strong> asks Guidelight to read full
-          attempt archives (not just topic error counts). On class scope it scans every student in
-          the class for shared gaps; on student scope it focuses on that learner.
+          Press <strong className="text-foreground">Pinpoint weakspots</strong> to analyse full
+          attempt archives. Class scope finds shared gaps; student scope focuses on one learner.
+        </p>
+        <p>
+          Under <strong className="text-foreground">Produce report</strong>, add notes, press{' '}
+          <strong className="text-foreground">Generate report</strong>, then edit the text. Use{' '}
+          <strong className="text-foreground">Save</strong> and{' '}
+          <strong className="text-foreground">Print / PDF</strong> when ready. You can also generate
+          a parent report from a student profile.
         </p>
       </Section>
 
@@ -247,8 +347,8 @@ export function TeacherGuidePage() {
 
       <Section title="Teacher account">
         <p>
-          Register with your email and password. Guidelight emails a verification link — you must
-          confirm before signing in. Forgotten passwords use a reset link; you can also choose{' '}
+          Register with your email and password. Guidelight emails a verification link — confirm it
+          before signing in. Forgotten passwords use a reset link; you can also choose{' '}
           <strong className="text-foreground">Email me a sign-in link</strong> for password-free
           access.
         </p>
@@ -262,8 +362,22 @@ export function StudentGuidePage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="How to use Guidelight"
-        description="Everything you need for Tasks and Tools — from starting homework to reading practice."
+        description="Everything you need for Tasks and Tools — from homework to reading practice."
       />
+
+      <Section title="Getting started">
+        <p>
+          Your teacher creates your account and gives you a{' '}
+          <strong className="text-foreground">username</strong> and{' '}
+          <strong className="text-foreground">password</strong>. On the Guidelight home page, choose{' '}
+          <strong className="text-foreground">Student</strong> sign-in and enter those details.
+        </p>
+        <p>
+          Use the sidebar for <strong className="text-foreground">Tasks</strong> (work your teacher
+          assigns) and <strong className="text-foreground">Tools</strong> (optional practice).{' '}
+          <strong className="text-foreground">Settings</strong> and this guide sit below them.
+        </p>
+      </Section>
 
       <Section title="Tasks">
         <p>
@@ -272,8 +386,10 @@ export function StudentGuidePage() {
           score.
         </p>
         <p>
-          Statuses: start a new task, continue one in progress, or see Submitted when you are done.
-          Due work appears here as soon as your teacher publishes it.
+          Statuses: <strong className="text-foreground">Start</strong> a new task,{' '}
+          <strong className="text-foreground">Continue</strong> one in progress, or see{' '}
+          <strong className="text-foreground">Submitted</strong> when you are done. Work appears here
+          as soon as your teacher publishes it.
         </p>
         <p>Badge colours mean:</p>
         <ColourLegend />
@@ -284,16 +400,21 @@ export function StudentGuidePage() {
         <p>
           Tap <strong className="text-foreground">Start</strong> or{' '}
           <strong className="text-foreground">Continue</strong>. Answer each question, then submit.
-          Copy and paste are disabled. After submit you see your score and per-question feedback.
+          Copy and paste are disabled. After submit you see your score and feedback for each
+          question.
         </p>
         <p>
-          <strong className="text-foreground">English level</strong> opens a timed CEFR-style
-          diagnostic (vocabulary, listening, reading, grammar, writing) with an indicative level and
-          IELTS band.
+          Timed tasks may auto-submit when time runs out. For assessments, stay on the page — leaving
+          the window can be flagged for your teacher.
+        </p>
+        <p>
+          <strong className="text-foreground">English level</strong> is a timed CEFR-style check
+          (vocabulary, listening, reading, grammar, writing). You get an indicative level and IELTS
+          band.
         </p>
         <p>
           <strong className="text-foreground">Reading speed</strong> times you on a passage, then
-          checks comprehension before recording your words-per-minute.
+          checks comprehension before recording your words per minute (WPM).
         </p>
       </Section>
 
@@ -302,27 +423,30 @@ export function StudentGuidePage() {
           <strong className="text-foreground">Tools</strong> are optional practice — they do not
           replace assigned Tasks.
         </p>
-        <ul className="list-disc space-y-2 pl-5">
+        <ul className="list-disc space-y-3 pl-5">
           <li>
-            <strong className="text-foreground">Flashcards</strong> — AI cards built from your
-            weakspots and recent mistakes.
+            <strong className="text-foreground">Flashcards</strong> — generate cards from your
+            weakspots and recent mistakes, then flip through them to revise.
           </li>
           <li>
-            <strong className="text-foreground">Practice quiz</strong> — a short MCQ set targeting
-            the same gaps.
+            <strong className="text-foreground">Practice quiz</strong> — generate a short
+            multiple-choice set on the same gaps and check the options.
           </li>
           <li>
-            <strong className="text-foreground">A1–C2 Stories</strong> — graded stories by CEFR
-            level; read (and optionally quiz) at your own pace.
+            <strong className="text-foreground">A1–C2 Stories</strong> — pick a CEFR level, open a
+            story, listen with highlighted words (change speed, show or hide 中文), tap a word to
+            jump in the audio, and download DOCX, PDF, or Markdown. Short tips also appear on the
+            Stories page.
           </li>
           <li>
-            <strong className="text-foreground">RSVP Focused Reading Machine</strong> — flash words
-            at a chosen WPM to train focus and fluency; save class or personal texts.
+            <strong className="text-foreground">RSVP Focused Reading Machine</strong> — practise class
+            texts or upload your own. Open a text, set WPM, then play or pause (spacebar works too).
+            Restart anytime; sessions are logged to help you track progress.
           </li>
           <li>
-            <strong className="text-foreground">Exam Dojo</strong> — sit AI-reconstructed practice
-            papers from your teacher or your own uploads; track scores and pass-probability
-            estimates (practice only, not guarantees).
+            <strong className="text-foreground">Exam Dojo</strong> — sit practice papers from your
+            teacher, or upload your own past paper. After you submit, you see your score plus
+            practice estimates for passing and top marks. These are guides only, not guarantees.
           </li>
         </ul>
       </Section>

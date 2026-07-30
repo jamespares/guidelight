@@ -6,7 +6,13 @@ import type { Env } from '../types'
 
 export function stripeConfigured(env: Env): boolean {
   const key = env.STRIPE_SECRET_KEY?.trim() ?? ''
-  return key.startsWith('sk_test_') || key.startsWith('sk_live_')
+  // Standard secret keys (sk_) or restricted keys (rk_)
+  return (
+    key.startsWith('sk_test_') ||
+    key.startsWith('sk_live_') ||
+    key.startsWith('rk_test_') ||
+    key.startsWith('rk_live_')
+  )
 }
 
 /** Safe diagnostics for billing setup (never returns key material). */
@@ -18,10 +24,15 @@ export function stripeStatus(env: Env): {
   publishable_present: boolean
 } {
   const key = env.STRIPE_SECRET_KEY?.trim() ?? ''
+  const secret_looks_valid =
+    key.startsWith('sk_test_') ||
+    key.startsWith('sk_live_') ||
+    key.startsWith('rk_test_') ||
+    key.startsWith('rk_live_')
   return {
-    configured: stripeConfigured(env),
+    configured: secret_looks_valid,
     secret_present: key.length > 0,
-    secret_looks_valid: key.startsWith('sk_test_') || key.startsWith('sk_live_'),
+    secret_looks_valid,
     webhook_secret_present: Boolean(env.STRIPE_WEBHOOK_SECRET?.trim()),
     publishable_present: Boolean(env.STRIPE_PUBLISHABLE_KEY?.trim()),
   }
