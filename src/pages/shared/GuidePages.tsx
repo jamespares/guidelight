@@ -52,10 +52,10 @@ export function TeacherGuidePage() {
       <Section title="Your workspace">
         <p>
           The sidebar has: <strong className="text-foreground">Students</strong>,{' '}
+          <strong className="text-foreground">Lessons</strong>,{' '}
           <strong className="text-foreground">Homework</strong>,{' '}
           <strong className="text-foreground">Assessments</strong>,{' '}
-          <strong className="text-foreground">Exam Dojo</strong>,{' '}
-          <strong className="text-foreground">Lessons</strong>, and{' '}
+          <strong className="text-foreground">Exam Dojo</strong>, and{' '}
           <strong className="text-foreground">Insights</strong>. Settings and this guide sit below
           them.
         </p>
