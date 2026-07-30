@@ -8,13 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { api, type StudentRow, type Weakspot } from '@/lib/api'
+import { api, type DojoAttemptScore, type StudentRow, type Weakspot } from '@/lib/api'
 
 export function StudentDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [student, setStudent] = useState<StudentRow | null>(null)
   const [attempts, setAttempts] = useState<unknown[]>([])
+  const [dojoAttempts, setDojoAttempts] = useState<DojoAttemptScore[]>([])
   const [interests, setInterests] = useState('')
   const [career, setCareer] = useState('')
   const [summary, setSummary] = useState('')
@@ -39,6 +40,7 @@ export function StudentDetailPage() {
         const res = await api.student(id)
         setStudent(res.student)
         setAttempts(res.attempts)
+        setDojoAttempts(res.dojoAttempts ?? [])
         setInterests(res.student.interests)
         setCareer(res.student.career_ambitions)
         setSummary(res.student.ai_summary)
@@ -270,6 +272,46 @@ export function StudentDetailPage() {
         error={pinpointError}
         onPinpoint={() => void pinpoint()}
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Exam Dojo scores</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!dojoAttempts.length ? (
+            <p className="text-sm text-muted-foreground">No Exam Dojo attempts yet.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {dojoAttempts.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 pb-2 last:border-0"
+                >
+                  <span>
+                    <span className="font-medium">{a.title || a.subject}</span>
+                    <span className="text-muted-foreground">
+                      {' '}
+                      · {a.subject}
+                      {a.syllabus_code ? ` · ${a.syllabus_code}` : ''}
+                    </span>
+                  </span>
+                  <span className="tabular-nums text-[hsl(var(--insight-score-fg))]">
+                    {a.score_pct == null ? '—' : `${a.score_pct}%`}
+                    {a.submitted_at ? (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {a.submitted_at.slice(0, 10)}
+                      </span>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Full attempt archives (markdown) are included when you Pinpoint weakspots.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">

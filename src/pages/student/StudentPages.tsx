@@ -439,17 +439,16 @@ export function StudentToolsPage() {
           </p>
         </Link>
 
-        <div className="rounded-xl border border-dashed border-border bg-secondary/40 p-5 opacity-90">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Exam Dojo</h2>
-            <Badge variant="warn">Coming soon</Badge>
-          </div>
+        <Link
+          to="/student/exam-dojo"
+          className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
+        >
+          <h2 className="text-lg font-semibold">Exam Dojo</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Generate realistic past papers for the exams you are studying, track your scores, and
-            see exactly what average you need across N papers for an X% chance of hitting your
-            target grade — a data-driven guaranteed-pass exam system.
+            Sit AI-reconstructed practice papers, track scores, and see what average you need for a
+            stronger chance of your target grade.
           </p>
-        </div>
+        </Link>
 
         <button
           type="button"

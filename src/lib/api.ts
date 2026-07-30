@@ -166,6 +166,47 @@ export interface LessonRow {
   plan: LessonPlan
 }
 
+export interface DojoPaper {
+  id: string
+  class_id: string
+  owner_student_id?: string | null
+  title: string
+  subject: string
+  curriculum: string
+  syllabus_code: string
+  source_file_name?: string
+  reconstruction_label: string
+  reconstructed_at: string | null
+  status: 'processing' | 'draft' | 'ready' | 'published' | 'failed'
+  duration_seconds: number | null
+  pass_threshold: number
+  top_threshold: number
+  fail_reason?: string
+  created_at: string
+  published_at?: string | null
+  created_by_role?: string
+  content?: TaskContent
+}
+
+export interface DojoStats {
+  papersCompleted: number
+  averageScore: number | null
+  passProbability: number | null
+  topProbability: number | null
+  unlockMessage?: string
+  recommendation?: string
+}
+
+export interface DojoAttemptScore {
+  id: string
+  score_pct: number | null
+  submitted_at: string | null
+  title: string
+  subject: string
+  curriculum: string
+  syllabus_code: string
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
@@ -249,7 +290,9 @@ export const api = {
     }>('/api/classes', { method: 'POST', body: JSON.stringify(body) }),
   students: () => request<{ students: StudentRow[] }>('/api/students'),
   student: (id: string) =>
-    request<{ student: StudentRow; attempts: unknown[] }>(`/api/students/${id}`),
+    request<{ student: StudentRow; attempts: unknown[]; dojoAttempts?: DojoAttemptScore[] }>(
+      `/api/students/${id}`,
+    ),
   updateStudent: (
     id: string,
     body: { interests?: string; career_ambitions?: string; username?: string },
@@ -462,4 +505,71 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ slug, event_type }),
     }),
+
+  // Exam Dojo
+  dojoPapers: (classId: string) =>
+    request<{ papers: DojoPaper[] }>(
+      `/api/dojo/papers?classId=${encodeURIComponent(classId)}`,
+    ),
+  createDojoPaper: (body: Record<string, unknown>) =>
+    request<{ paper: DojoPaper; reused: boolean }>('/api/dojo/papers', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  dojoPaper: (id: string) => request<{ paper: DojoPaper }>(`/api/dojo/papers/${id}`),
+  updateDojoPaper: (id: string, body: Record<string, unknown>) =>
+    request<{ paper: DojoPaper }>(`/api/dojo/papers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  publishDojoPaper: (id: string) =>
+    request<{ ok: boolean }>(`/api/dojo/papers/${id}/publish`, {
+      method: 'POST',
+      body: '{}',
+    }),
+  studentDojoPapers: () =>
+    request<{ shared: DojoPaper[]; mine: DojoPaper[] }>('/api/student/dojo/papers'),
+  createStudentDojoPaper: (body: Record<string, unknown>) =>
+    request<{ paper: DojoPaper; reused: boolean }>('/api/student/dojo/papers', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  startDojoAttempt: (paperId: string) =>
+    request<{ attemptId: string; time_limit_seconds?: number | null; resumed?: boolean }>(
+      `/api/student/dojo/papers/${paperId}/start`,
+      { method: 'POST', body: '{}' },
+    ),
+  submitDojoAttempt: (
+    attemptId: string,
+    body: { answers: Record<string, unknown>; duration_ms: number },
+  ) =>
+    request<{
+      score_pct: number
+      feedback: Record<
+        string,
+        {
+          correct: boolean
+          feedback: string
+          topic: string
+          marksAwarded: number
+          marksPossible: number
+        }
+      >
+      stats: DojoStats
+      pass_threshold: number
+      top_threshold: number
+    }>(`/api/student/dojo/attempts/${attemptId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  studentDojoStats: (opts?: { pass?: number; top?: number; subject?: string }) => {
+    const params = new URLSearchParams()
+    if (opts?.pass != null) params.set('pass', String(opts.pass))
+    if (opts?.top != null) params.set('top', String(opts.top))
+    if (opts?.subject) params.set('subject', opts.subject)
+    const q = params.toString()
+    return request<{ stats: DojoStats; scores: Array<{ score_pct: number }> }>(
+      `/api/student/dojo/stats${q ? `?${q}` : ''}`,
+    )
+  },
 }

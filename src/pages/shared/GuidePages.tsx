@@ -51,9 +51,11 @@ export function TeacherGuidePage() {
 
       <Section title="Your workspace">
         <p>
-          The sidebar has four main areas: <strong className="text-foreground">Students</strong>,{' '}
+          The sidebar has: <strong className="text-foreground">Students</strong>,{' '}
           <strong className="text-foreground">Homework</strong>,{' '}
-          <strong className="text-foreground">Assessments</strong>, and{' '}
+          <strong className="text-foreground">Assessments</strong>,{' '}
+          <strong className="text-foreground">Exam Dojo</strong>,{' '}
+          <strong className="text-foreground">Lessons</strong>, and{' '}
           <strong className="text-foreground">Insights</strong>. Settings and this guide sit below
           them.
         </p>
@@ -74,9 +76,20 @@ export function TeacherGuidePage() {
         </p>
         <p>
           From the profile you can also edit interests and career ambitions, refresh their AI
-          introduction, generate a parent report, or run{' '}
+          introduction, generate a parent report, see{' '}
+          <strong className="text-foreground">Exam Dojo scores</strong>, or run{' '}
           <strong className="text-foreground">Pinpoint weakspots</strong> on their full attempt
-          history.
+          history (homework plus Exam Dojo archives).
+        </p>
+      </Section>
+
+      <Section title="Exam Dojo">
+        <p>
+          Upload a past paper with subject, curriculum, and syllabus code. Kimi reconstructs a{' '}
+          <strong className="text-foreground">passable practice paper</strong> once — it is labelled
+          and never regenerated. Review and edit questions, then publish to the class. Students sit
+          the interactive version; scores and full attempt archives land on their profile for later
+          insight.
         </p>
       </Section>
 
@@ -194,8 +207,9 @@ export function StudentGuidePage() {
             at a chosen WPM to train focus and fluency; save class or personal texts.
           </li>
           <li>
-            <strong className="text-foreground">Exam Dojo</strong> — coming soon for timed exam
-            practice.
+            <strong className="text-foreground">Exam Dojo</strong> — sit AI-reconstructed practice
+            papers from your teacher or your own uploads; track scores and pass-probability
+            estimates (practice only, not guarantees).
           </li>
         </ul>
       </Section>

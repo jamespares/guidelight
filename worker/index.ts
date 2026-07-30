@@ -26,6 +26,13 @@ import {
   handleCefrApi,
   isSpecialAssessment,
 } from './lib/cefr'
+import {
+  handleDojoApi,
+  listDojoArchivesForClass,
+  listDojoArchivesForStudent,
+  listDojoScoresForStudent,
+  recomputeWeakspotsWithDojo,
+} from './lib/dojo'
 
 const PHASE2_TYPES = ['mcq', 'cloze', 'short_written', 'reading_comprehension']
 const ALL_TYPES = [
@@ -53,35 +60,7 @@ async function hasDiagnostic(env: Env, classId: string): Promise<boolean> {
 }
 
 async function recomputeWeakspots(env: Env, studentId: string) {
-  const attempts = await env.DB.prepare(
-    `SELECT feedback_json FROM attempts WHERE student_id = ? AND status = 'submitted'`,
-  )
-    .bind(studentId)
-    .all<{ feedback_json: string }>()
-
-  const topicErrors: Record<string, number> = {}
-  for (const a of attempts.results ?? []) {
-    try {
-      const fb = JSON.parse(a.feedback_json) as Record<string, { correct?: boolean; topic?: string }>
-      for (const item of Object.values(fb)) {
-        if (item.correct === false && item.topic) {
-          topicErrors[item.topic] = (topicErrors[item.topic] ?? 0) + 1
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  const weakspots = Object.entries(topicErrors)
-    .filter(([, n]) => n >= 2)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([topic, count]) => ({ topic, count }))
-
-  await env.DB.prepare(`UPDATE students SET weakspots = ? WHERE id = ?`)
-    .bind(JSON.stringify(weakspots), studentId)
-    .run()
+  await recomputeWeakspotsWithDojo(env, studentId)
 }
 
 /** Rebuild attempt_archive_md when empty (idempotent). */
@@ -226,6 +205,15 @@ export default {
         if (!user) return error('Unauthorized', 401)
         const cefrRes = await handleCefrApi(request, env, path, user)
         if (cefrRes) return cefrRes
+        return error('Not found', 404)
+      }
+
+      // —— Exam Dojo ——
+      if (path.startsWith('/api/dojo/') || path.startsWith('/api/student/dojo/')) {
+        const user = await getSession(env, request)
+        if (!user) return error('Unauthorized', 401)
+        const dojoRes = await handleDojoApi(request, env, path, user)
+        if (dojoRes) return dojoRes
         return error('Not found', 404)
       }
 
@@ -396,9 +384,10 @@ export default {
           .bind(studentId)
           .all()
 
-        const [rate, avgScore] = await Promise.all([
+        const [rate, avgScore, dojoScores] = await Promise.all([
           hwCompletionRate(env, s.id, s.class_id),
           avgTaskScore(env, s.id, s.class_id),
+          listDojoScoresForStudent(env, studentId),
         ])
         const { teacher_id: _teacherId, ...safe } = s
         void _teacherId
@@ -410,6 +399,7 @@ export default {
             avg_score: avgScore,
           },
           attempts: attempts.results,
+          dojoAttempts: dojoScores,
         })
       }
 
@@ -1599,6 +1589,13 @@ export default {
           })
         }
 
+        const dojoChunks = await listDojoArchivesForStudent(env, studentId)
+        for (const d of dojoChunks) {
+          chunks.push({ label: d.label, md: d.md })
+        }
+
+        // Newest-first: homework already DESC; prepend dojo by sorting labels is weak —
+        // interleave by putting dojo after homework is fine; truncateArchives keeps budget.
         if (!chunks.length) {
           return error('No submitted attempts to analyse yet', 400)
         }
@@ -1688,6 +1685,30 @@ export default {
             label: `${row.display_name} · ${row.title || 'Task'} · ${row.submitted_at || ''}`,
             md,
           })
+        }
+
+        const dojoClass = await listDojoArchivesForClass(env, classId)
+        // Fair sample dojo too: round-robin by student, cap contribution
+        const dojoByStudent = new Map<string, typeof dojoClass>()
+        for (const row of dojoClass) {
+          const list = dojoByStudent.get(row.student_id) ?? []
+          list.push(row)
+          dojoByStudent.set(row.student_id, list)
+        }
+        let di = 0
+        let dAdded = true
+        let dojoCount = 0
+        while (dAdded && dojoCount < 40) {
+          dAdded = false
+          for (const list of dojoByStudent.values()) {
+            if (di < list.length) {
+              const row = list[di]
+              chunks.push({ label: row.label, md: row.md })
+              dojoCount += 1
+              dAdded = true
+            }
+          }
+          di += 1
         }
 
         if (!chunks.length) {

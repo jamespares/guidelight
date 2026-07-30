@@ -728,3 +728,217 @@ Slots (in order): ${JSON.stringify(
   }
 }
 
+const OPEN_TYPES = new Set(['short_written', 'extended_written', 'reading_comprehension', 'listen_respond', 'frayer', 'image_analysis'])
+
+function normalizeReconstructedContent(
+  parsed: TaskContent,
+  fallbackTitle: string,
+  subject: string,
+): TaskContent {
+  const questions = (parsed.questions ?? [])
+    .filter((q) => q && typeof q.prompt === 'string' && q.prompt.trim())
+    .map((q, i) => ({
+      ...q,
+      id: q.id || `dq${i + 1}`,
+      type: q.type || 'short_written',
+      topic: q.topic || subject || 'general',
+      learningObjective:
+        q.learningObjective ||
+        `Assess understanding of ${q.topic || subject || 'the topic'} for this question.`,
+      marks: typeof q.marks === 'number' && q.marks > 0 ? q.marks : 1,
+    }))
+
+  return {
+    title: (parsed.title || fallbackTitle || `${subject} practice paper`).slice(0, 120),
+    instructions:
+      parsed.instructions ||
+      'This is an AI-reconstructed practice paper for Exam Dojo — not an official exam copy. Answer carefully.',
+    questions,
+  }
+}
+
+/**
+ * Best-effort reconstruction of a past paper into a completable practice TaskContent.
+ * Prefer a passable paper over failing when the source is messy.
+ */
+export async function reconstructPastPaper(
+  env: Env,
+  input: {
+    extractedText?: string
+    imageDataUrls?: string[]
+    subject: string
+    curriculum: string
+    syllabusCode: string
+    title?: string
+  },
+): Promise<TaskContent> {
+  const system = `You are Guidelight Exam Dojo. Turn a past-paper upload into a usable PRACTICE exam in JSON.
+
+Philosophy:
+- Goal: a completable practice paper students can sit in the browser — NOT a perfect archival facsimile.
+- Follow the source when clear. When text is garbled, marks missing, or structure ambiguous, infer sensible questions using the subject, curriculum, and syllabus code.
+- Skip or paraphrase unreadable fragments. Never leave empty prompts.
+- Prefer a slightly imperfect but passable paper over aborting.
+
+Return ONLY valid JSON matching:
+{
+  "title": string,
+  "instructions": string,
+  "questions": [
+    {
+      "id": string,
+      "type": "mcq" | "cloze" | "short_written" | "extended_written" | "reading_comprehension" | "bloom",
+      "prompt": string,
+      "topic": string,
+      "learningObjective": string,
+      "options": string[] (mcq/bloom),
+      "correctAnswer": string | string[],
+      "blanks": string[] (cloze),
+      "marks": number
+    }
+  ]
+}
+Include at least 3 questions whenever any usable content exists.
+Pull answer keys when present; otherwise invent provisional answers suitable for practice marking.`
+
+  const meta = `Subject: ${input.subject}
+Curriculum: ${input.curriculum || 'n/a'}
+Syllabus code: ${input.syllabusCode || 'n/a'}
+Preferred title: ${input.title || 'n/a'}`
+
+  const text = (input.extractedText || '').trim().slice(0, 12_000)
+  const images = (input.imageDataUrls || []).slice(0, 4)
+
+  async function once(strict: boolean): Promise<TaskContent> {
+    const strictNote = strict
+      ? '\nReturn ONLY a single JSON object. No markdown fences, no commentary.'
+      : ''
+
+    let raw: string
+    if (text) {
+      raw = await runChat(
+        env,
+        system + strictNote,
+        `${meta}\n\nPast paper text:\n${text}`,
+        { timeoutMs: 55_000, maxTokens: 8192 },
+      )
+    } else if (images.length) {
+      const parts: Array<Record<string, unknown>> = [
+        {
+          type: 'text',
+          text: `${meta}\n\nReconstruct a passable practice paper from these past-paper page image(s).${strictNote}`,
+        },
+      ]
+      for (const url of images) {
+        parts.push({ type: 'image_url', image_url: { url } })
+      }
+      raw = await runChat(env, system, parts, { timeoutMs: 55_000, maxTokens: 8192 })
+    } else {
+      throw new Error('No past paper text or images to reconstruct')
+    }
+
+    const parsed = extractJson(raw) as TaskContent
+    const normalized = normalizeReconstructedContent(
+      parsed,
+      input.title || `${input.subject} practice paper`,
+      input.subject,
+    )
+    if (normalized.questions.length < 3) {
+      throw new Error('Reconstruction produced fewer than 3 questions')
+    }
+    return normalized
+  }
+
+  try {
+    return await once(false)
+  } catch (err) {
+    console.error('reconstructPastPaper first pass failed, retrying strict', err)
+    try {
+      return await once(true)
+    } catch (err2) {
+      console.error('reconstructPastPaper failed', err2)
+      throw err2 instanceof Error ? err2 : new Error('Could not reconstruct practice paper')
+    }
+  }
+}
+
+type MarkResult = Awaited<ReturnType<typeof markAttempt>>
+
+/**
+ * Hybrid Dojo marking: score MCQ/cloze locally when answers exist; AI-mark open questions only.
+ */
+export async function markDojoAttempt(
+  env: Env,
+  input: {
+    subject: string
+    content: TaskContent
+    answers: Record<string, unknown>
+  },
+): Promise<MarkResult> {
+  const closed: typeof input.content.questions = []
+  const open: typeof input.content.questions = []
+
+  for (const q of input.content.questions) {
+    const hasKey = q.correctAnswer != null && String(q.correctAnswer).length > 0
+    if ((q.type === 'mcq' || q.type === 'cloze' || q.type === 'bloom') && hasKey) {
+      closed.push(q)
+    } else if (OPEN_TYPES.has(q.type) || !hasKey) {
+      open.push(q)
+    } else {
+      closed.push(q)
+    }
+  }
+
+  const closedResult = closed.length
+    ? localMark({ content: { ...input.content, questions: closed }, answers: input.answers })
+    : {
+        score_pct: 0,
+        feedback: {} as MarkResult['feedback'],
+        topic_tags: [] as string[],
+      }
+
+  let openResult: MarkResult = {
+    score_pct: 0,
+    feedback: {},
+    topic_tags: [],
+  }
+
+  if (open.length) {
+    openResult = await markAttempt(env, {
+      subject: input.subject,
+      content: { ...input.content, questions: open },
+      answers: input.answers,
+    })
+  }
+
+  const feedback: MarkResult['feedback'] = {
+    ...closedResult.feedback,
+    ...openResult.feedback,
+  }
+
+  let awarded = 0
+  let possible = 0
+  const topic_tags: string[] = []
+  for (const q of input.content.questions) {
+    const fb = feedback[q.id]
+    if (!fb) {
+      feedback[q.id] = {
+        correct: false,
+        feedback: 'Not marked.',
+        topic: q.topic,
+        learningObjective: q.learningObjective,
+        marksAwarded: 0,
+        marksPossible: q.marks ?? 1,
+      }
+    }
+    const item = feedback[q.id]
+    awarded += item.marksAwarded ?? 0
+    possible += item.marksPossible ?? q.marks ?? 1
+    if (item.topic) topic_tags.push(item.topic)
+  }
+
+  const score_pct = possible > 0 ? Math.round((awarded / possible) * 1000) / 10 : 0
+  return { score_pct, feedback, topic_tags: [...new Set(topic_tags)] }
+}
+
+
