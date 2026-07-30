@@ -9,12 +9,35 @@ const NightGuideScene = lazy(() =>
 )
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
+import { COPYRIGHT_LINE, SUPPORT_MAILTO } from '@/lib/legal'
 import { TRUST_LANDING } from '@/lib/trustCopy'
 import { cn } from '@/lib/utils'
+
+function AuthLegalFooter() {
+  return (
+    <footer className="mt-6 space-y-1 text-center text-xs text-muted-foreground">
+      <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <Link to="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
+          Terms
+        </Link>
+        <span aria-hidden>·</span>
+        <Link to="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
+          Privacy
+        </Link>
+        <span aria-hidden>·</span>
+        <a href={SUPPORT_MAILTO} className="underline-offset-4 hover:text-foreground hover:underline">
+          Contact
+        </a>
+      </nav>
+      <p>{COPYRIGHT_LINE}</p>
+    </footer>
+  )
+}
 
 function AuthShell({ children }: { children: ReactNode }) {
   return (
@@ -25,7 +48,10 @@ function AuthShell({ children }: { children: ReactNode }) {
       <div className="absolute right-4 top-4 z-20">
         <ThemeToggle className="border-border/40 bg-card/30 shadow-sm backdrop-blur-xl hover:bg-card/45" />
       </div>
-      <div className="relative z-10 w-full max-w-md">{children}</div>
+      <div className="relative z-10 w-full max-w-md">
+        {children}
+        <AuthLegalFooter />
+      </div>
     </div>
   )
 }
@@ -77,6 +103,7 @@ export function TeacherAuth() {
   const [needsVerify, setNeedsVerify] = useState(false)
   const [loading, setLoading] = useState(false)
   const [magicBusy, setMagicBusy] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const { setUser } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -112,6 +139,10 @@ export function TeacherAuth() {
     setError('')
     setInfo('')
     setNeedsVerify(false)
+    if (mode === 'register' && !acceptedTerms) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue.')
+      return
+    }
     setLoading(true)
     try {
       if (mode === 'register') {
@@ -211,6 +242,7 @@ export function TeacherAuth() {
                   setMode('login')
                   setError('')
                   setInfo('')
+                  setAcceptedTerms(false)
                 }}
               >
                 <LogIn className="h-4 w-4" />
@@ -269,6 +301,26 @@ export function TeacherAuth() {
                 />
               </div>
             ) : null}
+            {mode === 'register' ? (
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="accept-terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="accept-terms" className="text-sm font-normal leading-snug text-muted-foreground">
+                  I agree to the{' '}
+                  <Link to="/terms" className="text-foreground underline-offset-4 hover:underline">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" className="text-foreground underline-offset-4 hover:underline">
+                    Privacy Policy
+                  </Link>
+                </Label>
+              </div>
+            ) : null}
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             {info ? <p className="text-sm text-foreground">{info}</p> : null}
             {needsVerify && email ? (
@@ -283,8 +335,11 @@ export function TeacherAuth() {
                 Resend verification email
               </Button>
             ) : null}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || (mode === 'register' && !acceptedTerms)}
+            >              {loading
                 ? 'Please wait…'
                 : mode === 'login'
                   ? 'Sign in'

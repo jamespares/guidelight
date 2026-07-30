@@ -19,6 +19,7 @@ import { CapHitBanner } from '@/components/UsageDial'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth'
 import { BillingProvider, SidebarUsageDial, useBilling } from '@/lib/billing'
+import { SUPPORT_MAILTO } from '@/lib/legal'
 import { cn } from '@/lib/utils'
 
 type NavItem = { to: string; label: string; icon: LucideIcon }
@@ -108,6 +109,19 @@ function AppShell({
             <Home className="h-4 w-4" />
             {footerLabel}
           </NavLink>
+          <nav className="flex flex-wrap gap-x-2 gap-y-1 px-3 text-[11px] text-sidebar-muted">
+            <NavLink to="/terms" className="hover:text-sidebar-foreground hover:underline">
+              Terms
+            </NavLink>
+            <span aria-hidden>·</span>
+            <NavLink to="/privacy" className="hover:text-sidebar-foreground hover:underline">
+              Privacy
+            </NavLink>
+            <span aria-hidden>·</span>
+            <a href={SUPPORT_MAILTO} className="hover:text-sidebar-foreground hover:underline">
+              Contact
+            </a>
+          </nav>
           <Button
             type="button"
             variant="ghost"
