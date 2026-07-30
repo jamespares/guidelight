@@ -5,7 +5,26 @@
 import type { Env } from '../types'
 
 export function stripeConfigured(env: Env): boolean {
-  return Boolean(env.STRIPE_SECRET_KEY?.startsWith('sk_'))
+  const key = env.STRIPE_SECRET_KEY?.trim() ?? ''
+  return key.startsWith('sk_test_') || key.startsWith('sk_live_')
+}
+
+/** Safe diagnostics for billing setup (never returns key material). */
+export function stripeStatus(env: Env): {
+  configured: boolean
+  secret_present: boolean
+  secret_looks_valid: boolean
+  webhook_secret_present: boolean
+  publishable_present: boolean
+} {
+  const key = env.STRIPE_SECRET_KEY?.trim() ?? ''
+  return {
+    configured: stripeConfigured(env),
+    secret_present: key.length > 0,
+    secret_looks_valid: key.startsWith('sk_test_') || key.startsWith('sk_live_'),
+    webhook_secret_present: Boolean(env.STRIPE_WEBHOOK_SECRET?.trim()),
+    publishable_present: Boolean(env.STRIPE_PUBLISHABLE_KEY?.trim()),
+  }
 }
 
 async function stripeRequest<T>(
