@@ -52,5 +52,8 @@
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "wrangler": "^4.114.0"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.1.5"
   }
 }
