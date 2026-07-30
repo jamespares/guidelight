@@ -149,7 +149,7 @@ export function TeacherGuidePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
-        title="How to use Guidelight"
+        title="Info"
         description="A clear walkthrough of the teacher portal — classes, lessons, tasks, Exam Dojo, and insights."
       />
 
@@ -188,14 +188,11 @@ export function TeacherGuidePage() {
           <strong className="text-foreground">Assessments</strong>,{' '}
           <strong className="text-foreground">Exam Dojo</strong>, and{' '}
           <strong className="text-foreground">Insights</strong>.{' '}
-          <strong className="text-foreground">Settings</strong> and this guide sit below them. The
+          <strong className="text-foreground">Info</strong> and{' '}
+          <strong className="text-foreground">Settings</strong> sit below them. The
           sidebar also shows your <strong className="text-foreground">AI usage dial</strong> for
           this month.
         </p>
-      </Section>
-
-      <Section title="What AI costs">
-        <AiCostExplainer />
       </Section>
 
       <Section title="Students">
@@ -353,6 +350,10 @@ export function TeacherGuidePage() {
           access.
         </p>
       </Section>
+
+      <Section title="What AI costs">
+        <AiCostExplainer />
+      </Section>
     </div>
   )
 }
@@ -361,7 +362,7 @@ export function StudentGuidePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
-        title="How to use Guidelight"
+        title="Info"
         description="Everything you need for Tasks and Tools — from homework to reading practice."
       />
 
@@ -375,7 +376,8 @@ export function StudentGuidePage() {
         <p>
           Use the sidebar for <strong className="text-foreground">Tasks</strong> (work your teacher
           assigns) and <strong className="text-foreground">Tools</strong> (optional practice).{' '}
-          <strong className="text-foreground">Settings</strong> and this guide sit below them.
+          <strong className="text-foreground">Info</strong> and{' '}
+          <strong className="text-foreground">Settings</strong> sit below them.
         </p>
       </Section>
 

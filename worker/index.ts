@@ -57,6 +57,52 @@ async function classOwned(env: Env, classId: string, teacherId: string) {
     .first()
 }
 
+type InsightEventRow = {
+  id: string
+  name: string
+  event_date: string
+  description: string
+  class_id: string | null
+  student_id: string | null
+}
+
+function mapInsightEvents(rows: InsightEventRow[]) {
+  return rows.map((e) => ({
+    id: e.id,
+    name: e.name,
+    event_date: e.event_date,
+    description: e.description,
+    scope: e.class_id ? ('class' as const) : ('student' as const),
+  }))
+}
+
+/** Class events for a class, or class+student events for a student (privacy: no other students). */
+async function loadInsightEvents(
+  env: Env,
+  opts: { classId: string } | { studentId: string; classId: string },
+) {
+  if ('studentId' in opts) {
+    const rows = await env.DB.prepare(
+      `SELECT id, name, event_date, description, class_id, student_id
+       FROM insight_events
+       WHERE class_id = ? OR student_id = ?
+       ORDER BY event_date ASC, created_at ASC`,
+    )
+      .bind(opts.classId, opts.studentId)
+      .all<InsightEventRow>()
+    return mapInsightEvents(rows.results ?? [])
+  }
+  const rows = await env.DB.prepare(
+    `SELECT id, name, event_date, description, class_id, student_id
+     FROM insight_events
+     WHERE class_id = ?
+     ORDER BY event_date ASC, created_at ASC`,
+  )
+    .bind(opts.classId)
+    .all<InsightEventRow>()
+  return mapInsightEvents(rows.results ?? [])
+}
+
 async function hasDiagnostic(env: Env, classId: string): Promise<boolean> {
   const row = await env.DB.prepare(
     `SELECT id FROM tasks WHERE class_id = ? AND subtype = 'diagnostic' AND status = 'published' LIMIT 1`,
@@ -1424,6 +1470,8 @@ export default {
               value: Math.round(((i + 1) / Math.max(arr.length, 1)) * 1000) / 10,
             }))
 
+          const events = await loadInsightEvents(env, { classId: id })
+
           return json({
             avgScore,
             scoreSeries: scores,
@@ -1432,6 +1480,7 @@ export default {
             weakspots,
             weakspotsSummary,
             weakspotsUpdatedAt,
+            events,
           })
         }
 
@@ -1475,6 +1524,11 @@ export default {
             value: Math.round(((i + 1) / Math.max(arr.length, 1)) * hwRate!) || 0,
           }))
 
+        const events = await loadInsightEvents(env, {
+          studentId: id,
+          classId: s.class_id,
+        })
+
         return json({
           avgScore,
           scoreSeries: scores,
@@ -1483,7 +1537,81 @@ export default {
           weakspots: JSON.parse(s.weakspots || '[]'),
           weakspotsSummary: s.weakspots_summary || null,
           weakspotsUpdatedAt: s.weakspots_updated_at ?? null,
+          events,
         })
+      }
+
+      // —— Insight events ——
+      if (path === '/api/insight-events' && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const body = (await request.json()) as {
+          class_id?: string
+          student_id?: string
+          name?: string
+          event_date?: string
+          description?: string
+        }
+        const name = (body.name ?? '').trim()
+        const eventDate = (body.event_date ?? '').trim()
+        const description = (body.description ?? '').trim()
+        if (!name) return error('name required')
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) return error('event_date must be YYYY-MM-DD')
+
+        const hasClass = !!body.class_id
+        const hasStudent = !!body.student_id
+        if (hasClass === hasStudent) return error('Provide exactly one of class_id or student_id')
+
+        let classId: string | null = null
+        let studentId: string | null = null
+
+        if (body.class_id) {
+          const cls = await classOwned(env, body.class_id, user.id)
+          if (!cls) return error('Not found', 404)
+          classId = body.class_id
+        } else {
+          const student = await env.DB.prepare(
+            `SELECT s.id FROM students s JOIN classes c ON c.id = s.class_id
+             WHERE s.id = ? AND c.teacher_id = ?`,
+          )
+            .bind(body.student_id, user.id)
+            .first()
+          if (!student) return error('Not found', 404)
+          studentId = body.student_id!
+        }
+
+        const id = generateId()
+        await env.DB.prepare(
+          `INSERT INTO insight_events (id, teacher_id, class_id, student_id, name, event_date, description)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        )
+          .bind(id, user.id, classId, studentId, name, eventDate, description)
+          .run()
+
+        return json({
+          event: {
+            id,
+            name,
+            event_date: eventDate,
+            description,
+            scope: classId ? 'class' : 'student',
+          },
+        })
+      }
+
+      const insightEventMatch = path.match(/^\/api\/insight-events\/([^/]+)$/)
+      if (insightEventMatch && request.method === 'DELETE') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const eventId = insightEventMatch[1]
+        const row = await env.DB.prepare(
+          `SELECT id FROM insight_events WHERE id = ? AND teacher_id = ?`,
+        )
+          .bind(eventId, user.id)
+          .first()
+        if (!row) return error('Not found', 404)
+        await env.DB.prepare(`DELETE FROM insight_events WHERE id = ?`).bind(eventId).run()
+        return json({ ok: true })
       }
 
       // —— Reports ——

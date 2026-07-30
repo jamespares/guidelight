@@ -17,6 +17,14 @@ export interface ClassRow {
   student_count: number
 }
 
+export interface InsightEvent {
+  id: string
+  name: string
+  event_date: string
+  description: string
+  scope: 'class' | 'student'
+}
+
 export interface Weakspot {
   topic?: string
   skill?: string
@@ -425,7 +433,21 @@ export const api = {
       weakspots: Weakspot[]
       weakspotsSummary?: string | null
       weakspotsUpdatedAt?: string | null
+      events: InsightEvent[]
     }>(`/api/insights?scope=${scope}&id=${encodeURIComponent(id)}`),
+  createInsightEvent: (body: {
+    class_id?: string
+    student_id?: string
+    name: string
+    event_date: string
+    description?: string
+  }) =>
+    request<{ event: InsightEvent }>('/api/insight-events', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  deleteInsightEvent: (id: string) =>
+    request<{ ok: boolean }>(`/api/insight-events/${id}`, { method: 'DELETE' }),
   pinpointStudentWeakspots: (studentId: string) =>
     request<{
       weakspots: Weakspot[]

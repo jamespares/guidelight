@@ -152,8 +152,8 @@ const teacherNav: NavItem[] = [
 ]
 
 const teacherSecondary: NavItem[] = [
+  { to: '/teacher/guide', label: 'Info', icon: BookOpenText },
   { to: '/teacher/settings', label: 'Settings', icon: Settings },
-  { to: '/teacher/guide', label: 'How to use', icon: BookOpenText },
 ]
 
 const studentNav: NavItem[] = [
@@ -162,8 +162,8 @@ const studentNav: NavItem[] = [
 ]
 
 const studentSecondary: NavItem[] = [
+  { to: '/student/guide', label: 'Info', icon: BookOpenText },
   { to: '/student/settings', label: 'Settings', icon: Settings },
-  { to: '/student/guide', label: 'How to use', icon: BookOpenText },
 ]
 
 export function TeacherLayout() {
