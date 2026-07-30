@@ -54,6 +54,11 @@
     "wrangler": "^4.114.0"
   },
   "optionalDependencies": {
-    "@rolldown/binding-linux-x64-gnu": "1.1.5"
+    "@rolldown/binding-linux-x64-gnu": "1.1.5",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.3",
+    "lightningcss-linux-x64-gnu": "1.33.0"
+  },
+  "overrides": {
+    "lightningcss": "1.33.0"
   }
 }
