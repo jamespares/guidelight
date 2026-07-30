@@ -1,4 +1,4 @@
-import type { Env, TaskContent } from './types'
+import type { Env, LessonPlan, TaskContent } from './types'
 import {
   error,
   generateId,
@@ -9,6 +9,7 @@ import {
   slugify,
 } from './lib/auth'
 import {
+  generateLessonPlans,
   generatePracticeOrFlashcards,
   generateReport,
   generateStudentSummary,
@@ -17,6 +18,7 @@ import {
   markAttempt,
   pinpointWeakspotsFromArchives,
 } from './lib/ai'
+import { normalizeDaysOfWeek, scheduleLessonSlots } from './lib/lessonSchedule'
 import { buildAttemptArchiveMd, truncateArchives } from './lib/attemptArchive'
 import { getSession, handleAuth, requireRole } from './lib/session'
 import {
@@ -531,6 +533,257 @@ export default {
         const cls = await classOwned(env, classId, user.id)
         if (!cls) return error('Not found', 404)
         return json({ hasDiagnostic: await hasDiagnostic(env, classId) })
+      }
+
+      // —— Lesson batches ——
+      if (path === '/api/lesson-batches' && request.method === 'GET') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const { results } = await env.DB.prepare(
+          `SELECT b.*, c.name as class_name
+           FROM lesson_batches b
+           JOIN classes c ON c.id = b.class_id
+           WHERE b.teacher_id = ?
+           ORDER BY b.created_at DESC`,
+        )
+          .bind(user.id)
+          .all()
+        return json({
+          batches: (results ?? []).map((row) => {
+            const r = row as Record<string, unknown>
+            return {
+              ...r,
+              days_of_week: JSON.parse(String(r.days_of_week || '[]')),
+              resources: JSON.parse(String(r.resources_json || '[]')),
+              resources_json: undefined,
+            }
+          }),
+        })
+      }
+
+      if (path === '/api/lesson-batches' && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const body = (await request.json()) as {
+          class_id?: string
+          subject?: string
+          curriculum?: string
+          duration_minutes?: number
+          weekly_frequency?: number
+          days_of_week?: string[]
+          resources?: string[]
+          weeks?: number
+          start_date?: string
+        }
+
+        if (!body.class_id || !body.start_date) {
+          return error('class_id and start_date are required')
+        }
+        const weeks = Number(body.weeks ?? 0)
+        if (!Number.isInteger(weeks) || weeks < 1 || weeks > 12) {
+          return error('weeks must be an integer from 1 to 12')
+        }
+
+        const days = normalizeDaysOfWeek(body.days_of_week ?? [])
+        if (!days.length) return error('Select at least one day of the week (Mon–Sun)')
+
+        const frequency = Number(body.weekly_frequency ?? days.length)
+        if (frequency !== days.length) {
+          return error('weekly_frequency must match the number of selected days')
+        }
+
+        const duration = Number(body.duration_minutes ?? 45)
+        if (!Number.isFinite(duration) || duration < 15 || duration > 180) {
+          return error('duration_minutes must be between 15 and 180')
+        }
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(body.start_date)) {
+          return error('start_date must be YYYY-MM-DD')
+        }
+
+        const cls = await classOwned(env, body.class_id, user.id)
+        if (!cls) return error('Class not found', 404)
+
+        const classRow = cls as {
+          subject: string
+          curriculum: string
+          age_range: string
+        }
+        const subject = (body.subject || classRow.subject).trim()
+        const curriculum =
+          body.curriculum !== undefined ? body.curriculum.trim() : classRow.curriculum
+        const ageRange = classRow.age_range
+        const resources = Array.isArray(body.resources)
+          ? body.resources.map(String).filter(Boolean)
+          : []
+
+        const slots = scheduleLessonSlots(body.start_date, days, weeks)
+        if (!slots.length) return error('Could not schedule lessons for those days')
+
+        const students = await env.DB.prepare(
+          `SELECT display_name, interests, career_ambitions FROM students WHERE class_id = ? LIMIT 16`,
+        )
+          .bind(body.class_id)
+          .all<{ display_name: string; interests: string; career_ambitions: string }>()
+
+        const generated = await generateLessonPlans(env, {
+          subject,
+          curriculum,
+          ageRange,
+          durationMinutes: duration,
+          weeks,
+          daysOfWeek: days,
+          resources,
+          slots,
+          studentProfiles: (students.results ?? []).map((s) => ({
+            name: s.display_name,
+            interests: s.interests,
+            careerAmbitions: s.career_ambitions,
+          })),
+        })
+
+        const batchId = generateId()
+        await env.DB.prepare(
+          `INSERT INTO lesson_batches (
+            id, teacher_id, class_id, subject, curriculum, age_range,
+            duration_minutes, weekly_frequency, days_of_week, resources_json,
+            weeks, start_date, title
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+          .bind(
+            batchId,
+            user.id,
+            body.class_id,
+            subject,
+            curriculum,
+            ageRange,
+            duration,
+            frequency,
+            JSON.stringify(days),
+            JSON.stringify(resources),
+            weeks,
+            body.start_date,
+            generated.title || `${subject} · ${weeks}-week plan`,
+          )
+          .run()
+
+        for (let i = 0; i < slots.length; i++) {
+          const slot = slots[i]
+          const lesson = generated.lessons[i]
+          await env.DB.prepare(
+            `INSERT INTO lessons (
+              id, batch_id, week_index, sequence_index, scheduled_date, day_of_week, title, plan_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+            .bind(
+              generateId(),
+              batchId,
+              slot.week_index,
+              slot.sequence_index,
+              slot.scheduled_date,
+              slot.day_of_week,
+              lesson?.title ?? `${subject}: week ${slot.week_index}`,
+              JSON.stringify(lesson?.plan ?? {}),
+            )
+            .run()
+        }
+
+        return json({ batch: { id: batchId, title: generated.title } }, 201)
+      }
+
+      const batchMatch = path.match(/^\/api\/lesson-batches\/([^/]+)$/)
+      if (batchMatch && request.method === 'GET') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const batchId = batchMatch[1]
+        const batch = await env.DB.prepare(
+          `SELECT b.*, c.name as class_name
+           FROM lesson_batches b
+           JOIN classes c ON c.id = b.class_id
+           WHERE b.id = ? AND b.teacher_id = ?`,
+        )
+          .bind(batchId, user.id)
+          .first<Record<string, unknown>>()
+        if (!batch) return error('Not found', 404)
+
+        const { results } = await env.DB.prepare(
+          `SELECT * FROM lessons WHERE batch_id = ? ORDER BY sequence_index ASC`,
+        )
+          .bind(batchId)
+          .all()
+
+        return json({
+          batch: {
+            ...batch,
+            days_of_week: JSON.parse(String(batch.days_of_week || '[]')),
+            resources: JSON.parse(String(batch.resources_json || '[]')),
+            resources_json: undefined,
+          },
+          lessons: (results ?? []).map((row) => {
+            const r = row as Record<string, unknown>
+            return {
+              ...r,
+              plan: JSON.parse(String(r.plan_json || '{}')),
+              plan_json: undefined,
+            }
+          }),
+        })
+      }
+
+      if (batchMatch && request.method === 'DELETE') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const batchId = batchMatch[1]
+        const batch = await env.DB.prepare(
+          `SELECT id FROM lesson_batches WHERE id = ? AND teacher_id = ?`,
+        )
+          .bind(batchId, user.id)
+          .first()
+        if (!batch) return error('Not found', 404)
+        await env.DB.prepare(`DELETE FROM lesson_batches WHERE id = ?`).bind(batchId).run()
+        return json({ ok: true })
+      }
+
+      const lessonMatch = path.match(/^\/api\/lessons\/([^/]+)$/)
+      if (lessonMatch && request.method === 'PATCH') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const lessonId = lessonMatch[1]
+        const owned = await env.DB.prepare(
+          `SELECT l.id FROM lessons l
+           JOIN lesson_batches b ON b.id = l.batch_id
+           WHERE l.id = ? AND b.teacher_id = ?`,
+        )
+          .bind(lessonId, user.id)
+          .first()
+        if (!owned) return error('Not found', 404)
+
+        const body = (await request.json()) as {
+          title?: string
+          plan?: LessonPlan
+          scheduled_date?: string
+        }
+
+        if (body.title !== undefined) {
+          await env.DB.prepare(`UPDATE lessons SET title = ? WHERE id = ?`)
+            .bind(body.title.trim(), lessonId)
+            .run()
+        }
+        if (body.plan !== undefined) {
+          await env.DB.prepare(`UPDATE lessons SET plan_json = ? WHERE id = ?`)
+            .bind(JSON.stringify(body.plan), lessonId)
+            .run()
+        }
+        if (body.scheduled_date !== undefined) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(body.scheduled_date)) {
+            return error('scheduled_date must be YYYY-MM-DD')
+          }
+          await env.DB.prepare(`UPDATE lessons SET scheduled_date = ? WHERE id = ?`)
+            .bind(body.scheduled_date, lessonId)
+            .run()
+        }
+
+        return json({ ok: true })
       }
 
       // —— Tasks (homework + assessments) ——

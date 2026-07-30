@@ -1,4 +1,5 @@
-import type { Env, Question, TaskContent } from '../types'
+import type { Env, GeneratedLesson, LessonPlan, LessonStage, Question, TaskContent } from '../types'
+import { fallbackGeneratedLessons, type ScheduledSlot } from './lessonSchedule'
 
 const MODEL = '@cf/moonshotai/kimi-k2.6'
 
@@ -566,6 +567,164 @@ ${input.archivesMarkdown.slice(0, 95_000)}`
         },
       ],
     }
+  }
+}
+
+function normalizeStage(raw: unknown, fallbackMins: number): LessonStage {
+  const s = (raw && typeof raw === 'object' ? raw : {}) as Partial<LessonStage>
+  const steps = Array.isArray(s.steps)
+    ? s.steps.map(String).filter(Boolean)
+    : ['Teacher-led step (edit me).']
+  return {
+    durationMins: typeof s.durationMins === 'number' && s.durationMins > 0 ? s.durationMins : fallbackMins,
+    steps,
+    teacherNotes: typeof s.teacherNotes === 'string' ? s.teacherNotes : '',
+  }
+}
+
+function normalizeLessonPlan(raw: unknown, durationMinutes: number): LessonPlan {
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const present = Math.max(8, Math.round(durationMinutes * 0.35))
+  const practice = Math.max(8, Math.round(durationMinutes * 0.35))
+  const production = Math.max(5, durationMinutes - present - practice)
+  const style = p.activityStyle === 'communicative' ? 'communicative' : 'traditional'
+  return {
+    learningObjective:
+      typeof p.learningObjective === 'string' && p.learningObjective
+        ? p.learningObjective
+        : 'Meet the lesson learning objective.',
+    materials: Array.isArray(p.materials) ? p.materials.map(String) : [],
+    activityStyle: style,
+    careerContext:
+      typeof p.careerContext === 'string' && p.careerContext.trim()
+        ? p.careerContext.trim()
+        : undefined,
+    presentation: normalizeStage(p.presentation, present),
+    practice: normalizeStage(p.practice, practice),
+    production: normalizeStage(p.production, production),
+    differentiation: typeof p.differentiation === 'string' ? p.differentiation : '',
+    plenary: typeof p.plenary === 'string' ? p.plenary : '',
+    homeworkOptional: typeof p.homeworkOptional === 'string' ? p.homeworkOptional : '',
+  }
+}
+
+/**
+ * Generate PPP lesson plans in week chunks. Majority traditional;
+ * occasional communicative lessons use fun career-framed activities.
+ */
+export async function generateLessonPlans(
+  env: Env,
+  input: {
+    subject: string
+    curriculum: string
+    ageRange: string
+    durationMinutes: number
+    weeks: number
+    daysOfWeek: string[]
+    resources: string[]
+    studentProfiles?: Array<{
+      name: string
+      interests: string
+      careerAmbitions: string
+    }>
+    slots: ScheduledSlot[]
+  },
+): Promise<{ title: string; lessons: GeneratedLesson[] }> {
+  const total = input.slots.length
+  if (!total) {
+    return { title: `${input.subject} syllabus`, lessons: [] }
+  }
+
+  const lessonsPerWeek = Math.max(1, input.daysOfWeek.length)
+  const chunkWeeks = 3
+  const all: GeneratedLesson[] = []
+
+  for (let weekStart = 1; weekStart <= input.weeks; weekStart += chunkWeeks) {
+    const weekEnd = Math.min(input.weeks, weekStart + chunkWeeks - 1)
+    const chunkSlots = input.slots.filter(
+      (s) => s.week_index >= weekStart && s.week_index <= weekEnd,
+    )
+    const count = chunkSlots.length
+
+    const system = `You are Guidelight, an expert lesson planner for teachers.
+Return ONLY valid JSON matching this schema:
+{
+  "lessons": [
+    {
+      "title": string,
+      "weekIndex": number,
+      "plan": {
+        "learningObjective": string,
+        "materials": string[],
+        "activityStyle": "traditional" | "communicative",
+        "careerContext": string (optional — only for communicative/activity lessons),
+        "presentation": { "durationMins": number, "steps": string[], "teacherNotes": string },
+        "practice": { "durationMins": number, "steps": string[], "teacherNotes": string },
+        "production": { "durationMins": number, "steps": string[], "teacherNotes": string },
+        "differentiation": string,
+        "plenary": string,
+        "homeworkOptional": string
+      }
+    }
+  ]
+}
+Rules:
+- Presentation → Practice → Production (PPP). Stage durations should roughly sum to ${input.durationMinutes} minutes.
+- MOST lessons must be traditional (PPT/input → worksheet/practice → short essay or output if time).
+- Only OCCASIONAL lessons should be communicative/fun activities (about 1 in 4). When you do include a roleplay/project/debate-style activity, ground it in a fun career-related scenario (e.g. planning a marketing campaign, picking a stock, courtroom argument, writing to a local politician, speech as PM, advising a struggling business). Set careerContext for those only.
+- Do NOT career-theme every worksheet or input stage.
+- Vary topics across weeks for the subject and curriculum.
+- Return exactly ${count} lessons in chronological order for weeks ${weekStart}–${weekEnd}.`
+
+    const user = `Plan lessons for weeks ${weekStart}–${weekEnd} of a ${input.weeks}-week syllabus.
+Subject: ${input.subject}
+Curriculum: ${input.curriculum || 'n/a'}
+Age range: ${input.ageRange || 'n/a'}
+Lesson duration: ${input.durationMinutes} minutes
+Lessons per week: ${lessonsPerWeek} on ${input.daysOfWeek.join(', ')}
+Resources available: ${input.resources.join(', ') || 'standard classroom'}
+Student hints: ${JSON.stringify(input.studentProfiles ?? []).slice(0, 1800)}
+Slots (in order): ${JSON.stringify(
+      chunkSlots.map((s) => ({
+        week: s.week_index,
+        day: s.day_of_week,
+        date: s.scheduled_date,
+      })),
+    )}`
+
+    try {
+      const raw = await runChat(env, system, user, {
+        timeoutMs: 55_000,
+        maxTokens: 8192,
+      })
+      const parsed = extractJson(raw) as { lessons?: Array<Record<string, unknown>> }
+      const chunkLessons = Array.isArray(parsed.lessons) ? parsed.lessons : []
+      if (!chunkLessons.length) throw new Error('No lessons in model response')
+
+      for (let i = 0; i < chunkSlots.length; i++) {
+        const slot = chunkSlots[i]
+        const rawLesson = chunkLessons[i] ?? chunkLessons[chunkLessons.length - 1] ?? {}
+        const plan = normalizeLessonPlan(rawLesson.plan, input.durationMinutes)
+        const title =
+          typeof rawLesson.title === 'string' && rawLesson.title.trim()
+            ? rawLesson.title.trim()
+            : `${input.subject}: week ${slot.week_index}`
+        all.push({
+          title,
+          weekIndex: slot.week_index,
+          plan,
+        })
+      }
+    } catch (err) {
+      console.error(`generateLessonPlans chunk weeks ${weekStart}-${weekEnd} falling back`, err)
+      const fallback = fallbackGeneratedLessons(chunkSlots, input.subject, input.durationMinutes)
+      all.push(...fallback)
+    }
+  }
+
+  return {
+    title: `${input.subject} · ${input.weeks}-week plan`,
+    lessons: all,
   }
 }
 

@@ -1,6 +1,7 @@
 import {
   BookOpenCheck,
   BookOpenText,
+  CalendarDays,
   ClipboardList,
   Home,
   LineChart,
@@ -118,6 +119,7 @@ const teacherNav: NavItem[] = [
   { to: '/teacher/students', label: 'Students', icon: Users },
   { to: '/teacher/homework', label: 'Homework', icon: BookOpenCheck },
   { to: '/teacher/assessments', label: 'Assessments', icon: ClipboardList },
+  { to: '/teacher/lessons', label: 'Lessons', icon: CalendarDays },
   { to: '/teacher/insights', label: 'Insights', icon: LineChart },
 ]
 

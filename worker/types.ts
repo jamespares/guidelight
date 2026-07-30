@@ -68,3 +68,34 @@ export interface TaskContent {
   instructions: string
   questions: Question[]
 }
+
+export type LessonActivityStyle = 'traditional' | 'communicative'
+
+export interface LessonStage {
+  durationMins: number
+  steps: string[]
+  teacherNotes?: string
+}
+
+export interface LessonPlan {
+  learningObjective: string
+  materials: string[]
+  activityStyle: LessonActivityStyle
+  /** Set when the lesson includes a career-framed communicative activity */
+  careerContext?: string
+  presentation: LessonStage
+  practice: LessonStage
+  production: LessonStage
+  differentiation?: string
+  plenary?: string
+  homeworkOptional?: string
+}
+
+export interface GeneratedLesson {
+  title: string
+  weekIndex: number
+  plan: LessonPlan
+}
+
+export const LESSON_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
+export type LessonDay = (typeof LESSON_DAYS)[number]

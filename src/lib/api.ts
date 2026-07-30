@@ -116,6 +116,56 @@ export interface TaskRow {
   attempt_status?: string | null
 }
 
+export type LessonActivityStyle = 'traditional' | 'communicative'
+
+export interface LessonStage {
+  durationMins: number
+  steps: string[]
+  teacherNotes?: string
+}
+
+export interface LessonPlan {
+  learningObjective: string
+  materials: string[]
+  activityStyle: LessonActivityStyle
+  careerContext?: string
+  presentation: LessonStage
+  practice: LessonStage
+  production: LessonStage
+  differentiation?: string
+  plenary?: string
+  homeworkOptional?: string
+}
+
+export interface LessonBatchRow {
+  id: string
+  teacher_id: string
+  class_id: string
+  class_name?: string
+  subject: string
+  curriculum: string
+  age_range: string
+  duration_minutes: number
+  weekly_frequency: number
+  days_of_week: string[]
+  resources: string[]
+  weeks: number
+  start_date: string
+  title: string
+  created_at: string
+}
+
+export interface LessonRow {
+  id: string
+  batch_id: string
+  week_index: number
+  sequence_index: number
+  scheduled_date: string
+  day_of_week: string
+  title: string
+  plan: LessonPlan
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
@@ -222,6 +272,20 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  lessonBatches: () => request<{ batches: LessonBatchRow[] }>('/api/lesson-batches'),
+  createLessonBatch: (body: Record<string, unknown>) =>
+    request<{ batch: { id: string; title: string } }>('/api/lesson-batches', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  lessonBatch: (id: string) =>
+    request<{ batch: LessonBatchRow; lessons: LessonRow[] }>(`/api/lesson-batches/${id}`),
+  deleteLessonBatch: (id: string) =>
+    request<{ ok: boolean }>(`/api/lesson-batches/${id}`, { method: 'DELETE' }),
+  updateLesson: (
+    id: string,
+    body: { title?: string; plan?: LessonPlan; scheduled_date?: string },
+  ) => request<{ ok: boolean }>(`/api/lessons/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   task: (id: string) =>
     request<{ task: TaskRow & { content: TaskContent } }>(`/api/tasks/${id}`),
   updateTask: (id: string, body: Record<string, unknown>) =>
