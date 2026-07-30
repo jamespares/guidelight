@@ -1,6 +1,6 @@
 # Guidelight
 
-AI-infused homework and assessment on Cloudflare Workers, D1, and Workers AI (Kimi K2.6).
+AI-infused homework and assessment on Cloudflare Workers, D1, and Workers AI.
 
 ## Develop
 

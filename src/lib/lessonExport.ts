@@ -7,6 +7,7 @@ import {
   AlignmentType,
 } from 'docx'
 import type { LessonBatchRow, LessonRow, LessonStage } from '@/lib/api'
+import { activityStyleLabel } from '@/lib/lessonLabels'
 
 function stageLines(label: string, stage: LessonStage | undefined): string[] {
   if (!stage) return [`${label}: (empty)`]
@@ -47,7 +48,7 @@ export function exportLessonBatchCsv(batch: LessonBatchRow, lessons: LessonRow[]
       l.day_of_week,
       String(l.week_index),
       `"${(l.title || '').replace(/"/g, '""')}"`,
-      p?.activityStyle ?? '',
+      activityStyleLabel(p?.activityStyle),
       `"${(p?.careerContext || '').replace(/"/g, '""')}"`,
       `"${(p?.learningObjective || '').replace(/"/g, '""')}"`,
       `"${(p?.presentation?.steps ?? []).join('; ').replace(/"/g, '""')}"`,
@@ -100,7 +101,7 @@ export async function exportLessonBatchDocx(batch: LessonBatchRow, lessons: Less
       new Paragraph({
         children: [
           new TextRun({
-            text: `Week ${lesson.week_index} · ${p?.activityStyle ?? 'traditional'}${
+            text: `Week ${lesson.week_index} · ${activityStyleLabel(p?.activityStyle)}${
               p?.careerContext ? ` · ${p.careerContext}` : ''
             }`,
             italics: true,

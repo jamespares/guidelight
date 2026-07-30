@@ -127,7 +127,9 @@ export interface LessonStage {
 export interface LessonPlan {
   learningObjective: string
   materials: string[]
+  /** Quiet work (traditional) or Interactive (communicative) */
   activityStyle: LessonActivityStyle
+  /** Set when the lesson includes a career-framed Interactive activity */
   careerContext?: string
   presentation: LessonStage
   practice: LessonStage
@@ -218,14 +220,72 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const err = data as { error?: string; code?: string; message?: string }
+    const err = data as {
+      error?: string
+      code?: string
+      message?: string
+      used_cents?: number
+      cap_cents?: number
+      settings_path?: string
+    }
     const message = err.message || err.error || `Request failed (${res.status})`
-    const e = new Error(message) as Error & { code?: string; status?: number }
+    const e = new Error(message) as Error & {
+      code?: string
+      status?: number
+      used_cents?: number
+      cap_cents?: number
+      settings_path?: string
+    }
     e.code = err.code
     e.status = res.status
+    e.used_cents = err.used_cents
+    e.cap_cents = err.cap_cents
+    e.settings_path = err.settings_path
+    if (err.code === 'ai_budget_exceeded' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('guidelight:ai-budget-exceeded', { detail: e }))
+    }
     throw e
   }
   return data as T
+}
+
+export type BillingUsage = {
+  used_cents: number
+  cap_cents: number
+  capped: boolean
+  starter_credit_remaining_cents: number
+  period_start: string
+  period_end: string
+  payment_status: string
+  has_payment_method: boolean
+  school_name: string
+  billing_email: string
+  purchase_order: string
+  settings_path: string
+  stripe_configured: boolean
+  by_feature: Array<{ feature: string; calls: number; cost_cents: number }>
+}
+
+export type BillingInvoice = {
+  id: string
+  status: string
+  amount_due: number
+  amount_paid: number
+  currency: string
+  created: number
+  invoice_pdf: string | null
+  hosted_invoice_url: string | null
+  number: string | null
+  kind: string | null
+  period_start: string | null
+}
+
+export function isAiBudgetError(err: unknown): err is Error & {
+  code: 'ai_budget_exceeded'
+  settings_path?: string
+} {
+  if (!err || typeof err !== 'object') return false
+  return (err as { code?: string }).code === 'ai_budget_exceeded'
 }
 
 export const api = {
@@ -572,4 +632,50 @@ export const api = {
       `/api/student/dojo/stats${q ? `?${q}` : ''}`,
     )
   },
+
+  billingUsage: () => request<BillingUsage>('/api/billing/usage'),
+  billingSetCap: (monthly_cap_cents: number) =>
+    request<BillingUsage>('/api/billing/cap', {
+      method: 'PATCH',
+      body: JSON.stringify({ monthly_cap_cents }),
+    }),
+  billingUpdateProfile: (body: {
+    school_name?: string
+    billing_email?: string
+    purchase_order?: string
+  }) =>
+    request<BillingUsage>('/api/billing/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  billingSetup: () =>
+    request<{ url: string | null }>('/api/billing/setup', { method: 'POST' }),
+  billingPortal: () =>
+    request<{ url: string }>('/api/billing/portal', { method: 'POST' }),
+  billingInvoices: () =>
+    request<{ invoices: BillingInvoice[]; stripe_configured: boolean }>(
+      '/api/billing/invoices',
+    ),
+  billingInvoicePreview: () =>
+    request<{
+      statement: {
+        period_start: string
+        period_end: string
+        usage_cents: number
+        credit_applied_cents: number
+        amount_due_cents: number
+        school_name: string
+        purchase_order: string
+        teacher_name: string
+        teacher_email?: string
+      }
+      invoice: {
+        id: string
+        status: string
+        invoice_pdf: string | null
+        hosted_invoice_url: string | null
+        amount_due: number
+      } | null
+      message?: string
+    }>('/api/billing/invoices/preview', { method: 'POST' }),
 }

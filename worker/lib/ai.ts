@@ -1,7 +1,15 @@
 import type { Env, GeneratedLesson, LessonPlan, LessonStage, Question, TaskContent } from '../types'
+import {
+  estimateTokens,
+  extractUsageTokens,
+  recordAiUsage,
+  type AiMeterContext,
+} from './billing'
 import { fallbackGeneratedLessons, type ScheduledSlot } from './lessonSchedule'
 
 const MODEL = '@cf/moonshotai/kimi-k2.6'
+
+export type { AiMeterContext }
 
 function extractJson(text: string): unknown {
   const trimmed = text.trim()
@@ -26,11 +34,21 @@ function asText(result: unknown): string {
   return JSON.stringify(result)
 }
 
+function promptCharLength(system: string, user: string | Array<Record<string, unknown>>): number {
+  if (typeof user === 'string') return system.length + user.length
+  let n = system.length
+  for (const part of user) {
+    if (typeof part.text === 'string') n += part.text.length
+    else n += 500 // image / multimodal stub
+  }
+  return n
+}
+
 async function runChat(
   env: Env,
   system: string,
   user: string | Array<Record<string, unknown>>,
-  opts?: { timeoutMs?: number; maxTokens?: number },
+  opts?: { timeoutMs?: number; maxTokens?: number; meter?: AiMeterContext },
 ): Promise<string> {
   const userContent =
     typeof user === 'string'
@@ -54,13 +72,36 @@ async function runChat(
   })
 
   const result = await Promise.race([call, timeout])
-  return asText(result)
+  const text = asText(result)
+
+  // Bill only successful AI calls (timeouts/errors never reach here)
+  if (opts?.meter) {
+    const fromApi = extractUsageTokens(result)
+    const inputTokens =
+      fromApi && fromApi.inputTokens > 0
+        ? fromApi.inputTokens
+        : estimateTokens('x'.repeat(promptCharLength(system, user)))
+    const outputTokens =
+      fromApi && fromApi.outputTokens > 0 ? fromApi.outputTokens : estimateTokens(text)
+    try {
+      await recordAiUsage(env, opts.meter, {
+        model: MODEL,
+        inputTokens,
+        outputTokens,
+      })
+    } catch (err) {
+      console.error('recordAiUsage failed', err)
+    }
+  }
+
+  return text
 }
 
 /** Use vision to summarise a past-paper image into style notes for generation. */
 export async function describePastPaperImage(
   env: Env,
   imageDataUrl: string,
+  meter?: AiMeterContext,
 ): Promise<string> {
   const match = imageDataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/)
   if (!match) throw new Error('Invalid image data')
@@ -69,16 +110,23 @@ export async function describePastPaperImage(
     'You analyse exam past papers. Describe the question style, structure, topics, mark schemes cues, and wording patterns so another model can mimic them. Return plain text notes only.'
 
   try {
-    const raw = await runChat(env, system, [
-      {
-        type: 'text',
-        text: 'Extract past-paper style notes from this image for generating a similar assessment.',
-      },
-      {
-        type: 'image_url',
-        image_url: { url: imageDataUrl },
-      },
-    ])
+    const raw = await runChat(
+      env,
+      system,
+      [
+        {
+          type: 'text',
+          text: 'Extract past-paper style notes from this image for generating a similar assessment.',
+        },
+        {
+          type: 'image_url',
+          image_url: { url: imageDataUrl },
+        },
+      ],
+      meter
+        ? { meter: { ...meter, feature: meter.feature || 'past_paper_vision' } }
+        : undefined,
+    )
     return raw.slice(0, 8000)
   } catch (err) {
     console.error('describePastPaperImage failed', err)
@@ -156,6 +204,7 @@ export async function generateTaskContent(
     subtype?: string | null
     questionTypes: string[]
     studentProfiles?: Array<{ name: string; interests: string; weakspots: string }>
+    meter?: AiMeterContext
   },
 ): Promise<TaskContent> {
   const system = `You are Guidelight, an expert education content generator.
@@ -199,7 +248,9 @@ Past paper style reference (if any): ${input.pastPaperText?.slice(0, 6000) || 'n
 Student personalisation hints: ${JSON.stringify(input.studentProfiles ?? []).slice(0, 1500)}`
 
   try {
-    const raw = await runChat(env, system, user)
+    const raw = await runChat(env, system, user, {
+      meter: input.meter ? { ...input.meter, feature: 'task_gen' } : undefined,
+    })
     const parsed = extractJson(raw) as TaskContent
     if (!parsed.questions?.length) throw new Error('Model returned no questions')
     parsed.questions = parsed.questions.map((q, i) => ({
@@ -224,6 +275,9 @@ export async function markAttempt(
     subject: string
     content: TaskContent
     answers: Record<string, unknown>
+    meter?: AiMeterContext
+    /** Override feature tag (e.g. dojo_mark). Defaults to mark_attempt. */
+    feature?: AiMeterContext['feature']
   },
 ): Promise<{
   score_pct: number
@@ -274,7 +328,12 @@ Questions: ${JSON.stringify(
 Student answers: ${JSON.stringify(input.answers)}`
 
   try {
-    const raw = await runChat(env, system, user)
+    const raw = await runChat(env, system, user, {
+      timeoutMs: 45_000,
+      meter: input.meter
+        ? { ...input.meter, feature: input.feature ?? 'mark_attempt' }
+        : undefined,
+    })
     const parsed = extractJson(raw) as {
       items: Array<{
         questionId: string
@@ -418,12 +477,15 @@ export async function generateStudentSummary(
     career_ambitions: string
     weakspots: string
     attempts: unknown[]
+    meter?: AiMeterContext
   },
 ): Promise<string> {
   const system =
     'You are Guidelight. Write a concise 2-3 paragraph teacher-facing introduction to this student based on their data. Warm, specific, actionable. Return plain text only.'
   try {
-    return await runChat(env, system, JSON.stringify(input))
+    return await runChat(env, system, JSON.stringify(input), {
+      meter: input.meter ? { ...input.meter, feature: 'summary' } : undefined,
+    })
   } catch {
     return `${input.name} is developing steadily. Interests: ${input.interests || 'not yet recorded'}. Career ambitions: ${input.career_ambitions || 'not yet recorded'}. Weakspots to watch: ${input.weakspots || 'none recorded yet'}. Complete more diagnostic and homework tasks to enrich this profile.`
   }
@@ -436,13 +498,16 @@ export async function generateReport(
     name: string
     teacherNotes: string
     data: unknown
+    meter?: AiMeterContext
   },
 ): Promise<string> {
   const system = `You are Guidelight. Produce a professional parent-facing progress report in markdown.
 Include: overview, strengths, areas to improve, homework engagement, recommended next steps.
 Tone: constructive and encouraging.`
   try {
-    return await runChat(env, system, JSON.stringify(input))
+    return await runChat(env, system, JSON.stringify(input), {
+      meter: input.meter ? { ...input.meter, feature: 'report' } : undefined,
+    })
   } catch {
     return `# Progress report — ${input.name}\n\n## Overview\nThis report summarises recent learning activity on Guidelight.\n\n## Teacher notes\n${input.teacherNotes || 'None provided.'}\n\n## Next steps\nContinue regular practice on weakspot topics and review marked feedback after each task.\n`
   }
@@ -451,14 +516,21 @@ Tone: constructive and encouraging.`
 export async function generatePracticeOrFlashcards(
   env: Env,
   mode: 'flashcards' | 'practice',
-  input: { subject: string; weakspots: string[]; recentErrors: unknown[] },
+  input: {
+    subject: string
+    weakspots: string[]
+    recentErrors: unknown[]
+    meter?: AiMeterContext
+  },
 ): Promise<unknown> {
   const system =
     mode === 'flashcards'
       ? 'Return ONLY JSON: { "cards": [{ "front": string, "back": string, "topic": string }] } (8-12 cards).'
       : 'Return ONLY JSON: { "title": string, "questions": [{ "id": string, "type": "mcq", "prompt": string, "options": string[], "correctAnswer": string, "topic": string, "marks": 1 }] } (6 questions).'
   try {
-    const raw = await runChat(env, system, JSON.stringify(input))
+    const raw = await runChat(env, system, JSON.stringify(input), {
+      meter: input.meter ? { ...input.meter, feature: 'practice_tools' } : undefined,
+    })
     return extractJson(raw)
   } catch {
     const topics = input.weakspots.length ? input.weakspots : [input.subject]
@@ -503,6 +575,7 @@ export async function pinpointWeakspotsFromArchives(
     scope: 'student' | 'class'
     name: string
     archivesMarkdown: string
+    meter?: AiMeterContext
   },
 ): Promise<{ weakspots: PinpointWeakspot[]; summary: string }> {
   const system = `You are Guidelight, an expert learning diagnostican.
@@ -530,7 +603,11 @@ Attempt archives:
 ${input.archivesMarkdown.slice(0, 95_000)}`
 
   try {
-    const raw = await runChat(env, system, user, { timeoutMs: 55_000, maxTokens: 4096 })
+    const raw = await runChat(env, system, user, {
+      timeoutMs: 55_000,
+      maxTokens: 4096,
+      meter: input.meter ? { ...input.meter, feature: 'weakspots' } : undefined,
+    })
     const parsed = extractJson(raw) as {
       summary?: string
       weakspots?: PinpointWeakspot[]
@@ -609,8 +686,8 @@ function normalizeLessonPlan(raw: unknown, durationMinutes: number): LessonPlan 
 }
 
 /**
- * Generate PPP lesson plans in week chunks. Majority traditional;
- * occasional communicative lessons use fun career-framed activities.
+ * Generate PPP lesson plans in week chunks. Majority Quiet work (traditional);
+ * occasional Interactive (communicative) lessons use fun career-framed activities.
  */
 export async function generateLessonPlans(
   env: Env,
@@ -628,6 +705,7 @@ export async function generateLessonPlans(
       careerAmbitions: string
     }>
     slots: ScheduledSlot[]
+    meter?: AiMeterContext
   },
 ): Promise<{ title: string; lessons: GeneratedLesson[] }> {
   const total = input.slots.length
@@ -657,7 +735,7 @@ Return ONLY valid JSON matching this schema:
         "learningObjective": string,
         "materials": string[],
         "activityStyle": "traditional" | "communicative",
-        "careerContext": string (optional — only for communicative/activity lessons),
+        "careerContext": string (optional — only for communicative/Interactive lessons),
         "presentation": { "durationMins": number, "steps": string[], "teacherNotes": string },
         "practice": { "durationMins": number, "steps": string[], "teacherNotes": string },
         "production": { "durationMins": number, "steps": string[], "teacherNotes": string },
@@ -670,8 +748,8 @@ Return ONLY valid JSON matching this schema:
 }
 Rules:
 - Presentation → Practice → Production (PPP). Stage durations should roughly sum to ${input.durationMinutes} minutes.
-- MOST lessons must be traditional (PPT/input → worksheet/practice → short essay or output if time).
-- Only OCCASIONAL lessons should be communicative/fun activities (about 1 in 4). When you do include a roleplay/project/debate-style activity, ground it in a fun career-related scenario (e.g. planning a marketing campaign, picking a stock, courtroom argument, writing to a local politician, speech as PM, advising a struggling business). Set careerContext for those only.
+- MOST lessons must be traditional = Quiet work (PPT/input → worksheet/practice → short essay or output if time). Teacher circulates and can mark while students work independently.
+- Only OCCASIONAL lessons should be communicative = Interactive (about 1 in 4): roleplay, debate, project, or career-framed activity. The teacher facilitates; little marking time. Ground these in a fun career-related scenario (e.g. planning a marketing campaign, picking a stock, courtroom argument, writing to a local politician, speech as PM, advising a struggling business). Set careerContext for those only.
 - Do NOT career-theme every worksheet or input stage.
 - Vary topics across weeks for the subject and curriculum.
 - Return exactly ${count} lessons in chronological order for weeks ${weekStart}–${weekEnd}.`
@@ -696,6 +774,7 @@ Slots (in order): ${JSON.stringify(
       const raw = await runChat(env, system, user, {
         timeoutMs: 55_000,
         maxTokens: 8192,
+        meter: input.meter ? { ...input.meter, feature: 'lesson_plans' } : undefined,
       })
       const parsed = extractJson(raw) as { lessons?: Array<Record<string, unknown>> }
       const chunkLessons = Array.isArray(parsed.lessons) ? parsed.lessons : []
@@ -770,6 +849,7 @@ export async function reconstructPastPaper(
     curriculum: string
     syllabusCode: string
     title?: string
+    meter?: AiMeterContext
   },
 ): Promise<TaskContent> {
   const system = `You are Guidelight Exam Dojo. Turn a past-paper upload into a usable PRACTICE exam in JSON.
@@ -820,7 +900,13 @@ Preferred title: ${input.title || 'n/a'}`
         env,
         system + strictNote,
         `${meta}\n\nPast paper text:\n${text}`,
-        { timeoutMs: 55_000, maxTokens: 8192 },
+        {
+          timeoutMs: 55_000,
+          maxTokens: 8192,
+          meter: input.meter
+            ? { ...input.meter, feature: 'dojo_reconstruct' }
+            : undefined,
+        },
       )
     } else if (images.length) {
       const parts: Array<Record<string, unknown>> = [
@@ -832,7 +918,13 @@ Preferred title: ${input.title || 'n/a'}`
       for (const url of images) {
         parts.push({ type: 'image_url', image_url: { url } })
       }
-      raw = await runChat(env, system, parts, { timeoutMs: 55_000, maxTokens: 8192 })
+      raw = await runChat(env, system, parts, {
+        timeoutMs: 55_000,
+        maxTokens: 8192,
+        meter: input.meter
+          ? { ...input.meter, feature: 'dojo_reconstruct' }
+          : undefined,
+      })
     } else {
       throw new Error('No past paper text or images to reconstruct')
     }
@@ -873,6 +965,7 @@ export async function markDojoAttempt(
     subject: string
     content: TaskContent
     answers: Record<string, unknown>
+    meter?: AiMeterContext
   },
 ): Promise<MarkResult> {
   const closed: typeof input.content.questions = []
@@ -908,6 +1001,8 @@ export async function markDojoAttempt(
       subject: input.subject,
       content: { ...input.content, questions: open },
       answers: input.answers,
+      meter: input.meter,
+      feature: 'dojo_mark',
     })
   }
 

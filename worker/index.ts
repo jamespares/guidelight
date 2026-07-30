@@ -22,6 +22,13 @@ import { normalizeDaysOfWeek, scheduleLessonSlots } from './lib/lessonSchedule'
 import { buildAttemptArchiveMd, truncateArchives } from './lib/attemptArchive'
 import { getSession, handleAuth, requireRole } from './lib/session'
 import {
+  AiBudgetExceededError,
+  aiBudgetExceededResponse,
+  assertAiBudget,
+  teacherIdForStudent,
+} from './lib/billing'
+import { handleBillingApi, runMonthlyBilling } from './lib/billingApi'
+import {
   createSpecialTask,
   handleCefrApi,
   isSpecialAssessment,
@@ -183,7 +190,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': url.origin,
           'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Headers': 'Content-Type, Stripe-Signature',
           'Access-Control-Allow-Credentials': 'true',
         },
       })
@@ -193,6 +200,24 @@ export default {
       if (path.startsWith('/api/auth')) {
         const res = await handleAuth(env, request, path)
         if (res) return res
+      }
+
+      if (path.startsWith('/api/billing')) {
+        if (path === '/api/billing/webhook' && request.method === 'POST') {
+          return (
+            (await handleBillingApi(
+              request,
+              env,
+              path,
+              { id: '', role: 'teacher', name: '' },
+            )) ?? error('Not found', 404)
+          )
+        }
+        const user = await getSession(env, request)
+        if (!user) return error('Unauthorized', 401)
+        const res = await handleBillingApi(request, env, path, user)
+        if (res) return res
+        return error('Not found', 404)
       }
 
       // —— CEFR / reading / stories APIs ——
@@ -494,6 +519,15 @@ export default {
           }>()
         if (!s || s.teacher_id !== user.id) return error('Not found', 404)
 
+        try {
+          await assertAiBudget(env, user.id)
+        } catch (err) {
+          if (err instanceof AiBudgetExceededError) {
+            return aiBudgetExceededResponse(err.usedCents, err.capCents)
+          }
+          throw err
+        }
+
         const attempts = await env.DB.prepare(
           `SELECT score_pct, feedback_json, topic_tags_json, submitted_at FROM attempts
            WHERE student_id = ? AND status = 'submitted'`,
@@ -507,6 +541,7 @@ export default {
           career_ambitions: s.career_ambitions,
           weakspots: s.weakspots,
           attempts: attempts.results ?? [],
+          meter: { teacherId: user.id, feature: 'summary' },
         })
         await env.DB.prepare(`UPDATE students SET ai_summary = ? WHERE id = ?`)
           .bind(summary, studentId)
@@ -610,6 +645,15 @@ export default {
         const slots = scheduleLessonSlots(body.start_date, days, weeks)
         if (!slots.length) return error('Could not schedule lessons for those days')
 
+        try {
+          await assertAiBudget(env, user.id)
+        } catch (err) {
+          if (err instanceof AiBudgetExceededError) {
+            return aiBudgetExceededResponse(err.usedCents, err.capCents)
+          }
+          throw err
+        }
+
         const students = await env.DB.prepare(
           `SELECT display_name, interests, career_ambitions FROM students WHERE class_id = ? LIMIT 16`,
         )
@@ -630,6 +674,7 @@ export default {
             interests: s.interests,
             careerAmbitions: s.career_ambitions,
           })),
+          meter: { teacherId: user.id, classId: body.class_id, feature: 'lesson_plans' },
         })
 
         const batchId = generateId()
@@ -847,9 +892,23 @@ export default {
           ? ALL_TYPES
           : PHASE2_TYPES
 
+        try {
+          await assertAiBudget(env, user.id)
+        } catch (err) {
+          if (err instanceof AiBudgetExceededError) {
+            return aiBudgetExceededResponse(err.usedCents, err.capCents)
+          }
+          throw err
+        }
+
+        const meter = { teacherId: user.id, classId: body.class_id, feature: 'task_gen' as const }
+
         let pastPaperText = body.past_paper_text ?? ''
         if (body.past_paper_image) {
-          const visionNotes = await describePastPaperImage(env, body.past_paper_image)
+          const visionNotes = await describePastPaperImage(env, body.past_paper_image, {
+            ...meter,
+            feature: 'past_paper_vision',
+          })
           pastPaperText = [pastPaperText, visionNotes].filter(Boolean).join('\n\n')
         }
 
@@ -869,6 +928,7 @@ export default {
             interests: s.interests,
             weakspots: s.weakspots,
           })),
+          meter,
         })
 
         const id = generateId()
@@ -1178,10 +1238,26 @@ export default {
           .first<{ display_name: string }>()
 
         const content = JSON.parse(task.content_json) as TaskContent
+
+        const billingTeacherId = await teacherIdForStudent(env, user.id)
+        if (billingTeacherId) {
+          try {
+            await assertAiBudget(env, billingTeacherId)
+          } catch (err) {
+            if (err instanceof AiBudgetExceededError) {
+              return aiBudgetExceededResponse(err.usedCents, err.capCents)
+            }
+            throw err
+          }
+        }
+
         const marked = await markAttempt(env, {
           subject: task.subject,
           content,
           answers: body.answers ?? {},
+          meter: billingTeacherId
+            ? { teacherId: billingTeacherId, feature: 'mark_attempt' }
+            : undefined,
         })
 
         const duration =
@@ -1414,6 +1490,14 @@ export default {
       if (path === '/api/reports' && request.method === 'POST') {
         const user = await requireRole(env, request, 'teacher')
         if (user instanceof Response) return user
+        try {
+          await assertAiBudget(env, user.id)
+        } catch (err) {
+          if (err instanceof AiBudgetExceededError) {
+            return aiBudgetExceededResponse(err.usedCents, err.capCents)
+          }
+          throw err
+        }
         const body = (await request.json()) as {
           student_id?: string
           class_id?: string
@@ -1468,6 +1552,11 @@ export default {
           name,
           teacherNotes: body.teacher_notes ?? '',
           data,
+          meter: {
+            teacherId: user.id,
+            classId: body.class_id,
+            feature: 'report',
+          },
         })
 
         const id = generateId()
@@ -1534,10 +1623,25 @@ export default {
           .bind(user.id)
           .all()
 
+        const billingTeacherId = await teacherIdForStudent(env, user.id)
+        if (billingTeacherId) {
+          try {
+            await assertAiBudget(env, billingTeacherId)
+          } catch (err) {
+            if (err instanceof AiBudgetExceededError) {
+              return aiBudgetExceededResponse(err.usedCents, err.capCents)
+            }
+            throw err
+          }
+        }
+
         const result = await generatePracticeOrFlashcards(env, body.mode, {
           subject: s.subject,
           weakspots: weakspots.map((w) => w.skill || w.topic || s.subject).filter(Boolean),
           recentErrors: recent.results ?? [],
+          meter: billingTeacherId
+            ? { teacherId: billingTeacherId, feature: 'practice_tools' }
+            : undefined,
         })
         return json({ result })
       }
@@ -1554,6 +1658,15 @@ export default {
           .bind(studentId)
           .first<{ id: string; display_name: string; teacher_id: string }>()
         if (!s || s.teacher_id !== user.id) return error('Not found', 404)
+
+        try {
+          await assertAiBudget(env, user.id)
+        } catch (err) {
+          if (err instanceof AiBudgetExceededError) {
+            return aiBudgetExceededResponse(err.usedCents, err.capCents)
+          }
+          throw err
+        }
 
         const attempts = await env.DB.prepare(
           `SELECT a.id, a.attempt_archive_md, a.answers_json, a.feedback_json, a.score_pct,
@@ -1605,6 +1718,7 @@ export default {
           scope: 'student',
           name: s.display_name,
           archivesMarkdown: corpus,
+          meter: { teacherId: user.id, feature: 'weakspots' },
         })
 
         await env.DB.prepare(
@@ -1627,6 +1741,15 @@ export default {
         const classId = path.split('/')[3]
         const cls = await classOwned(env, classId, user.id)
         if (!cls) return error('Not found', 404)
+
+        try {
+          await assertAiBudget(env, user.id)
+        } catch (err) {
+          if (err instanceof AiBudgetExceededError) {
+            return aiBudgetExceededResponse(err.usedCents, err.capCents)
+          }
+          throw err
+        }
 
         const className = (cls as { name?: string }).name || 'Class'
 
@@ -1720,6 +1843,7 @@ export default {
           scope: 'class',
           name: className,
           archivesMarkdown: corpus,
+          meter: { teacherId: user.id, classId, feature: 'weakspots' },
         })
 
         await env.DB.prepare(
@@ -1766,9 +1890,21 @@ export default {
       // Static assets / SPA
       return env.ASSETS.fetch(request)
     } catch (err) {
+      if (err instanceof AiBudgetExceededError) {
+        return aiBudgetExceededResponse(err.usedCents, err.capCents)
+      }
       console.error(err)
       const message = err instanceof Error ? err.message : 'Server error'
       return error(message, 500)
+    }
+  },
+
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    try {
+      const result = await runMonthlyBilling(env)
+      console.log('Monthly billing processed', result)
+    } catch (err) {
+      console.error('Monthly billing failed', err)
     }
   },
 } satisfies ExportedHandler<Env>

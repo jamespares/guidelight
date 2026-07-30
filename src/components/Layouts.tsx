@@ -15,11 +15,19 @@ import {
 import { NavLink, Outlet } from 'react-router-dom'
 import { BrandMark } from '@/components/BrandMark'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { CapHitBanner } from '@/components/UsageDial'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth'
+import { BillingProvider, SidebarUsageDial, useBilling } from '@/lib/billing'
 import { cn } from '@/lib/utils'
 
 type NavItem = { to: string; label: string; icon: LucideIcon }
+
+function TeacherCapBanner() {
+  const billing = useBilling()
+  if (!billing?.usage?.capped) return null
+  return <CapHitBanner />
+}
 
 function AppShell({
   role,
@@ -27,12 +35,14 @@ function AppShell({
   secondaryItems,
   footerTo,
   footerLabel,
+  showBillingDial,
 }: {
   role: string
   items: NavItem[]
   secondaryItems: NavItem[]
   footerTo: string
   footerLabel: string
+  showBillingDial?: boolean
 }) {
   const { user, logout } = useAuth()
 
@@ -85,6 +95,7 @@ function AppShell({
         </nav>
 
         <div className="space-y-2 border-t border-sidebar-border p-3">
+          {showBillingDial ? <SidebarUsageDial /> : null}
           <div className="px-3 text-xs text-sidebar-muted">
             <div className="font-medium text-sidebar-foreground">{user?.name}</div>
             {user?.username ? <div>@{user.username}</div> : null}
@@ -110,6 +121,7 @@ function AppShell({
       </aside>
 
       <main className="ml-60 flex-1 p-8">
+        {showBillingDial ? <TeacherCapBanner /> : null}
         <Outlet />
       </main>
     </div>
@@ -142,24 +154,29 @@ const studentSecondary: NavItem[] = [
 
 export function TeacherLayout() {
   return (
-    <AppShell
-      role="Teacher"
-      items={teacherNav}
-      secondaryItems={teacherSecondary}
-      footerTo="/"
-      footerLabel="Switch portal"
-    />
+    <BillingProvider>
+      <AppShell
+        role="Teacher"
+        items={teacherNav}
+        secondaryItems={teacherSecondary}
+        footerTo="/"
+        footerLabel="Switch portal"
+        showBillingDial
+      />
+    </BillingProvider>
   )
 }
 
 export function StudentLayout() {
   return (
-    <AppShell
-      role="Student"
-      items={studentNav}
-      secondaryItems={studentSecondary}
-      footerTo="/"
-      footerLabel="Switch portal"
-    />
+    <BillingProvider>
+      <AppShell
+        role="Student"
+        items={studentNav}
+        secondaryItems={studentSecondary}
+        footerTo="/"
+        footerLabel="Switch portal"
+      />
+    </BillingProvider>
   )
 }

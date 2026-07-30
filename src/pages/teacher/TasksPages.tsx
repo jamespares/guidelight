@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FileUp, Plus, Sparkles, X } from 'lucide-react'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,6 +36,7 @@ import {
 import { api, type ClassRow, type StudentRow, type TaskRow, type TaskSubtype } from '@/lib/api'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 import { readPastPaperFile } from '@/lib/pastPaper'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 function TaskCreateForm({
   type,
@@ -65,6 +67,8 @@ function TaskCreateForm({
   const [busy, setBusy] = useState(false)
 
   const isSpecial = subtype === 'english_level' || subtype === 'reading_speed'
+  // Only estimate progress for AI drafts (not special non-AI create)
+  const draftProgress = useEstimatedProgress(busy && !isSpecial, AI_WAIT_MS.draft)
 
   useEffect(() => {
     void (async () => {
@@ -404,14 +408,22 @@ function TaskCreateForm({
         Students in class: {students.filter((s) => s.class_id === classId).length}
       </p>
       <Button type="submit" className="w-full" disabled={busy || needsDiag || !classId || uploadBusy}>
-        {!isSpecial ? <Sparkles className="h-4 w-4" /> : null}
-        {busy
-          ? isSpecial
-            ? 'Creating…'
-            : 'Generating with Kimi…'
-          : isSpecial
-            ? 'Create assessment'
-            : 'Generate draft'}
+        {busy ? (
+          isSpecial ? (
+            'Creating…'
+          ) : (
+            <GenerationBusyLabel
+              label="Guidelight is drafting…"
+              percent={draftProgress.percent}
+              elapsedLabel={draftProgress.elapsedLabel}
+            />
+          )
+        ) : (
+          <>
+            {!isSpecial ? <Sparkles className="h-4 w-4" /> : null}
+            {isSpecial ? 'Create assessment' : 'Generate draft'}
+          </>
+        )}
       </Button>
     </form>
   )

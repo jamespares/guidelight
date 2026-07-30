@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FileText, KeyRound, RefreshCw, Save } from 'lucide-react'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { WeakspotsPanel, weakspotLabel } from '@/components/WeakspotsPanel'
 import { Button } from '@/components/ui/button'
@@ -9,6 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { api, type DojoAttemptScore, type StudentRow, type Weakspot } from '@/lib/api'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
+
+type BusyKind = 'save' | 'summary' | 'report' | null
 
 export function StudentDetailPage() {
   const { id } = useParams()
@@ -21,7 +25,7 @@ export function StudentDetailPage() {
   const [summary, setSummary] = useState('')
   const [error, setError] = useState('')
   const [pinpointError, setPinpointError] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busyKind, setBusyKind] = useState<BusyKind>(null)
   const [pinpointBusy, setPinpointBusy] = useState(false)
   const [notes, setNotes] = useState('')
   const [weakspots, setWeakspots] = useState<Weakspot[]>([])
@@ -32,6 +36,10 @@ export function StudentDetailPage() {
   const [revealedPassword, setRevealedPassword] = useState<string | null>(null)
   const [credBusy, setCredBusy] = useState(false)
   const [credError, setCredError] = useState('')
+
+  const busy = busyKind !== null
+  const summaryProgress = useEstimatedProgress(busyKind === 'summary', AI_WAIT_MS.report)
+  const reportProgress = useEstimatedProgress(busyKind === 'report', AI_WAIT_MS.report)
 
   useEffect(() => {
     if (!id) return
@@ -57,39 +65,39 @@ export function StudentDetailPage() {
   async function save(e: FormEvent) {
     e.preventDefault()
     if (!id) return
-    setBusy(true)
+    setBusyKind('save')
     try {
       await api.updateStudent(id, { interests, career_ambitions: career })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
-      setBusy(false)
+      setBusyKind(null)
     }
   }
 
   async function refreshSummary() {
     if (!id) return
-    setBusy(true)
+    setBusyKind('summary')
     try {
       const res = await api.refreshSummary(id)
       setSummary(res.summary)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
-      setBusy(false)
+      setBusyKind(null)
     }
   }
 
   async function makeReport() {
     if (!id) return
-    setBusy(true)
+    setBusyKind('report')
     try {
       const res = await api.createReport({ student_id: id, teacher_notes: notes })
       navigate(`/teacher/reports/${res.report.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
-      setBusy(false)
+      setBusyKind(null)
     }
   }
 
@@ -317,8 +325,19 @@ export function StudentDetailPage() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>AI introduction</CardTitle>
           <Button type="button" variant="outline" disabled={busy} onClick={() => void refreshSummary()}>
-            <RefreshCw className="h-4 w-4" />
-            Generate / refresh
+            {busyKind === 'summary' ? (
+              <GenerationBusyLabel
+                label="Generating…"
+                percent={summaryProgress.percent}
+                elapsedLabel={summaryProgress.elapsedLabel}
+                variant="onSurface"
+              />
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Generate / refresh
+              </>
+            )}
           </Button>
         </CardHeader>
         <CardContent>
@@ -345,7 +364,7 @@ export function StudentDetailPage() {
             </div>
             <Button type="submit" className="w-full" disabled={busy}>
               <Save className="h-4 w-4" />
-              {busy ? 'Saving…' : 'Save'}
+              {busyKind === 'save' ? 'Saving…' : 'Save'}
             </Button>
           </form>
         </CardContent>
@@ -361,8 +380,18 @@ export function StudentDetailPage() {
             <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
           <Button type="button" className="w-full" disabled={busy} onClick={() => void makeReport()}>
-            <FileText className="h-4 w-4" />
-            Generate report
+            {busyKind === 'report' ? (
+              <GenerationBusyLabel
+                label="Generating…"
+                percent={reportProgress.percent}
+                elapsedLabel={reportProgress.elapsedLabel}
+              />
+            ) : (
+              <>
+                <FileText className="h-4 w-4" />
+                Generate report
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>

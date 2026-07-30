@@ -206,6 +206,10 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
       .bind(teacher.id)
       .run()
 
+    // Create billing account + free starter credit on first verified signup
+    const { ensureBillingAccount } = await import('./billing')
+    await ensureBillingAccount(env, teacher.id)
+
     const session = await createSession(env, teacher.id, 'teacher')
     return json(
       {

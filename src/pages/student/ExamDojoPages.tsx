@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FileUp, Upload } from 'lucide-react'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ import {
   type TaskContent,
 } from '@/lib/api'
 import { readPastPaperFile } from '@/lib/pastPaper'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 const CURRICULA = ['IB', 'IGCSE', 'GCSE', 'A-Level', 'Other']
 
@@ -77,6 +79,7 @@ export function ExamDojoHubPage() {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [uploadBusy, setUploadBusy] = useState(false)
+  const draftProgress = useEstimatedProgress(busy, AI_WAIT_MS.draft)
 
   const [subject, setSubject] = useState('')
   const [curriculum, setCurriculum] = useState('IGCSE')
@@ -227,7 +230,7 @@ export function ExamDojoHubPage() {
             <DialogHeader>
               <DialogTitle>Upload a past paper</DialogTitle>
               <DialogDescription>
-                Tell us about the exam so Kimi can build a passable practice paper. This is for
+                Tell us about the exam so Guidelight can draft a passable practice paper. This is for
                 practice — not an official exam copy.
               </DialogDescription>
             </DialogHeader>
@@ -279,7 +282,15 @@ export function ExamDojoHubPage() {
               </div>
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
               <Button type="submit" disabled={busy || uploadBusy}>
-                {busy ? 'Reconstructing…' : 'Turn into practice paper'}
+                {busy ? (
+                  <GenerationBusyLabel
+                    label="Guidelight is drafting…"
+                    percent={draftProgress.percent}
+                    elapsedLabel={draftProgress.elapsedLabel}
+                  />
+                ) : (
+                  'Turn into practice paper'
+                )}
               </Button>
             </form>
           </DialogContent>
@@ -379,6 +390,7 @@ export function ExamDojoSitPage() {
   } | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const markProgress = useEstimatedProgress(busy, AI_WAIT_MS.marking)
   const startedAt = useRef(Date.now())
   const answersRef = useRef(answers)
   const attemptRef = useRef(attemptId)
@@ -537,7 +549,15 @@ export function ExamDojoSitPage() {
         </Card>
       ))}
       <Button type="button" disabled={busy} onClick={() => void submit(false)}>
-        {busy ? 'Marking…' : 'Submit for marking'}
+        {busy ? (
+          <GenerationBusyLabel
+            label="Marking…"
+            percent={markProgress.percent}
+            elapsedLabel={markProgress.elapsedLabel}
+          />
+        ) : (
+          'Submit for marking'
+        )}
       </Button>
     </div>
   )

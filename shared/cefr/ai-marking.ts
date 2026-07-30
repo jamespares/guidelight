@@ -100,7 +100,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): 
   ])
 }
 
-/** Real runner: Kimi K2.6 via the Workers AI binding, with a hard timeout. */
+/** Real runner: Workers AI binding, with a hard timeout. */
 export function kimiRunner(ai: Ai): AiRunner {
   return async (prompt) => {
     const out = (await withTimeout(
@@ -110,7 +110,7 @@ export function kimiRunner(ai: Ai): AiRunner {
         chat_template_kwargs: { thinking: false },
       } as never),
       AI_TIMEOUT_MS,
-      'Kimi marking call',
+      'Guidelight marking call',
     )) as { choices?: { message?: { content?: string } }[] }
     const content = out?.choices?.[0]?.message?.content
     if (!content) throw new Error('Empty response from marking model')

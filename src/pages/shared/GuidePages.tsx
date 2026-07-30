@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { BILLING_SETTINGS_PATH, TRUST_DIAL } from '@/lib/trustCopy'
 import { TASK_KIND_GROUPS, TASK_KIND_LEGEND, taskKindBadgeClass, taskKindLabel } from '@/lib/taskLabels'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -41,6 +43,108 @@ function ColourLegend() {
   )
 }
 
+/** Simple pay-as-you-go cost explainer for teachers — no model names. */
+function AiCostExplainer() {
+  const spendShare = [
+    { label: 'Marking student work', share: 80, hint: 'Most of your bill' },
+    { label: 'Creating tasks & lessons', share: 12, hint: 'A few dollars' },
+    { label: 'Insights, Dojo & extras', share: 8, hint: 'Small slice' },
+  ]
+
+  const scenarios = [
+    {
+      title: 'Light load',
+      detail: '2 classes · lighter homework',
+      price: 'About $8',
+    },
+    {
+      title: 'Typical',
+      detail: '4 classes · full features',
+      price: '$15–25',
+      highlight: true,
+    },
+    {
+      title: 'Busy term',
+      detail: '6 classes · lots of marking',
+      price: '$40–60',
+    },
+  ]
+
+  return (
+    <div className="space-y-5">
+      <p>
+        Guidelight is <strong className="text-foreground">pay as you go</strong> — no subscription.
+        You only pay at month end for the AI your classes actually use. A usage dial in the sidebar
+        shows spend against your monthly limit (default{' '}
+        <strong className="text-foreground">$20</strong>; you can raise it anytime in{' '}
+        <Link
+          to={BILLING_SETTINGS_PATH}
+          className="font-medium text-foreground underline-offset-2 hover:underline"
+        >
+          Settings → Billing
+        </Link>
+        ).
+      </p>
+      <p className="text-xs text-muted-foreground">{TRUST_DIAL}</p>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+          Where a typical month goes
+        </p>
+        <div
+          className="flex h-3 overflow-hidden rounded-full bg-muted"
+          role="img"
+          aria-label="Cost share: about 80% marking, 12% creating, 8% extras"
+        >
+          <div className="bg-primary" style={{ width: '80%' }} title="Marking" />
+          <div className="bg-primary/55" style={{ width: '12%' }} title="Creating" />
+          <div className="bg-primary/30" style={{ width: '8%' }} title="Extras" />
+        </div>
+        <ul className="space-y-2">
+          {spendShare.map((row) => (
+            <li key={row.label} className="flex items-baseline justify-between gap-3">
+              <span>
+                <strong className="text-foreground">{row.label}</strong>
+                <span className="text-muted-foreground"> — {row.hint}</span>
+              </span>
+              <span className="shrink-0 tabular-nums text-foreground">{row.share}%</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+          Rough monthly cost
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {scenarios.map((s) => (
+            <div
+              key={s.title}
+              className={
+                s.highlight
+                  ? 'rounded-lg border border-primary/40 bg-primary/5 px-3 py-3'
+                  : 'rounded-lg border border-border px-3 py-3'
+              }
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                {s.title}
+              </p>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-foreground">{s.price}</p>
+              <p className="mt-0.5 text-xs">{s.detail}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs">
+          Costs scale with how many students submit work — marking is the main driver. Planning
+          lessons, drafting homework, and Exam Dojo uploads cost far less because you run them a
+          handful of times, not hundreds.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function TeacherGuidePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -57,8 +161,13 @@ export function TeacherGuidePage() {
           <strong className="text-foreground">Assessments</strong>,{' '}
           <strong className="text-foreground">Exam Dojo</strong>, and{' '}
           <strong className="text-foreground">Insights</strong>. Settings and this guide sit below
-          them.
+          them. The sidebar also shows your{' '}
+          <strong className="text-foreground">AI usage dial</strong> for this month.
         </p>
+      </Section>
+
+      <Section title="What AI costs">
+        <AiCostExplainer />
       </Section>
 
       <Section title="Students">
@@ -85,7 +194,7 @@ export function TeacherGuidePage() {
 
       <Section title="Exam Dojo">
         <p>
-          Upload a past paper with subject, curriculum, and syllabus code. Kimi reconstructs a{' '}
+          Upload a past paper with subject, curriculum, and syllabus code. Guidelight drafts a{' '}
           <strong className="text-foreground">passable practice paper</strong> once — it is labelled
           and never regenerated. Review and edit questions, then publish to the class. Students sit
           the interactive version; scores and full attempt archives land on their profile for later
@@ -122,14 +231,18 @@ export function TeacherGuidePage() {
           matching colours: stronger sky for scores, quieter emerald for homework rates.
         </p>
         <p>
-          <strong className="text-foreground">Pinpoint weakspots</strong> asks Kimi to read full
+          <strong className="text-foreground">Pinpoint weakspots</strong> asks Guidelight to read full
           attempt archives (not just topic error counts). On class scope it scans every student in
           the class for shared gaps; on student scope it focuses on that learner.
         </p>
       </Section>
 
       <Section title="Settings">
-        <p>Use Settings to switch between light and dark theme. Your choice is stored on this device.</p>
+        <p>
+          Use Settings to switch between light and dark theme, and to manage{' '}
+          <strong className="text-foreground">Billing & AI usage</strong> — your monthly spending
+          limit, payment method, and invoices. Your theme choice is stored on this device.
+        </p>
       </Section>
 
       <Section title="Teacher account">

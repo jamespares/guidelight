@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 type CefrItem = {
   id: string
@@ -62,6 +64,8 @@ export function EnglishLevelPage() {
   } | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const markProgress = useEstimatedProgress(submitting, AI_WAIT_MS.marking)
 
   async function loadStatus() {
     if (!taskId) return
@@ -125,6 +129,7 @@ export function EnglishLevelPage() {
   async function submit() {
     if (!testId) return
     setBusy(true)
+    setSubmitting(true)
     setError('')
     try {
       const res = await api.cefrSubmit(testId, answers)
@@ -134,6 +139,7 @@ export function EnglishLevelPage() {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
       setBusy(false)
+      setSubmitting(false)
     }
   }
 
@@ -247,7 +253,15 @@ export function EnglishLevelPage() {
             )
           })}
           <Button type="button" disabled={busy} onClick={() => void submit()}>
-            {busy ? 'Submitting…' : 'Submit test'}
+            {submitting ? (
+              <GenerationBusyLabel
+                label="Submitting…"
+                percent={markProgress.percent}
+                elapsedLabel={markProgress.elapsedLabel}
+              />
+            ) : (
+              'Submit test'
+            )}
           </Button>
         </div>
       ) : null}

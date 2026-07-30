@@ -32,6 +32,14 @@
   ],
   "vars": {
     "APP_URL": "https://getguidelight.com",
-    "AUTH_FROM_EMAIL": "auth@getguidelight.com"
+    "AUTH_FROM_EMAIL": "auth@getguidelight.com",
+    "AI_PRICE_INPUT_PER_M": "0.95",
+    "AI_PRICE_OUTPUT_PER_M": "4.00",
+    "AI_MARKUP_BPS": "20000",
+    "DEFAULT_MONTHLY_CAP_CENTS": "2000",
+    "DEFAULT_STARTER_CREDIT_CENTS": "500"
+  },
+  "triggers": {
+    "crons": ["0 6 1 * *"]
   }
 }

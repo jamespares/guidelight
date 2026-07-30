@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Play, Send, Sparkles } from 'lucide-react'
+import { GenerationBusyLabel, GenerationProgress } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/table'
 import { api, type Question, type TaskContent, type TaskRow } from '@/lib/api'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 function speak(text: string) {
   if (!('speechSynthesis' in window)) return
@@ -207,6 +209,7 @@ export function AttemptPage() {
   } | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const markProgress = useEstimatedProgress(busy, AI_WAIT_MS.marking)
   const startedAt = useRef(Date.now())
   const hardStop = useRef(false)
   const answersRef = useRef(answers)
@@ -375,8 +378,18 @@ export function AttemptPage() {
       ))}
 
       <Button type="button" className="w-full" disabled={busy} onClick={() => void submit(false)}>
-        <Send className="h-4 w-4" />
-        {busy ? 'Marking…' : 'Submit for marking'}
+        {busy ? (
+          <GenerationBusyLabel
+            label="Marking…"
+            percent={markProgress.percent}
+            elapsedLabel={markProgress.elapsedLabel}
+          />
+        ) : (
+          <>
+            <Send className="h-4 w-4" />
+            Submit for marking
+          </>
+        )}
       </Button>
     </div>
   )
@@ -387,6 +400,7 @@ export function StudentToolsPage() {
   const [result, setResult] = useState<unknown>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const draftProgress = useEstimatedProgress(busy, AI_WAIT_MS.practice)
 
   async function generate(m: 'flashcards' | 'practice') {
     setBusy(true)
@@ -479,7 +493,12 @@ export function StudentToolsPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {busy ? <p className="text-sm text-muted-foreground">Generating with Kimi…</p> : null}
+      {busy ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <GenerationProgress value={draftProgress.percent} size="sm" variant="onSurface" />
+          Guidelight is drafting… · {draftProgress.elapsedLabel}
+        </p>
+      ) : null}
 
       {mode === 'flashcards' && cards ? (
         <div className="space-y-3">

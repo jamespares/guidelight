@@ -16,6 +16,19 @@ export interface Env {
   EMAIL: SendEmailBinding
   APP_URL?: string
   AUTH_FROM_EMAIL?: string
+  /** Stripe secret key (sk_…). Optional in local/dev — billing setup disabled without it. */
+  STRIPE_SECRET_KEY?: string
+  STRIPE_WEBHOOK_SECRET?: string
+  /** Optional Stripe Price ID for metered AI usage. */
+  STRIPE_PRICE_METERED?: string
+  /** COGS: $ per million input tokens (Workers AI Kimi default 0.95). */
+  AI_PRICE_INPUT_PER_M?: string
+  /** COGS: $ per million output tokens (Workers AI Kimi default 4.00). */
+  AI_PRICE_OUTPUT_PER_M?: string
+  /** Retail markup in basis points (20000 = 2× COGS). */
+  AI_MARKUP_BPS?: string
+  DEFAULT_MONTHLY_CAP_CENTS?: string
+  DEFAULT_STARTER_CREDIT_CENTS?: string
 }
 
 export type Role = 'teacher' | 'student'
@@ -80,8 +93,9 @@ export interface LessonStage {
 export interface LessonPlan {
   learningObjective: string
   materials: string[]
+  /** Quiet work (traditional) or Interactive (communicative) */
   activityStyle: LessonActivityStyle
-  /** Set when the lesson includes a career-framed communicative activity */
+  /** Set when the lesson includes a career-framed Interactive activity */
   careerContext?: string
   presentation: LessonStage
   practice: LessonStage

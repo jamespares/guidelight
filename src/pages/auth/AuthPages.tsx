@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
+import { TRUST_LANDING } from '@/lib/trustCopy'
 import { cn } from '@/lib/utils'
 
 function AuthShell({ children }: { children: ReactNode }) {
@@ -40,6 +41,10 @@ export function Landing() {
           <CardDescription className="text-base">
             Lead your students to excellence with AI-powered homework and assessments
           </CardDescription>
+          <p className="text-sm text-muted-foreground">{TRUST_LANDING}</p>
+          <p className="text-xs text-muted-foreground">
+            No subscription — teachers pay only for the AI they use.
+          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button asChild className="flex-1">
@@ -234,6 +239,9 @@ export function TeacherAuth() {
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                <p className="text-xs text-muted-foreground">
+                  {TRUST_LANDING} Includes free starter AI credit — no subscription.
+                </p>
               </div>
             ) : null}
             <div className="space-y-2">

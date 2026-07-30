@@ -3,6 +3,13 @@ import { error, generateId, json } from './auth'
 import { reconstructPastPaper, markDojoAttempt } from './ai'
 import { buildDojoAttemptArchiveMd } from './attemptArchive'
 import { computeDojoStats } from '../../shared/dojo/stats'
+import {
+  AiBudgetExceededError,
+  aiBudgetExceededResponse,
+  assertAiBudget,
+  teacherIdForClass,
+  teacherIdForStudent,
+} from './billing'
 
 const RECONSTRUCTION_LABEL = 'ai_reconstructed_practice'
 
@@ -156,11 +163,22 @@ async function runReconstruction(
     curriculum: string
     syllabusCode: string
     title?: string
+    teacherId?: string
+    classId?: string
   },
   nextStatus: 'draft' | 'ready',
 ): Promise<DojoPaperRow> {
   try {
-    const content = await reconstructPastPaper(env, input)
+    const content = await reconstructPastPaper(env, {
+      ...input,
+      meter: input.teacherId
+        ? {
+            teacherId: input.teacherId,
+            classId: input.classId,
+            feature: 'dojo_reconstruct',
+          }
+        : undefined,
+    })
     await env.DB.prepare(
       `UPDATE dojo_papers SET
          content_json = ?, title = COALESCE(NULLIF(?, ''), title),
@@ -440,6 +458,16 @@ export async function handleDojoApi(
       )
       .run()
 
+    try {
+      await assertAiBudget(env, user.id)
+    } catch (err) {
+      if (err instanceof AiBudgetExceededError) {
+        await env.DB.prepare(`DELETE FROM dojo_papers WHERE id = ?`).bind(id).run()
+        return aiBudgetExceededResponse(err.usedCents, err.capCents)
+      }
+      throw err
+    }
+
     const row = await runReconstruction(
       env,
       id,
@@ -450,6 +478,8 @@ export async function handleDojoApi(
         curriculum: body.curriculum.trim(),
         syllabusCode: body.syllabus_code.trim(),
         title: body.title,
+        teacherId: user.id,
+        classId: body.class_id,
       },
       'draft',
     )
@@ -702,6 +732,19 @@ export async function handleDojoApi(
       )
       .run()
 
+    const billingTeacherId = await teacherIdForClass(env, s.class_id)
+    if (billingTeacherId) {
+      try {
+        await assertAiBudget(env, billingTeacherId)
+      } catch (err) {
+        if (err instanceof AiBudgetExceededError) {
+          await env.DB.prepare(`DELETE FROM dojo_papers WHERE id = ?`).bind(id).run()
+          return aiBudgetExceededResponse(err.usedCents, err.capCents)
+        }
+        throw err
+      }
+    }
+
     const row = await runReconstruction(
       env,
       id,
@@ -712,6 +755,8 @@ export async function handleDojoApi(
         curriculum: body.curriculum.trim(),
         syllabusCode: body.syllabus_code.trim(),
         title: body.title,
+        teacherId: billingTeacherId ?? undefined,
+        classId: s.class_id,
       },
       'ready',
     )
@@ -797,10 +842,25 @@ export async function handleDojoApi(
       return error('Invalid paper content', 500)
     }
 
+    const billingTeacherId = await teacherIdForStudent(env, user.id)
+    if (billingTeacherId) {
+      try {
+        await assertAiBudget(env, billingTeacherId)
+      } catch (err) {
+        if (err instanceof AiBudgetExceededError) {
+          return aiBudgetExceededResponse(err.usedCents, err.capCents)
+        }
+        throw err
+      }
+    }
+
     const marked = await markDojoAttempt(env, {
       subject: attempt.subject,
       content,
       answers: body.answers ?? {},
+      meter: billingTeacherId
+        ? { teacherId: billingTeacherId, feature: 'dojo_mark' }
+        : undefined,
     })
 
     const submittedAt = new Date().toISOString()

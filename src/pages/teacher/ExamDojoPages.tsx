@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FileUp, Plus, Save, Send, X } from 'lucide-react'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,7 @@ import {
   type TaskContent,
 } from '@/lib/api'
 import { readPastPaperFile } from '@/lib/pastPaper'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 const CURRICULA = ['IB', 'IGCSE', 'GCSE', 'A-Level', 'Other']
 
@@ -55,6 +57,7 @@ export function TeacherDojoPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
+  const draftProgress = useEstimatedProgress(busy, AI_WAIT_MS.draft)
 
   const [subject, setSubject] = useState('')
   const [curriculum, setCurriculum] = useState('IGCSE')
@@ -181,7 +184,7 @@ export function TeacherDojoPage() {
             <DialogHeader>
               <DialogTitle>Upload past paper</DialogTitle>
               <DialogDescription>
-                Kimi reconstructs a passable practice paper once. It is labelled and never
+                Guidelight will draft a passable practice paper once. It is labelled and never
                 regenerated — you can edit manually before publishing.
               </DialogDescription>
             </DialogHeader>
@@ -248,7 +251,15 @@ export function TeacherDojoPage() {
               </div>
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
               <Button type="submit" disabled={busy || uploadBusy}>
-                {busy ? 'Reconstructing with Kimi…' : 'Reconstruct practice paper'}
+                {busy ? (
+                  <GenerationBusyLabel
+                    label="Guidelight is drafting…"
+                    percent={draftProgress.percent}
+                    elapsedLabel={draftProgress.elapsedLabel}
+                  />
+                ) : (
+                  'Draft practice paper'
+                )}
               </Button>
             </form>
           </DialogContent>

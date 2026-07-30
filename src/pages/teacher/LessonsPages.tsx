@@ -10,6 +10,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,12 @@ import {
   type LessonStage,
 } from '@/lib/api'
 import { exportLessonBatchCsv, exportLessonBatchDocx } from '@/lib/lessonExport'
+import {
+  ACTIVITY_STYLE_OPTIONS,
+  activityStyleHint,
+  activityStyleLabel,
+} from '@/lib/lessonLabels'
+import { lessonPlanExpectedMs, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 import { cn } from '@/lib/utils'
 
 const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
@@ -89,6 +96,7 @@ function PlanLessonsForm({
   const [startDate, setStartDate] = useState(todayIso())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const progress = useEstimatedProgress(busy, lessonPlanExpectedMs(weeks))
 
   const selectedClass = classes.find((c) => c.id === classId)
 
@@ -332,8 +340,18 @@ function PlanLessonsForm({
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       <Button type="submit" disabled={busy} className="w-full gap-2">
-        <Sparkles className="size-4" />
-        {busy ? 'Generating with Kimi…' : 'Plan lessons'}
+        {busy ? (
+          <GenerationBusyLabel
+            label="Guidelight is drafting…"
+            percent={progress.percent}
+            elapsedLabel={progress.elapsedLabel}
+          />
+        ) : (
+          <>
+            <Sparkles className="size-4" />
+            Plan lessons
+          </>
+        )}
       </Button>
     </form>
   )
@@ -360,7 +378,7 @@ export function LessonsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Lessons"
-        description="Plan PPP lesson batches with Kimi, then review them on a calendar or list."
+        description="Plan PPP lesson batches with Guidelight, then review them on a calendar or list."
         action={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -373,8 +391,8 @@ export function LessonsPage() {
               <DialogHeader>
                 <DialogTitle>Plan lessons</DialogTitle>
                 <DialogDescription>
-                  Choose the class, schedule, and resources. Kimi will draft a PPP syllabus
-                  (mostly traditional, with occasional career-framed activities).
+                  Choose the class, schedule, and resources. Guidelight will draft a PPP syllabus
+                  (mostly Quiet work, with occasional Interactive career-framed activities).
                 </DialogDescription>
               </DialogHeader>
               {classes.length ? (
@@ -663,7 +681,7 @@ export function LessonBatchPage() {
               <TableHead>Day</TableHead>
               <TableHead>Week</TableHead>
               <TableHead>Title</TableHead>
-              <TableHead>Style</TableHead>
+              <TableHead>Type</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -682,7 +700,7 @@ export function LessonBatchPage() {
                 </TableCell>
                 <TableCell>
                   <Badge variant={l.plan?.activityStyle === 'communicative' ? 'warn' : 'secondary'}>
-                    {l.plan?.activityStyle ?? 'traditional'}
+                    {activityStyleLabel(l.plan?.activityStyle)}
                   </Badge>
                 </TableCell>
               </TableRow>
@@ -872,7 +890,7 @@ export function LessonDetailPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Activity style</Label>
+          <Label>Lesson type</Label>
           <Select
             value={plan.activityStyle}
             onValueChange={(v) =>
@@ -886,10 +904,14 @@ export function LessonDetailPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="traditional">Traditional</SelectItem>
-              <SelectItem value="communicative">Communicative</SelectItem>
+              {ACTIVITY_STYLE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">{activityStyleHint(plan.activityStyle)}</p>
         </div>
         <div className="space-y-2">
           <Label>Career context (optional)</Label>

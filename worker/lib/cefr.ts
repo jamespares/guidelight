@@ -22,7 +22,20 @@ import {
   type TestResponseInput,
 } from '../../shared/cefr/test-engine'
 import { PASSAGES, type Item } from '../../shared/cefr/items'
-import { kimiRunner, markWrittenResponses, getWrittenMarks } from '../../shared/cefr/ai-marking'
+import {
+  kimiRunner,
+  markWrittenResponses,
+  getWrittenMarks,
+  MARKING_MODEL,
+} from '../../shared/cefr/ai-marking'
+import {
+  AiBudgetExceededError,
+  aiBudgetExceededResponse,
+  assertAiBudget,
+  estimateTokens,
+  recordAiUsage,
+  teacherIdForStudent,
+} from './billing'
 
 export type AssessmentSubtype =
   | 'diagnostic'
@@ -650,11 +663,37 @@ export async function handleCefrApi(
       .bind(totals.score, totals.max, level, overtime, testId)
       .run()
 
-    // AI re-mark written answers (best-effort)
+    // AI re-mark written answers (best-effort) — bill to class teacher
     try {
-      await markWrittenResponses(env.DB, testId, kimiRunner(env.AI))
-    } catch {
-      /* keep keyword scores */
+      const billingTeacherId = await teacherIdForStudent(env, user.id)
+      if (billingTeacherId) {
+        await assertAiBudget(env, billingTeacherId)
+        const run = kimiRunner(env.AI)
+        await markWrittenResponses(env.DB, testId, async (prompt) => {
+          const text = await run(prompt)
+          try {
+            await recordAiUsage(
+              env,
+              { teacherId: billingTeacherId, feature: 'cefr_mark' },
+              {
+                model: MARKING_MODEL,
+                inputTokens: estimateTokens(prompt),
+                outputTokens: estimateTokens(text),
+              },
+            )
+          } catch (err) {
+            console.error('cefr mark usage record failed', err)
+          }
+          return text
+        })
+      } else {
+        await markWrittenResponses(env.DB, testId, kimiRunner(env.AI))
+      }
+    } catch (err) {
+      if (err instanceof AiBudgetExceededError) {
+        return aiBudgetExceededResponse(err.usedCents, err.capCents)
+      }
+      /* keep keyword scores on other AI failures */
     }
 
     const refreshed = await env.DB.prepare(

@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { WeakspotsPanel } from '@/components/WeakspotsPanel'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { api, type ClassRow, type StudentRow, type Weakspot } from '@/lib/api'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 export function InsightsPage() {
   const [scope, setScope] = useState<'class' | 'student'>('class')
@@ -45,6 +47,7 @@ export function InsightsPage() {
   const [pinpointError, setPinpointError] = useState('')
   const [busy, setBusy] = useState(false)
   const [pinpointBusy, setPinpointBusy] = useState(false)
+  const reportProgress = useEstimatedProgress(busy, AI_WAIT_MS.report)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -264,8 +267,18 @@ export function InsightsPage() {
             <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
           <Button type="button" className="w-full" disabled={busy || !id} onClick={() => void report()}>
-            <FileText className="h-4 w-4" />
-            {busy ? 'Generating…' : 'Generate report'}
+            {busy ? (
+              <GenerationBusyLabel
+                label="Generating…"
+                percent={reportProgress.percent}
+                elapsedLabel={reportProgress.elapsedLabel}
+              />
+            ) : (
+              <>
+                <FileText className="h-4 w-4" />
+                Generate report
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>

@@ -1,7 +1,9 @@
 import { Crosshair } from 'lucide-react'
+import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Weakspot } from '@/lib/api'
+import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 export function weakspotLabel(w: Weakspot): string {
   return w.skill || w.topic || 'Unknown'
@@ -24,6 +26,8 @@ export function WeakspotsPanel({
   error?: string
   onPinpoint: () => void
 }) {
+  const progress = useEstimatedProgress(!!busy, AI_WAIT_MS.report)
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
@@ -36,8 +40,19 @@ export function WeakspotsPanel({
           ) : null}
         </div>
         <Button type="button" variant="outline" disabled={busy} onClick={onPinpoint}>
-          <Crosshair className="h-4 w-4" />
-          {busy ? 'Analysing…' : 'Pinpoint weakspots'}
+          {busy ? (
+            <GenerationBusyLabel
+              label="Analysing…"
+              percent={progress.percent}
+              elapsedLabel={progress.elapsedLabel}
+              variant="onSurface"
+            />
+          ) : (
+            <>
+              <Crosshair className="h-4 w-4" />
+              Pinpoint weakspots
+            </>
+          )}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
