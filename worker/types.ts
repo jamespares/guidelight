@@ -19,6 +19,10 @@ export interface Env {
   /** Stripe secret key (sk_…). Optional in local/dev — billing setup disabled without it. */
   STRIPE_SECRET_KEY?: string
   STRIPE_WEBHOOK_SECRET?: string
+  /** Publishable key (pk_…) — safe for client; used for Checkout branding / future Elements. */
+  STRIPE_PUBLISHABLE_KEY?: string
+  /** Stripe Customer Portal email-login link (billing.stripe.com/p/login/…). */
+  STRIPE_CUSTOMER_PORTAL_LOGIN_URL?: string
   /** Optional Stripe Price ID for metered AI usage. */
   STRIPE_PRICE_METERED?: string
   /** COGS: $ per million input tokens (Workers AI Kimi default 0.95). */

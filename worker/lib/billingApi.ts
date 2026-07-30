@@ -48,6 +48,9 @@ export async function handleBillingApi(
     return json({
       ...summary,
       stripe_configured: stripeConfigured(env),
+      stripe_publishable_key: env.STRIPE_PUBLISHABLE_KEY || null,
+      portal_login_url: env.STRIPE_CUSTOMER_PORTAL_LOGIN_URL || null,
+      has_stripe_customer: Boolean(summary.stripe_customer_id),
     })
   }
 

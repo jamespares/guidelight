@@ -258,11 +258,14 @@ export type BillingUsage = {
   period_end: string
   payment_status: string
   has_payment_method: boolean
+  has_stripe_customer?: boolean
   school_name: string
   billing_email: string
   purchase_order: string
   settings_path: string
   stripe_configured: boolean
+  stripe_publishable_key?: string | null
+  portal_login_url?: string | null
   by_feature: Array<{ feature: string; calls: number; cost_cents: number }>
 }
 

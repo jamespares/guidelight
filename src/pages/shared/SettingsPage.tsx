@@ -276,11 +276,22 @@ function TeacherBillingSection() {
             <Button
               type="button"
               variant="outline"
-              disabled={busy === 'portal' || !usage?.has_payment_method}
+              disabled={
+                busy === 'portal' ||
+                !usage?.stripe_configured ||
+                !(usage?.has_payment_method || usage?.has_stripe_customer)
+              }
               onClick={() => void openPortal()}
             >
               Manage cards & invoices
             </Button>
+            {usage?.portal_login_url ? (
+              <Button type="button" variant="ghost" asChild>
+                <a href={usage.portal_login_url} target="_blank" rel="noreferrer">
+                  Stripe portal login
+                </a>
+              </Button>
+            ) : null}
           </div>
         </div>
 
