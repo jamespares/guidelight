@@ -24,3 +24,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# HyperFrames demo
+demo/guidelight-launch/.venv/
+demo/guidelight-launch/node_modules/
+demo/guidelight-launch/*.mp3
