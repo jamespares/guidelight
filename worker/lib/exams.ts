@@ -1,5 +1,6 @@
 import type { Env, SessionUser, TaskContent } from '../types'
 import { error, generateId, json } from './auth'
+import { parseJsonBody } from './validation'
 import {
   describePastPaperImage,
   generateTaskContent,
@@ -295,7 +296,9 @@ export async function handleExamsApi(
 
   if (path === '/api/exam-profiles' && request.method === 'POST') {
     if (user.role !== 'teacher') return error('Forbidden', 403)
-    const body = (await request.json()) as {
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as {
       class_id?: string
       title?: string
       subject?: string
@@ -414,7 +417,9 @@ export async function handleExamsApi(
     const owned = await classOwned(env, row.class_id, user.id)
     if (!owned) return error('Not found', 404)
 
-    const body = (await request.json()) as {
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as {
       title?: string
       subject?: string
       curriculum?: string

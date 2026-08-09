@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -50,7 +51,8 @@ function QuestionInput({
 }) {
   if (q.type === 'mcq' || q.type === 'bloom') {
     return (
-      <div className="space-y-2">
+      <fieldset className="space-y-2">
+        <legend className="sr-only">{q.prompt}</legend>
         {(q.options ?? []).map((opt) => (
           <label
             key={opt}
@@ -66,7 +68,7 @@ function QuestionInput({
             <span className="text-sm">{opt}</span>
           </label>
         ))}
-      </div>
+      </fieldset>
     )
   }
 
@@ -147,7 +149,21 @@ function QuestionInput({
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Image stimulus</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm leading-relaxed">{q.imageUrl}</CardContent>
+            <CardContent>
+              <img
+                src={q.imageUrl}
+                alt=""
+                className="max-h-80 rounded-md border border-border object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget
+                  target.style.display = 'none'
+                  target.nextElementSibling?.classList.remove('hidden')
+                }}
+              />
+              <p className="hidden text-sm text-muted-foreground">
+                Image could not be loaded: {q.imageUrl}
+              </p>
+            </CardContent>
           </Card>
         ) : null}
         <Textarea
@@ -194,7 +210,11 @@ export function StudentTasksPage() {
         title="Tasks"
         description={`${tasks.length} assigned task${tasks.length === 1 ? '' : 's'}`}
       />
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       {examProfiles.length > 0 ? (
         <div className="space-y-3">
@@ -205,7 +225,7 @@ export function StudentTasksPage() {
             {examProfiles.map(({ profile, readiness }) => (
               <Card key={profile.id}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{profile.title}</CardTitle>
+                  <CardTitle as="h2" className="text-base">{profile.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   {readiness.unlockMessage ? (
@@ -252,13 +272,16 @@ export function StudentTasksPage() {
       ) : null}
 
       <Table>
+        <TableCaption>Assigned tasks and quick links to start or continue.</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Subject</TableHead>
-            <TableHead>Last score</TableHead>
-            <TableHead />
+            <TableHead scope="col">Title</TableHead>
+            <TableHead scope="col">Type</TableHead>
+            <TableHead scope="col">Subject</TableHead>
+            <TableHead scope="col">Last score</TableHead>
+            <TableHead scope="col">
+              <span className="sr-only">Actions</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -319,6 +342,8 @@ export function AttemptPage() {
   const [attemptId, setAttemptId] = useState<string | null>(null)
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
+  const [timeAnnouncement, setTimeAnnouncement] = useState('')
+  const announcedBoundary = useRef<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [result, setResult] = useState<{
     score_pct: number
@@ -396,12 +421,19 @@ export function AttemptPage() {
   }, [attemptId])
 
   useEffect(() => {
-    const block = (e: Event) => e.preventDefault()
-    document.addEventListener('copy', block)
-    document.addEventListener('cut', block)
-    document.addEventListener('paste', block)
-    document.addEventListener('contextmenu', block)
+    if (secondsLeft == null || secondsLeft <= 0) return
+    if (secondsLeft === 10) {
+      setTimeAnnouncement('10 seconds remaining')
+      return
+    }
+    const minutes = Math.floor(secondsLeft / 60)
+    if (secondsLeft % 60 === 0 && minutes > 0 && announcedBoundary.current !== minutes) {
+      announcedBoundary.current = minutes
+      setTimeAnnouncement(`${minutes} minute${minutes === 1 ? '' : 's'} remaining`)
+    }
+  }, [secondsLeft])
 
+  useEffect(() => {
     const onVis = () => {
       if (document.visibilityState === 'hidden' && attemptId && taskMeta?.type === 'assessment') {
         void api.flagAttempt(attemptId)
@@ -414,10 +446,6 @@ export function AttemptPage() {
     window.addEventListener('blur', onBlur)
 
     return () => {
-      document.removeEventListener('copy', block)
-      document.removeEventListener('cut', block)
-      document.removeEventListener('paste', block)
-      document.removeEventListener('contextmenu', block)
       document.removeEventListener('visibilitychange', onVis)
       window.removeEventListener('blur', onBlur)
     }
@@ -482,6 +510,9 @@ export function AttemptPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
+      <div aria-live="polite" className="sr-only">
+        {timeAnnouncement}
+      </div>
       <div className="sticky top-0 z-10 space-y-2 rounded-lg border border-border bg-primary px-4 py-3 text-primary-foreground shadow-sm">
         <div className="flex items-center justify-between">
           <strong>{content.title || taskMeta.title}</strong>
@@ -504,18 +535,22 @@ export function AttemptPage() {
           <span>{answeredCount}/{content.questions.length} answered</span>
         </div>
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
       <p className="text-sm text-muted-foreground">{content.instructions}</p>
-      <Card className="border-[hsl(38_80%_70%)] bg-[hsl(38_92%_94%)]">
-        <CardContent className="p-3 text-sm text-[hsl(32_80%_28%)]">
-          Copy and paste are disabled for this task.
+      <Card className="border border-warning-foreground/30 bg-warning text-warning-foreground">
+        <CardContent className="p-3 text-sm">
+          Do your own work — copying and pasting is not allowed for this task.
         </CardContent>
       </Card>
 
       {taskMeta.reading_text ? (
         <Card className="bg-secondary">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Reading passage</CardTitle>
+            <CardTitle as="h2" className="text-base">Reading passage</CardTitle>
           </CardHeader>
           <CardContent className="whitespace-pre-wrap text-sm leading-relaxed">
             {taskMeta.reading_text}
@@ -649,7 +684,11 @@ export function StudentToolsPage() {
         </button>
       </div>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
       {busy ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <GenerationProgress value={draftProgress.percent} size="sm" variant="onSurface" />

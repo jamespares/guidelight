@@ -38,11 +38,11 @@ export function SettingsPage({ role }: { role: 'teacher' | 'student' }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
+          <CardTitle as="h2">Appearance</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Theme</Label>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">Theme</legend>
             <p className="text-sm text-muted-foreground">
               Choose light or dark mode. Your choice is saved on this device.
             </p>
@@ -64,7 +64,7 @@ export function SettingsPage({ role }: { role: 'teacher' | 'student' }) {
                 </Button>
               ))}
             </div>
-          </div>
+          </fieldset>
         </CardContent>
       </Card>
 
@@ -201,7 +201,7 @@ function TeacherBillingSection() {
   return (
     <Card id="billing">
       <CardHeader>
-        <CardTitle>Billing & AI usage</CardTitle>
+        <CardTitle as="h2">Billing & AI usage</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm text-muted-foreground">{TRUST_DIAL}</p>
@@ -257,7 +257,7 @@ function TeacherBillingSection() {
         </form>
 
         <div className="space-y-2 border-t border-border pt-4">
-          <Label>Payment method</Label>
+          <p className="text-sm font-semibold">Payment method</p>
           <p className="text-sm text-muted-foreground">
             {usage?.has_payment_method
               ? 'Card on file — charged at month end for AI usage over your starter credit.'
@@ -299,7 +299,7 @@ function TeacherBillingSection() {
           onSubmit={(e) => void saveProfile(e)}
           className="space-y-3 border-t border-border pt-4"
         >
-          <Label>School reimbursement details</Label>
+          <p className="text-sm font-semibold">School reimbursement details</p>
           <p className="text-sm text-muted-foreground">
             Shown on Stripe invoices so you can reclaim AI costs from your school.
           </p>
@@ -326,7 +326,7 @@ function TeacherBillingSection() {
 
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Label>Invoices</Label>
+            <p className="text-sm font-semibold">Invoices</p>
             <Button
               type="button"
               size="sm"
@@ -366,8 +366,16 @@ function TeacherBillingSection() {
           )}
         </div>
 
-        {message ? <p className="text-sm text-foreground">{message}</p> : null}
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {message ? (
+          <div aria-live="polite" role="status">
+            <p className="text-sm text-foreground">{message}</p>
+          </div>
+        ) : null}
+        {error ? (
+          <div aria-live="polite" role="status">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   )

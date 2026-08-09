@@ -1,14 +1,25 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
+const Table = React.forwardRef<
+  HTMLTableElement,
+  React.HTMLAttributes<HTMLTableElement> & { caption?: React.ReactNode }
+>(({ className, caption, children, ...props }, ref) => (
+  <div className="relative w-full overflow-auto rounded-lg border border-border bg-card">
+    <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props}>
+      {caption ? <TableCaption>{caption}</TableCaption> : null}
+      {children}
+    </table>
+  </div>
+))
+Table.displayName = 'Table'
+
+const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttributes<HTMLTableCaptionElement>>(
   ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto rounded-lg border border-border bg-card">
-      <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
-    </div>
+    <caption ref={ref} className={cn('mt-4 text-sm text-muted-foreground', className)} {...props} />
   ),
 )
-Table.displayName = 'Table'
+TableCaption.displayName = 'TableCaption'
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, ...props }, ref) => (
@@ -56,4 +67,4 @@ const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<
 )
 TableCell.displayName = 'TableCell'
 
-export { Table, TableHeader, TableBody, TableHead, TableRow, TableCell }
+export { Table, TableHeader, TableBody, TableHead, TableRow, TableCell, TableCaption }

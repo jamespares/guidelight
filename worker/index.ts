@@ -29,6 +29,13 @@ import {
 } from './lib/billing'
 import { handleBillingApi, runMonthlyBilling } from './lib/billingApi'
 import {
+  checkBodySize,
+  corsPreflight,
+  withSecurityHeaders,
+} from './lib/security'
+import { rateLimitIp } from './lib/rateLimit'
+import { parseJsonBody } from './lib/validation'
+import {
   createSpecialTask,
   handleCefrApi,
   isSpecialAssessment,
@@ -256,23 +263,32 @@ async function avgTaskScore(env: Env, studentId: string, classId: string): Promi
   return Math.round(row.avg * 10) / 10
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url)
-    const path = url.pathname
+async function handleFetch(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url)
+  const path = url.pathname
 
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': url.origin,
-          'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Stripe-Signature',
-          'Access-Control-Allow-Credentials': 'true',
-        },
-      })
+  try {
+    // —— Health ——
+    if (path === '/health' && request.method === 'GET') {
+      await env.DB.prepare('SELECT 1').first()
+      return json({ ok: true, timestamp: new Date().toISOString() })
     }
 
-    try {
+    // —— GDPR account export / deletion ——
+    if (path === '/api/account/export' && request.method === 'GET') {
+      const user = await requireRole(env, request, 'teacher')
+      if (user instanceof Response) return user
+      const exportData = await exportTeacherAccount(env, user.id)
+      return json({ export: exportData })
+    }
+
+    if (path === '/api/account/delete' && request.method === 'POST') {
+      const user = await requireRole(env, request, 'teacher')
+      if (user instanceof Response) return user
+      await deleteTeacherAccount(env, user.id)
+      return json({ ok: true })
+    }
+
       if (path.startsWith('/api/auth')) {
         const res = await handleAuth(env, request, path)
         if (res) return res
@@ -567,11 +583,13 @@ export default {
           .first()
         if (!owned) return error('Not found', 404)
 
-        const body = (await request.json().catch(() => ({}))) as { password?: string }
+        const parsed = await parseJsonBody(request)
+        if (parsed instanceof Response) return parsed
+        const body = parsed as { password?: string }
         let password = body.password?.trim() ?? ''
         if (password) {
-          if (password.length < 4 || password.length > 64) {
-            return error('Password must be 4–64 characters', 400)
+          if (password.length < 8 || password.length > 64) {
+            return error('Password must be 8–64 characters', 400)
           }
         } else {
           password = randomPassword(8)
@@ -924,7 +942,9 @@ export default {
       if (path === '/api/tasks' && request.method === 'POST') {
         const user = await requireRole(env, request, 'teacher')
         if (user instanceof Response) return user
-        const body = (await request.json()) as {
+        const parsed = await parseJsonBody(request)
+        if (parsed instanceof Response) return parsed
+        const body = parsed as {
           type: 'homework' | 'assessment'
           subtype?: 'diagnostic' | 'formative' | 'summative' | 'english_level' | 'reading_speed' | null
           class_id: string
@@ -1089,7 +1109,9 @@ export default {
           .first<{ id: string; teacher_id: string; status: string }>()
         if (!task || task.teacher_id !== user.id) return error('Not found', 404)
 
-        const body = (await request.json()) as {
+        const parsed = await parseJsonBody(request)
+        if (parsed instanceof Response) return parsed
+        const body = parsed as {
           content?: TaskContent
           title?: string
           description?: string
@@ -2082,8 +2104,169 @@ export default {
         return aiBudgetExceededResponse(err.usedCents, err.capCents)
       }
       console.error(err)
-      const message = err instanceof Error ? err.message : 'Server error'
-      return error(message, 500)
+      return error('Internal server error', 500)
+    }
+  }
+
+async function exportTeacherAccount(env: Env, teacherId: string): Promise<Record<string, unknown>> {
+  const teacher = await env.DB.prepare(`SELECT id, email, name, created_at FROM teachers WHERE id = ?`)
+    .bind(teacherId)
+    .first()
+
+  const { results: classes } = await env.DB.prepare(
+    `SELECT * FROM classes WHERE teacher_id = ?`,
+  )
+    .bind(teacherId)
+    .all()
+
+  const classIds = (classes ?? []).map((c: Record<string, unknown>) => c.id as string)
+
+  let students: unknown[] = []
+  let tasks: unknown[] = []
+  let attempts: unknown[] = []
+  let examProfiles: unknown[] = []
+  let insightEvents: unknown[] = []
+  let billingAccount: unknown = null
+  let billingPeriods: unknown[] = []
+  let usageEvents: unknown[] = []
+
+  if (classIds.length) {
+    const placeholders = classIds.map(() => '?').join(',')
+    const studentRes = await env.DB.prepare(
+      `SELECT * FROM students WHERE class_id IN (${placeholders})`,
+    )
+      .bind(...classIds)
+      .all()
+    students = studentRes.results ?? []
+
+    const taskRes = await env.DB.prepare(
+      `SELECT * FROM tasks WHERE class_id IN (${placeholders})`,
+    )
+      .bind(...classIds)
+      .all()
+    tasks = taskRes.results ?? []
+
+    const attemptRes = await env.DB.prepare(
+      `SELECT a.* FROM attempts a
+       JOIN students s ON s.id = a.student_id
+       WHERE s.class_id IN (${placeholders})`,
+    )
+      .bind(...classIds)
+      .all()
+    attempts = attemptRes.results ?? []
+
+    const profileRes = await env.DB.prepare(
+      `SELECT * FROM exam_profiles WHERE class_id IN (${placeholders})`,
+    )
+      .bind(...classIds)
+      .all()
+    examProfiles = profileRes.results ?? []
+
+    const eventRes = await env.DB.prepare(
+      `SELECT * FROM insight_events WHERE class_id IN (${placeholders}) OR teacher_id = ?`,
+    )
+      .bind(...classIds, teacherId)
+      .all()
+    insightEvents = eventRes.results ?? []
+  }
+
+  const account = await env.DB.prepare(
+    `SELECT * FROM billing_accounts WHERE teacher_id = ?`,
+  )
+    .bind(teacherId)
+    .first()
+  if (account) {
+    billingAccount = account
+    const { results: periods } = await env.DB.prepare(
+      `SELECT * FROM billing_periods WHERE teacher_id = ?`,
+    )
+      .bind(teacherId)
+      .all()
+    billingPeriods = periods ?? []
+
+    const { results: usage } = await env.DB.prepare(
+      `SELECT * FROM ai_usage_events WHERE teacher_id = ?`,
+    )
+      .bind(teacherId)
+      .all()
+    usageEvents = usage ?? []
+  }
+
+  return {
+    teacher,
+    classes: classes ?? [],
+    students,
+    tasks,
+    attempts,
+    examProfiles,
+    insightEvents,
+    billingAccount,
+    billingPeriods,
+    usageEvents,
+  }
+}
+
+async function deleteTeacherAccount(env: Env, teacherId: string): Promise<void> {
+  // D1 does not support multi-statement transactions across prepared statements,
+  // so we delete in an order that respects foreign-key cascades and avoids
+  // leaving orphaned rows. audit_events for this actor are removed last.
+  const { results: classes } = await env.DB.prepare(
+    `SELECT id FROM classes WHERE teacher_id = ?`,
+  )
+    .bind(teacherId)
+    .all<{ id: string }>()
+  const classIds = (classes ?? []).map((c) => c.id)
+
+  if (classIds.length) {
+    const placeholders = classIds.map(() => '?').join(',')
+    // Attempts cascade from tasks/students; delete tasks first.
+    await env.DB.prepare(`DELETE FROM tasks WHERE class_id IN (${placeholders})`)
+      .bind(...classIds)
+      .run()
+    // Students cascade from classes, but explicit deletion clears any residual links.
+    await env.DB.prepare(`DELETE FROM students WHERE class_id IN (${placeholders})`)
+      .bind(...classIds)
+      .run()
+    await env.DB.prepare(`DELETE FROM classes WHERE id IN (${placeholders})`)
+      .bind(...classIds)
+      .run()
+  }
+
+  await env.DB.prepare(`DELETE FROM reports WHERE teacher_id = ?`).bind(teacherId).run()
+  await env.DB.prepare(`DELETE FROM sessions WHERE user_id = ? AND role = 'teacher'`)
+    .bind(teacherId)
+    .run()
+  await env.DB.prepare(`DELETE FROM billing_periods WHERE teacher_id = ?`).bind(teacherId).run()
+  await env.DB.prepare(`DELETE FROM ai_usage_events WHERE teacher_id = ?`).bind(teacherId).run()
+  await env.DB.prepare(`DELETE FROM billing_accounts WHERE teacher_id = ?`).bind(teacherId).run()
+  await env.DB.prepare(`DELETE FROM audit_events WHERE actor_id = ?`).bind(teacherId).run()
+  await env.DB.prepare(`DELETE FROM teachers WHERE id = ?`).bind(teacherId).run()
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const path = new URL(request.url).pathname
+
+    const preflight = corsPreflight(request, env)
+    if (preflight) return withSecurityHeaders(preflight, env)
+
+    const tooLarge = checkBodySize(request)
+    if (tooLarge) return withSecurityHeaders(tooLarge, env)
+
+    if (path !== '/health') {
+      const allowed = await rateLimitIp(request, env, 60, 60)
+      if (!allowed) return withSecurityHeaders(error('Rate limit exceeded', 429), env)
+    }
+
+    try {
+      const response = await handleFetch(request, env)
+      return withSecurityHeaders(response, env)
+    } catch (err) {
+      if (err instanceof AiBudgetExceededError) {
+        return withSecurityHeaders(aiBudgetExceededResponse(err.usedCents, err.capCents), env)
+      }
+      console.error(err)
+      return withSecurityHeaders(error('Internal server error', 500), env)
     }
   },
 

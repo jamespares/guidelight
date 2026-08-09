@@ -28,7 +28,7 @@ import {
 } from './pages/student/ReadingMachinePages'
 import { SettingsPage } from './pages/shared/SettingsPage'
 import { StudentGuidePage, TeacherGuidePage } from './pages/shared/GuidePages'
-import { PrivacyPolicyPage, TermsOfServicePage } from './pages/shared/LegalPages'
+import { AccessibilityStatementPage, PrivacyPolicyPage, TermsOfServicePage } from './pages/shared/LegalPages'
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -75,6 +75,7 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/accessibility" element={<AccessibilityStatementPage />} />
 
       <Route
         path="/teacher"

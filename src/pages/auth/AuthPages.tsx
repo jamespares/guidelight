@@ -42,15 +42,17 @@ function AuthLegalFooter() {
 
 function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-6">
       <Suspense fallback={null}>
         <NightGuideScene className="z-0" />
       </Suspense>
       <div className="absolute right-4 top-4 z-20">
         <ThemeToggle className="border-border/40 bg-card/30 shadow-sm backdrop-blur-xl hover:bg-card/45" />
       </div>
-      <div className="relative z-10 w-full max-w-md">
+      <main id="main-content" className="relative z-10 w-full max-w-md">
         {children}
+      </main>
+      <div className="relative z-10 w-full max-w-md">
         <AuthLegalFooter />
       </div>
     </div>
@@ -62,7 +64,7 @@ export function Landing() {
     <AuthShell>
       <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader className="space-y-4 px-6 pb-6 pt-4 text-center">
-          <CardTitle className="flex justify-center text-3xl">
+          <CardTitle as="h1" className="flex justify-center text-3xl">
             <GuidelightWordmark />
           </CardTitle>
           <CardDescription className="text-base">
@@ -226,7 +228,7 @@ export function TeacherAuth() {
     <AuthShell>
       <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="text-2xl">{title}</CardTitle>
+          <CardTitle as="h1" className="text-2xl">{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -321,8 +323,16 @@ export function TeacherAuth() {
                 </Label>
               </div>
             ) : null}
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            {info ? <p className="text-sm text-foreground">{info}</p> : null}
+            {error ? (
+              <div aria-live="polite" role="status">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            ) : null}
+            {info ? (
+              <div aria-live="polite" role="status">
+                <p className="text-sm text-foreground">{info}</p>
+              </div>
+            ) : null}
             {needsVerify && email ? (
               <Button
                 type="button"
@@ -439,7 +449,7 @@ export function VerifyEmailPage() {
     <AuthShell>
       <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Verify email</CardTitle>
+          <CardTitle as="h1" className="text-2xl">Verify email</CardTitle>
           <CardDescription>
             {status === 'loading'
               ? 'Confirming your email…'
@@ -503,7 +513,7 @@ export function ResetPasswordPage() {
     <AuthShell>
       <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl">
+          <CardTitle as="h1" className="flex items-center gap-2 text-2xl">
             <KeyRound className="h-6 w-6" />
             Set new password
           </CardTitle>
@@ -535,7 +545,11 @@ export function ResetPasswordPage() {
                 autoComplete="new-password"
               />
             </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? (
+              <div aria-live="polite" role="status">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            ) : null}
             <Button type="submit" className="w-full" disabled={loading || !token}>
               {loading ? 'Saving…' : 'Update password'}
             </Button>
@@ -576,7 +590,7 @@ export function StudentAuth() {
     <AuthShell>
       <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Student</CardTitle>
+          <CardTitle as="h1" className="text-2xl">Student</CardTitle>
           <CardDescription>Use the username and password your teacher gave you.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -600,7 +614,11 @@ export function StudentAuth() {
                 required
               />
             </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? (
+              <div aria-live="polite" role="status">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            ) : null}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Please wait…' : 'Sign in'}
             </Button>

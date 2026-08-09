@@ -235,7 +235,11 @@ export function InsightsPage() {
                     placeholder="Optional context for what changed"
                   />
                 </div>
-                {eventError ? <p className="text-sm text-destructive">{eventError}</p> : null}
+                {eventError ? (
+                  <div aria-live="polite" role="status">
+                    <p className="text-sm text-destructive">{eventError}</p>
+                  </div>
+                ) : null}
               </div>
               <DialogFooter>
                 <Button
@@ -251,12 +255,16 @@ export function InsightsPage() {
         }
       />
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       <Card>
         <CardContent className="grid gap-4 p-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Scope</Label>
+            <Label htmlFor="insight-scope">Scope</Label>
             <Select
               value={scope}
               onValueChange={(next) => {
@@ -265,7 +273,7 @@ export function InsightsPage() {
                 setId(value === 'class' ? classes[0]?.id ?? '' : students[0]?.id ?? '')
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger id="insight-scope">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -275,9 +283,9 @@ export function InsightsPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{scope === 'class' ? 'Class' : 'Student'}</Label>
+            <Label htmlFor="insight-id">{scope === 'class' ? 'Class' : 'Student'}</Label>
             <Select value={id || undefined} onValueChange={setId}>
-              <SelectTrigger>
+              <SelectTrigger id="insight-id">
                 <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
@@ -351,7 +359,7 @@ export function InsightsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Events</CardTitle>
+          <CardTitle as="h2">Events</CardTitle>
         </CardHeader>
         <CardContent>
           {events.length === 0 ? (
@@ -421,7 +429,7 @@ export function InsightsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Produce report</CardTitle>
+          <CardTitle as="h2">Produce report</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -491,8 +499,16 @@ export function ReportPage() {
           }
         />
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {saved ? <p className="text-sm text-muted-foreground">Saved</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
+      {saved ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-muted-foreground">Saved</p>
+        </div>
+      ) : null}
       <Textarea
         className="min-h-[480px] font-sans"
         value={content}

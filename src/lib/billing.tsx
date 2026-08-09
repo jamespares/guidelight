@@ -6,6 +6,13 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { CapHitModal, UsageDial } from '@/components/UsageDial'
 import { api, isAiBudgetError, type BillingUsage } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
@@ -83,20 +90,21 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       {user?.role === 'teacher' ? (
         <CapHitModal open={modalOpen} onClose={() => setModalOpen(false)} />
       ) : null}
-      {studentNotice ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg">
-            <p className="text-sm">{studentNotice}</p>
-            <button
-              type="button"
-              className="mt-4 text-sm font-medium text-primary underline"
-              onClick={() => setStudentNotice(null)}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <Dialog open={!!studentNotice} onOpenChange={() => setStudentNotice(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>AI usage notice</DialogTitle>
+            <DialogDescription>{studentNotice}</DialogDescription>
+          </DialogHeader>
+          <button
+            type="button"
+            className="text-sm font-medium text-primary underline"
+            onClick={() => setStudentNotice(null)}
+          >
+            OK
+          </button>
+        </DialogContent>
+      </Dialog>
     </Ctx.Provider>
   )
 }

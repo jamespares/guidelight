@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -120,32 +121,40 @@ export function TaskReviewPage() {
         />
       </div>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
       {message ? (
-        <Card className="border-[hsl(152_40%_70%)] bg-[hsl(152_40%_94%)]">
-          <CardContent className="p-3 text-sm text-[hsl(152_50%_25%)]">{message}</CardContent>
-        </Card>
+        <div aria-live="polite" role="status">
+          <Card className="border border-success-foreground/30 bg-success text-success-foreground">
+            <CardContent className="p-3 text-sm">{message}</CardContent>
+          </Card>
+        </div>
       ) : null}
 
       <Card>
         <CardContent className="space-y-4 p-6">
           <div className="space-y-2">
-            <Label>Title</Label>
+            <Label htmlFor="task-title">Title</Label>
             <Input
+              id="task-title"
               value={content.title}
               onChange={(e) => setContent({ ...content, title: e.target.value })}
             />
           </div>
           <div className="space-y-2">
-            <Label>Instructions</Label>
+            <Label htmlFor="task-instructions">Instructions</Label>
             <Textarea
+              id="task-instructions"
               value={content.instructions}
               onChange={(e) => setContent({ ...content, instructions: e.target.value })}
             />
           </div>
           {task.subtype === 'reading_speed' && task.reading_text ? (
             <div className="space-y-2">
-              <Label>Passage</Label>
+              <p className="text-sm font-semibold">Passage</p>
               <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-4 text-sm">
                 {task.reading_text}
               </pre>
@@ -174,19 +183,21 @@ export function TaskReviewPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label>Prompt</Label>
+              <Label htmlFor={`q-${q.id}-prompt`}>Prompt</Label>
               <Textarea
+                id={`q-${q.id}-prompt`}
                 value={q.prompt}
                 onChange={(e) => updateQuestion(i, { prompt: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Topic tag</Label>
-              <Input value={q.topic} onChange={(e) => updateQuestion(i, { topic: e.target.value })} />
+              <Label htmlFor={`q-${q.id}-topic`}>Topic tag</Label>
+              <Input id={`q-${q.id}-topic`} value={q.topic} onChange={(e) => updateQuestion(i, { topic: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Learning objective</Label>
+              <Label htmlFor={`q-${q.id}-objective`}>Learning objective</Label>
               <Input
+                id={`q-${q.id}-objective`}
                 value={q.learningObjective ?? ''}
                 onChange={(e) => updateQuestion(i, { learningObjective: e.target.value })}
                 placeholder="One sentence: what this question assesses"
@@ -194,8 +205,9 @@ export function TaskReviewPage() {
             </div>
             {q.options ? (
               <div className="space-y-2">
-                <Label>Options (one per line)</Label>
+                <Label htmlFor={`q-${q.id}-options`}>Options (one per line)</Label>
                 <Textarea
+                  id={`q-${q.id}-options`}
                   value={q.options.join('\n')}
                   onChange={(e) =>
                     updateQuestion(i, { options: e.target.value.split('\n').filter(Boolean) })
@@ -205,8 +217,9 @@ export function TaskReviewPage() {
             ) : null}
             {q.correctAnswer !== undefined ? (
               <div className="space-y-2">
-                <Label>Correct answer</Label>
+                <Label htmlFor={`q-${q.id}-answer`}>Correct answer</Label>
                 <Input
+                  id={`q-${q.id}-answer`}
                   value={
                     Array.isArray(q.correctAnswer)
                       ? q.correctAnswer.join(' | ')
@@ -218,8 +231,9 @@ export function TaskReviewPage() {
             ) : null}
             {q.audioScript ? (
               <div className="space-y-2">
-                <Label>Listen script</Label>
+                <Label htmlFor={`q-${q.id}-audio`}>Listen script</Label>
                 <Textarea
+                  id={`q-${q.id}-audio`}
                   value={q.audioScript}
                   onChange={(e) => updateQuestion(i, { audioScript: e.target.value })}
                 />
@@ -233,33 +247,35 @@ export function TaskReviewPage() {
       {task.status === 'draft' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Assign & publish</CardTitle>
+            <CardTitle as="h2">Assign & publish</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="assign-class"
+            <fieldset className="flex flex-wrap gap-4">
+              <legend className="sr-only">Assign to</legend>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  className="h-4 w-4 accent-primary"
+                  name="assign-mode"
                   checked={assignMode === 'class'}
-                  onCheckedChange={() => setAssignMode('class')}
+                  onChange={() => setAssignMode('class')}
                 />
-                <Label htmlFor="assign-class" className="font-normal">
-                  Whole class
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="assign-indiv"
+                Whole class
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  className="h-4 w-4 accent-primary"
+                  name="assign-mode"
                   checked={assignMode === 'individuals'}
-                  onCheckedChange={() => setAssignMode('individuals')}
+                  onChange={() => setAssignMode('individuals')}
                 />
-                <Label htmlFor="assign-indiv" className="font-normal">
-                  Individual students
-                </Label>
-              </div>
-            </div>
+                Individual students
+              </label>
+            </fieldset>
             {assignMode === 'individuals' ? (
-              <div className="space-y-2">
+              <fieldset className="space-y-2">
+                <legend className="sr-only">Select students</legend>
                 {students.map((s) => (
                   <div key={s.id} className="flex items-center gap-2">
                     <Checkbox
@@ -276,7 +292,7 @@ export function TaskReviewPage() {
                     </Label>
                   </div>
                 ))}
-              </div>
+              </fieldset>
             ) : null}
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" disabled={busy} onClick={() => void saveDraft()}>
@@ -295,17 +311,18 @@ export function TaskReviewPage() {
       {task.status === 'published' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Attempts</CardTitle>
+            <CardTitle as="h2">Attempts</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
+              <TableCaption>Student attempts for this task.</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Flags</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead scope="col">Student</TableHead>
+                  <TableHead scope="col">Score</TableHead>
+                  <TableHead scope="col">Duration</TableHead>
+                  <TableHead scope="col">Flags</TableHead>
+                  <TableHead scope="col">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

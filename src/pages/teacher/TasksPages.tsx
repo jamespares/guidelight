@@ -28,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -163,8 +164,8 @@ function TaskCreateForm({
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
       {needsDiag ? (
-        <Card className="border-[hsl(38_80%_70%)] bg-[hsl(38_92%_94%)]">
-          <CardContent className="p-3 text-sm text-[hsl(32_80%_28%)]">
+        <Card className="border border-warning-foreground/30 bg-warning text-warning-foreground">
+          <CardContent className="p-3 text-sm">
             Set a diagnostic first to gather personalisation data before homework or other
             assessments.
           </CardContent>
@@ -173,7 +174,7 @@ function TaskCreateForm({
 
       {type === 'assessment' ? (
         <div className="space-y-2">
-          <Label>Assessment type</Label>
+          <Label htmlFor="assessment-type">Assessment type</Label>
           <Select
             value={subtype ?? undefined}
             onValueChange={(v) => {
@@ -184,7 +185,7 @@ function TaskCreateForm({
             }}
             required
           >
-            <SelectTrigger>
+            <SelectTrigger id="assessment-type">
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
@@ -219,9 +220,9 @@ function TaskCreateForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Class</Label>
+          <Label htmlFor="task-class">Class</Label>
           <Select value={classId || undefined} onValueChange={setClassId} required>
-            <SelectTrigger>
+            <SelectTrigger id="task-class">
               <SelectValue placeholder="Select class…" />
             </SelectTrigger>
             <SelectContent>
@@ -234,12 +235,12 @@ function TaskCreateForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Difficulty</Label>
+          <Label htmlFor="task-difficulty">Difficulty</Label>
           <Select
             value={difficulty}
             onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}
           >
-            <SelectTrigger>
+            <SelectTrigger id="task-difficulty">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -306,9 +307,9 @@ function TaskCreateForm({
         </div>
         {type === 'assessment' ? (
           <div className="space-y-2">
-            <Label htmlFor="limit">Hard time limit (minutes)</Label>
+            <Label htmlFor="task-time-limit">Hard time limit (minutes)</Label>
             <Input
-              id="limit"
+              id="task-time-limit"
               type="number"
               min={5}
               value={timeLimit}
@@ -322,9 +323,9 @@ function TaskCreateForm({
       </div>
       ) : subtype === 'english_level' ? (
         <div className="space-y-2">
-          <Label htmlFor="limit">Time limit (minutes)</Label>
+          <Label htmlFor="cefr-time-limit">Time limit (minutes)</Label>
           <Input
-            id="limit"
+            id="cefr-time-limit"
             type="number"
             min={30}
             value={timeLimit || 60}
@@ -360,7 +361,7 @@ function TaskCreateForm({
       {!isSpecial && type === 'assessment' ? (
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Past paper inspiration</Label>
+            <Label htmlFor="past-paper-upload">Past paper inspiration</Label>
             <p className="text-xs text-muted-foreground">
               Upload a PDF or image of a past paper, and/or paste extra notes. AI will mimic the style.
             </p>
@@ -371,6 +372,7 @@ function TaskCreateForm({
               </span>
               <span className="text-xs text-muted-foreground">PNG, JPG, WebP, or PDF</span>
               <input
+                id="past-paper-upload"
                 type="file"
                 accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
                 className="sr-only"
@@ -386,6 +388,7 @@ function TaskCreateForm({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
+                  aria-label="Remove uploaded past paper"
                   onClick={() => {
                     setUploadName(null)
                     setPastPaperImage(undefined)
@@ -415,7 +418,11 @@ function TaskCreateForm({
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
       <p className="text-xs text-muted-foreground">
         Students in class: {students.filter((s) => s.class_id === classId).length}
       </p>
@@ -486,8 +493,9 @@ function ExamProfilesSection() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor="exam-profile-class" className="sr-only">Class</Label>
             <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger id="exam-profile-class" className="w-[200px]">
                 <SelectValue placeholder="Class" />
               </SelectTrigger>
               <SelectContent>
@@ -505,16 +513,23 @@ function ExamProfilesSection() {
           </div>
         </div>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? (
+          <div aria-live="polite" role="status">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        ) : null}
 
         <Table>
+          <TableCaption>Exam profiles configured for the selected class.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Exam</TableHead>
-              <TableHead>Curriculum</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Mocks</TableHead>
-              <TableHead />
+              <TableHead scope="col">Exam</TableHead>
+              <TableHead scope="col">Curriculum</TableHead>
+              <TableHead scope="col">Duration</TableHead>
+              <TableHead scope="col">Mocks</TableHead>
+              <TableHead scope="col">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -620,14 +635,17 @@ function TaskList({
       />
 
       <Table>
+        <TableCaption>{`List of ${type} tasks.`}</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Class</TableHead>
-            <TableHead>Subject</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead />
+            <TableHead scope="col">Title</TableHead>
+            <TableHead scope="col">Class</TableHead>
+            <TableHead scope="col">Subject</TableHead>
+            <TableHead scope="col">Type</TableHead>
+            <TableHead scope="col">Status</TableHead>
+            <TableHead scope="col">
+              <span className="sr-only">Actions</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

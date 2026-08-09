@@ -15,6 +15,9 @@ import {
   consumeAuthToken,
   createAuthToken,
 } from './authTokens'
+import { logAuth } from './audit'
+import { rateLimitIp, rateLimitUser } from './rateLimit'
+import { parseJsonBody } from './validation'
 import {
   appUrl,
   sendMagicLinkEmail,
@@ -110,10 +113,12 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
   }
 
   if (path === '/api/auth/logout' && request.method === 'POST') {
+    const user = await getSession(env, request)
     const cookies = parseCookies(request.headers.get('Cookie'))
     if (cookies.session) {
       await env.DB.prepare(`DELETE FROM sessions WHERE id = ?`).bind(cookies.session).run()
     }
+    await logAuth(env, 'logout', user, request)
     return json({ ok: true }, 200, { 'Set-Cookie': clearSessionCookie(secure) })
   }
 
@@ -189,7 +194,9 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
 
   // —— Verify email ——
   if (path === '/api/auth/teacher/verify-email' && request.method === 'POST') {
-    const body = (await request.json()) as { token?: string }
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as { token?: string }
     if (!body.token) return error('Missing token')
 
     const consumed = await consumeAuthToken(env, body.token.trim(), 'verify_email')
@@ -211,15 +218,10 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
     await ensureBillingAccount(env, teacher.id)
 
     const session = await createSession(env, teacher.id, 'teacher')
+    const user = { id: teacher.id, role: 'teacher' as const, name: teacher.name, email: teacher.email }
+    await logAuth(env, 'verify_email', user, request)
     return json(
-      {
-        user: {
-          id: teacher.id,
-          role: 'teacher',
-          name: teacher.name,
-          email: teacher.email,
-        },
-      },
+      { user },
       200,
       { 'Set-Cookie': sessionCookie(session.id, session.expiresAt, secure) },
     )
@@ -227,13 +229,23 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
 
   // —— Teacher password login ——
   if (path === '/api/auth/teacher/login' && request.method === 'POST') {
-    const body = (await request.json()) as { email?: string; password?: string }
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as { email?: string; password?: string }
     if (!body.email || !body.password) return error('Missing fields')
+
+    const email = body.email.trim().toLowerCase()
+    const ipAllowed = await rateLimitIp(request, env, 60, 5)
+    const userAllowed = await rateLimitUser(`teacher-email:${email}`, env, 300, 5)
+    if (!ipAllowed || !userAllowed) {
+      await logAuth(env, 'teacher_login_failure', null, request)
+      return error('Too many attempts. Please try again later.', 429)
+    }
 
     const teacher = await env.DB.prepare(
       `SELECT id, email, name, password_hash, email_verified FROM teachers WHERE email = ?`,
     )
-      .bind(body.email.trim().toLowerCase())
+      .bind(email)
       .first<{
         id: string
         email: string
@@ -243,10 +255,12 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
       }>()
 
     if (!teacher || !(await verifyPassword(body.password, teacher.password_hash))) {
+      await logAuth(env, 'teacher_login_failure', null, request)
       return error('Invalid email or password', 401)
     }
 
     if (!teacher.email_verified) {
+      await logAuth(env, 'teacher_login_failure', { id: teacher.id, role: 'teacher', name: teacher.name, email: teacher.email }, request)
       return json(
         {
           error: 'Email not verified',
@@ -258,8 +272,10 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
     }
 
     const session = await createSession(env, teacher.id, 'teacher')
+    const user = { id: teacher.id, role: 'teacher' as const, name: teacher.name, email: teacher.email }
+    await logAuth(env, 'teacher_login_success', user, request)
     return json(
-      { user: { id: teacher.id, role: 'teacher', name: teacher.name, email: teacher.email } },
+      { user },
       200,
       { 'Set-Cookie': sessionCookie(session.id, session.expiresAt, secure) },
     )
@@ -294,7 +310,9 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
 
   // —— Magic link exchange ——
   if (path === '/api/auth/teacher/magic-link/consume' && request.method === 'POST') {
-    const body = (await request.json()) as { token?: string }
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as { token?: string }
     if (!body.token) return error('Missing token')
 
     const consumed = await consumeAuthToken(env, body.token.trim(), 'magic_link')
@@ -308,15 +326,10 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
     if (!teacher || !teacher.email_verified) return error('Account not found', 404)
 
     const session = await createSession(env, teacher.id, 'teacher')
+    const user = { id: teacher.id, role: 'teacher' as const, name: teacher.name, email: teacher.email }
+    await logAuth(env, 'magic_link_used', user, request)
     return json(
-      {
-        user: {
-          id: teacher.id,
-          role: 'teacher',
-          name: teacher.name,
-          email: teacher.email,
-        },
-      },
+      { user },
       200,
       { 'Set-Cookie': sessionCookie(session.id, session.expiresAt, secure) },
     )
@@ -349,7 +362,9 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
 
   // —— Reset password ——
   if (path === '/api/auth/teacher/reset-password' && request.method === 'POST') {
-    const body = (await request.json()) as { token?: string; password?: string }
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as { token?: string; password?: string }
     if (!body.token || !body.password) return error('Missing fields')
     if (body.password.length < 8) return error('Password must be at least 8 characters')
 
@@ -368,17 +383,15 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
       .bind(consumed.teacherId)
       .first<{ id: string; email: string; name: string; email_verified: number }>()
 
+    const user = teacher
+      ? { id: teacher.id, role: 'teacher' as const, name: teacher.name, email: teacher.email }
+      : null
+    await logAuth(env, 'password_reset', user, request)
+
     if (teacher?.email_verified) {
       const session = await createSession(env, teacher.id, 'teacher')
       return json(
-        {
-          user: {
-            id: teacher.id,
-            role: 'teacher',
-            name: teacher.name,
-            email: teacher.email,
-          },
-        },
+        { user },
         200,
         { 'Set-Cookie': sessionCookie(session.id, session.expiresAt, secure) },
       )
@@ -391,13 +404,23 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
   }
 
   if (path === '/api/auth/student/login' && request.method === 'POST') {
-    const body = (await request.json()) as { username?: string; password?: string }
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as { username?: string; password?: string }
     if (!body.username || !body.password) return error('Missing fields')
+
+    const username = body.username.trim().toLowerCase()
+    const ipAllowed = await rateLimitIp(request, env, 60, 5)
+    const userAllowed = await rateLimitUser(`student-username:${username}`, env, 300, 5)
+    if (!ipAllowed || !userAllowed) {
+      await logAuth(env, 'student_login_failure', null, request)
+      return error('Too many attempts. Please try again later.', 429)
+    }
 
     const student = await env.DB.prepare(
       `SELECT id, display_name, username, password_hash FROM students WHERE username = ?`,
     )
-      .bind(body.username.trim())
+      .bind(username)
       .first<{
         id: string
         display_name: string
@@ -406,19 +429,20 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
       }>()
 
     if (!student || !(await verifyPassword(body.password, student.password_hash))) {
+      await logAuth(env, 'student_login_failure', null, request)
       return error('Invalid username or password', 401)
     }
 
     const session = await createSession(env, student.id, 'student')
+    const user = {
+      id: student.id,
+      role: 'student' as const,
+      name: student.display_name,
+      username: student.username,
+    }
+    await logAuth(env, 'student_login_success', user, request)
     return json(
-      {
-        user: {
-          id: student.id,
-          role: 'student',
-          name: student.display_name,
-          username: student.username,
-        },
-      },
+      { user },
       200,
       { 'Set-Cookie': sessionCookie(session.id, session.expiresAt, secure) },
     )

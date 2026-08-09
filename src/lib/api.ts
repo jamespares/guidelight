@@ -232,6 +232,21 @@ export interface ExamReadiness {
   recommendation?: string
 }
 
+export type CefrResponse = {
+  itemId: string
+  level: string
+  skill: string
+  type: string
+  prompt: string
+  response: string
+  score: number
+  maxScore: number
+  feedback?: string
+  options?: string[]
+  correct?: string
+  transcript?: string
+}
+
 export interface MockExamRow {
   id: string
   title: string
@@ -550,6 +565,7 @@ export const api = {
         over_time_seconds?: number | null
       }
       ieltsBand?: string | null
+      responses?: CefrResponse[]
     }>(`/api/cefr/tests/task/${taskId}`),
   cefrStart: (taskId: string) =>
     request<{ testId: string; resumed?: boolean }>(`/api/cefr/tests/task/${taskId}/start`, {

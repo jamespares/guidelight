@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -34,11 +35,15 @@ import {
 import {
   api,
   type ClassRow,
+  type ExamFormat,
+  type ExamFormatSection,
   type ExamProfile,
   type GradeBoundary,
   type MockExamRow,
+  type QuestionType,
 } from '@/lib/api'
 import { readPastPaperFile } from '@/lib/pastPaper'
+import { cn } from '@/lib/utils'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 const CURRICULA = ['IB', 'IGCSE', 'GCSE', 'A-Level', 'Other']
@@ -52,6 +57,33 @@ const DEFAULT_BOUNDARIES: GradeBoundary[] = [
   { grade: '4', minPct: 40, pass: true },
   { grade: '3', minPct: 30 },
 ]
+
+const MOCK_QUESTION_TYPES: { value: QuestionType; label: string }[] = [
+  { value: 'mcq', label: 'Multiple choice' },
+  { value: 'cloze', label: 'Cloze / fill blanks' },
+  { value: 'short_written', label: 'Short written' },
+  { value: 'reading_comprehension', label: 'Reading comprehension' },
+  { value: 'bloom', label: "Bloom's taxonomy" },
+  { value: 'extended_written', label: 'Extended written' },
+  { value: 'image_analysis', label: 'Image analysis' },
+]
+
+const DEFAULT_EXAM_FORMAT: ExamFormat = {
+  sections: [
+    {
+      name: 'Section A — Short answer',
+      questionTypes: ['mcq', 'cloze', 'short_written'],
+      questionCount: 10,
+      marks: 40,
+    },
+    {
+      name: 'Section B — Extended response',
+      questionTypes: ['extended_written', 'reading_comprehension'],
+      questionCount: 4,
+      marks: 60,
+    },
+  ],
+}
 
 export function ExamProfileCreateDialog({
   classes,
@@ -76,6 +108,7 @@ export function ExamProfileCreateDialog({
   const [targetGrade, setTargetGrade] = useState('8')
   const [boundaries, setBoundaries] = useState<GradeBoundary[]>(DEFAULT_BOUNDARIES)
   const [rubricGeneral, setRubricGeneral] = useState('')
+  const [examFormat, setExamFormat] = useState<ExamFormat>(DEFAULT_EXAM_FORMAT)
   const [extractedText, setExtractedText] = useState('')
   const [uploadName, setUploadName] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState<string | undefined>()
@@ -94,6 +127,7 @@ export function ExamProfileCreateDialog({
       setTargetGrade('8')
       setBoundaries(DEFAULT_BOUNDARIES)
       setRubricGeneral('')
+      setExamFormat(DEFAULT_EXAM_FORMAT)
       setExtractedText('')
       setUploadName(null)
       setImageUrl(undefined)
@@ -141,6 +175,7 @@ export function ExamProfileCreateDialog({
         pass_grade: passGrade,
         target_grade: targetGrade,
         rubric: { general: rubricGeneral },
+        exam_format: examFormat,
         reference_past_paper_text: extractedText || undefined,
         source_file_name: uploadName || undefined,
         past_paper_image: imageUrl,
@@ -160,6 +195,46 @@ export function ExamProfileCreateDialog({
     )
   }
 
+  function updateSection(index: number, field: keyof ExamFormatSection, value: unknown) {
+    setExamFormat((prev) => ({
+      ...prev,
+      sections: prev.sections.map((s, i) => (i === index ? { ...s, [field]: value } : s)),
+    }))
+  }
+
+  function toggleSectionType(index: number, type: QuestionType) {
+    setExamFormat((prev) => ({
+      ...prev,
+      sections: prev.sections.map((s, i) => {
+        if (i !== index) return s
+        const has = s.questionTypes.includes(type)
+        return {
+          ...s,
+          questionTypes: has
+            ? s.questionTypes.filter((t) => t !== type)
+            : [...s.questionTypes, type],
+        }
+      }),
+    }))
+  }
+
+  function addSection() {
+    setExamFormat((prev) => ({
+      ...prev,
+      sections: [
+        ...prev.sections,
+        { name: `Section ${String.fromCharCode(65 + prev.sections.length)}`, questionTypes: ['mcq'], questionCount: 5, marks: 20 },
+      ],
+    }))
+  }
+
+  function removeSection(index: number) {
+    setExamFormat((prev) => ({
+      ...prev,
+      sections: prev.sections.filter((_, i) => i !== index),
+    }))
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
@@ -171,9 +246,9 @@ export function ExamProfileCreateDialog({
         </DialogHeader>
         <form className="space-y-4" onSubmit={(e) => void createProfile(e)}>
           <div className="space-y-2">
-            <Label>Class</Label>
+            <Label htmlFor="exam-class">Class</Label>
             <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger>
+              <SelectTrigger id="exam-class">
                 <SelectValue placeholder="Select class…" />
               </SelectTrigger>
               <SelectContent>
@@ -186,8 +261,9 @@ export function ExamProfileCreateDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Exam title</Label>
+            <Label htmlFor="exam-title">Exam title</Label>
             <Input
+              id="exam-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. IGCSE Biology Paper 2"
@@ -196,9 +272,9 @@ export function ExamProfileCreateDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Curriculum</Label>
+              <Label htmlFor="exam-curriculum">Curriculum</Label>
               <Select value={curriculum} onValueChange={setCurriculum}>
-                <SelectTrigger>
+                <SelectTrigger id="exam-curriculum">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -211,8 +287,9 @@ export function ExamProfileCreateDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Syllabus code</Label>
+              <Label htmlFor="exam-syllabus">Syllabus code</Label>
               <Input
+                id="exam-syllabus"
                 value={syllabusCode}
                 onChange={(e) => setSyllabusCode(e.target.value)}
                 placeholder="e.g. 0610"
@@ -220,8 +297,9 @@ export function ExamProfileCreateDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Duration (minutes)</Label>
+            <Label htmlFor="exam-duration">Duration (minutes)</Label>
             <Input
+              id="exam-duration"
               type="number"
               min={10}
               max={180}
@@ -231,9 +309,9 @@ export function ExamProfileCreateDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Pass grade</Label>
+              <Label htmlFor="exam-pass-grade">Pass grade</Label>
               <Select value={passGrade} onValueChange={setPassGrade}>
-                <SelectTrigger>
+                <SelectTrigger id="exam-pass-grade">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,9 +324,9 @@ export function ExamProfileCreateDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Target grade</Label>
+              <Label htmlFor="exam-target-grade">Target grade</Label>
               <Select value={targetGrade} onValueChange={setTargetGrade}>
-                <SelectTrigger>
+                <SelectTrigger id="exam-target-grade">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -261,8 +339,8 @@ export function ExamProfileCreateDialog({
               </Select>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Grade boundaries (% minimum)</Label>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">Grade boundaries (% minimum)</legend>
             <div className="space-y-2 rounded-lg border p-3">
               {boundaries.map((b, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -270,12 +348,14 @@ export function ExamProfileCreateDialog({
                     className="w-16"
                     value={b.grade}
                     onChange={(e) => updateBoundary(i, 'grade', e.target.value)}
+                    aria-label={`Grade ${i + 1} label`}
                   />
                   <Input
                     type="number"
                     className="w-20"
                     value={b.minPct}
                     onChange={(e) => updateBoundary(i, 'minPct', Number(e.target.value))}
+                    aria-label={`Grade ${b.grade} minimum percentage`}
                   />
                   <span className="text-xs text-muted-foreground">%</span>
                   <label className="flex items-center gap-1 text-xs">
@@ -289,19 +369,102 @@ export function ExamProfileCreateDialog({
                 </div>
               ))}
             </div>
-          </div>
+          </fieldset>
           <div className="space-y-2">
-            <Label>Marking rubric</Label>
+            <Label htmlFor="rubric-general">Marking rubric</Label>
             <Textarea
+              id="rubric-general"
               value={rubricGeneral}
               onChange={(e) => setRubricGeneral(e.target.value)}
               placeholder="General marking criteria for AI marking…"
               className="min-h-[80px]"
             />
           </div>
+          <fieldset className="space-y-3">
+            <legend className="flex w-full items-center justify-between text-sm font-semibold">
+              <span>Exam format</span>
+              <Button type="button" variant="outline" size="sm" onClick={addSection}>
+                Add section
+              </Button>
+            </legend>
+            <p className="text-xs text-muted-foreground">
+              Define sections, question types, and marks. AI uses this to structure mock papers.
+            </p>
+            <div className="space-y-3">
+              {examFormat.sections.map((section, i) => (
+                <div key={i} className="space-y-2 rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={section.name}
+                      onChange={(e) => updateSection(i, 'name', e.target.value)}
+                      placeholder="Section name"
+                      className="flex-1"
+                      aria-label={`Section ${i + 1} name`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeSection(i)}
+                      disabled={examFormat.sections.length <= 1}
+                      aria-label={`Remove section ${section.name}`}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      value={section.questionCount}
+                      onChange={(e) => updateSection(i, 'questionCount', Number(e.target.value))}
+                      placeholder="Questions"
+                      aria-label={`Section ${section.name} question count`}
+                    />
+                    <Input
+                      type="number"
+                      min={1}
+                      value={section.marks}
+                      onChange={(e) => updateSection(i, 'marks', Number(e.target.value))}
+                      placeholder="Marks"
+                      aria-label={`Section ${section.name} marks`}
+                    />
+                  </div>
+                  <fieldset className="space-y-1">
+                    <legend className="text-xs font-medium text-muted-foreground">Question types</legend>
+                    <div className="flex flex-wrap gap-2">
+                      {MOCK_QUESTION_TYPES.map((t) => {
+                        const checked = section.questionTypes.includes(t.value)
+                        return (
+                          <label
+                            key={t.value}
+                            className={cn(
+                              'flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors',
+                              checked
+                                ? 'border-primary bg-primary/10 text-foreground'
+                                : 'border-input text-muted-foreground hover:bg-secondary',
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-3.5 w-3.5"
+                              checked={checked}
+                              onChange={() => toggleSectionType(i, t.value)}
+                            />
+                            {t.label}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </fieldset>
+                </div>
+              ))}
+            </div>
+          </fieldset>
           <div className="space-y-2">
-            <Label>Reference past paper (optional)</Label>
+            <Label htmlFor="exam-past-paper">Reference past paper (optional)</Label>
             <Input
+              id="exam-past-paper"
               type="file"
               accept=".pdf,image/*"
               onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
@@ -311,7 +474,11 @@ export function ExamProfileCreateDialog({
               <span className="text-xs text-muted-foreground">{uploadName}</span>
             ) : null}
           </div>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <div aria-live="polite" role="status">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          ) : null}
           <Button type="submit" disabled={busy} className="w-full">
             {busy ? (
               <GenerationBusyLabel
@@ -395,12 +562,16 @@ export function ExamProfileDetailPage() {
         />
       </div>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Exam config</CardTitle>
+            <CardTitle as="h2" className="text-base">Exam config</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
@@ -435,7 +606,7 @@ export function ExamProfileDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Exam format</CardTitle>
+            <CardTitle as="h2" className="text-base">Exam format</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {(profile.exam_format?.sections ?? []).map((s, i) => (
@@ -452,15 +623,18 @@ export function ExamProfileDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Generated mocks</CardTitle>
+          <CardTitle as="h2" className="text-base">Generated mocks</CardTitle>
         </CardHeader>
         <Table>
+          <TableCaption>Generated mock exams for this profile.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Time limit</TableHead>
-              <TableHead />
+              <TableHead scope="col">Title</TableHead>
+              <TableHead scope="col">Status</TableHead>
+              <TableHead scope="col">Time limit</TableHead>
+              <TableHead scope="col">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

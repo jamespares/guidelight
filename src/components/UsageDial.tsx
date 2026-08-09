@@ -1,4 +1,11 @@
 import { Link } from 'react-router-dom'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { BILLING_SETTINGS_PATH, CAP_HIT_TEACHER, formatUsdFromCents, TRUST_DIAL } from '@/lib/trustCopy'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -91,14 +98,15 @@ export function CapHitModal({
   open: boolean
   onClose: () => void
 }) {
-  if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
-        <h2 className="text-lg font-semibold">AI spending cap reached</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{CAP_HIT_TEACHER}</p>
-        <p className="mt-3 text-xs text-muted-foreground">{TRUST_DIAL}</p>
-        <div className="mt-5 flex justify-end gap-2">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>AI spending cap reached</DialogTitle>
+          <DialogDescription>{CAP_HIT_TEACHER}</DialogDescription>
+        </DialogHeader>
+        <p className="text-xs text-muted-foreground">{TRUST_DIAL}</p>
+        <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Close
           </Button>
@@ -106,7 +114,7 @@ export function CapHitModal({
             <Link to={BILLING_SETTINGS_PATH}>Increase your monthly limit</Link>
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

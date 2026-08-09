@@ -48,11 +48,17 @@ function AppShell({
 
   return (
     <div className="flex min-h-screen">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        Skip to main content
+      </a>
       <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-        <div className="flex items-start justify-between gap-2 border-b border-sidebar-border px-4 py-5">
+        <header className="flex items-start justify-between gap-2 border-b border-sidebar-border px-4 py-5">
           <BrandMark role={role} />
           <ThemeToggle className="mt-0.5" />
-        </div>
+        </header>
 
         <nav className="flex flex-1 flex-col gap-1 p-3">
           {items.map(({ to, label, icon: Icon }) => (
@@ -94,7 +100,7 @@ function AppShell({
           ))}
         </nav>
 
-        <div className="space-y-2 border-t border-sidebar-border p-3">
+        <footer className="space-y-2 border-t border-sidebar-border p-3">
           {showBillingDial ? <SidebarUsageDial /> : null}
           <div className="px-3 text-xs text-sidebar-muted">
             <div className="font-medium text-sidebar-foreground">{user?.name}</div>
@@ -117,6 +123,10 @@ function AppShell({
               Privacy
             </NavLink>
             <span aria-hidden>·</span>
+            <NavLink to="/accessibility" className="hover:text-sidebar-foreground hover:underline">
+              Accessibility
+            </NavLink>
+            <span aria-hidden>·</span>
             <a href={SUPPORT_MAILTO} className="hover:text-sidebar-foreground hover:underline">
               Contact
             </a>
@@ -130,10 +140,10 @@ function AppShell({
             <LogOut className="h-4 w-4" />
             Sign out
           </Button>
-        </div>
+        </footer>
       </aside>
 
-      <main className="ml-60 flex-1 p-8">
+      <main id="main-content" className="ml-60 flex-1 p-8">
         {showBillingDial ? <TeacherCapBanner /> : null}
         <Outlet />
       </main>

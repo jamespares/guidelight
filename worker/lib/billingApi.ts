@@ -3,6 +3,7 @@
  */
 import type { Env, SessionUser } from '../types'
 import { error, generateId, json } from './auth'
+import { parseJsonBody } from './validation'
 import {
   ensureBillingAccount,
   getUsageSummary,
@@ -57,7 +58,9 @@ export async function handleBillingApi(
   }
 
   if (path === '/api/billing/cap' && request.method === 'PATCH') {
-    const body = (await request.json()) as { monthly_cap_cents?: number }
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as { monthly_cap_cents?: number }
     const cap = Math.round(Number(body.monthly_cap_cents))
     if (!Number.isFinite(cap) || cap < 100) {
       return error('Monthly cap must be at least $1.00 (100 cents)')
@@ -73,7 +76,9 @@ export async function handleBillingApi(
   }
 
   if (path === '/api/billing/profile' && request.method === 'PATCH') {
-    const body = (await request.json()) as {
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as {
       school_name?: string
       billing_email?: string
       purchase_order?: string

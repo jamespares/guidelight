@@ -514,12 +514,50 @@ export async function handleCefrApi(
 
     if (completed) {
       const marks = await getWrittenMarks(env.DB, completed.id)
+      const { results: responseRows } = await env.DB.prepare(
+        `SELECT item_id, item_level, item_skill, item_type, response, score, max_score
+         FROM cefr_test_responses WHERE test_id = ? ORDER BY id`,
+      )
+        .bind(completed.id)
+        .all<{
+          item_id: string
+          item_level: string
+          item_skill: string
+          item_type: string
+          response: string
+          score: number
+          max_score: number
+        }>()
+
+      const responses = (responseRows ?? []).map((r) => {
+        const item = findItem(r.item_id)
+        const base = {
+          itemId: r.item_id,
+          level: r.item_level,
+          skill: r.item_skill,
+          type: r.item_type,
+          prompt: item?.prompt ?? r.item_id,
+          response: r.response,
+          score: r.score,
+          maxScore: r.max_score,
+          feedback: marks.get(r.item_id)?.feedback ?? '',
+        }
+        if (item && (item.type === 'mcq' || item.type === 'cloze' || item.type === 'reading' || item.type === 'listening')) {
+          return { ...base, options: item.options, correct: item.correct }
+        }
+        if (item && item.type === 'dictation') {
+          return { ...base, transcript: item.transcript }
+        }
+        return base
+      })
+
       return json({
         phase: 'result',
         title: task.title,
         test: completed,
         ieltsBand: completed.cefr_level ? ieltsBandForLevel(completed.cefr_level as never) : null,
         writtenMarks: Object.fromEntries(marks),
+        responses,
       })
     }
 

@@ -178,7 +178,11 @@ export function StudentDetailPage() {
         />
       </div>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         {[
@@ -226,7 +230,7 @@ export function StudentDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle as="h2" className="flex items-center gap-2">
             <KeyRound className="h-5 w-5" />
             Login credentials
           </CardTitle>
@@ -302,7 +306,7 @@ export function StudentDetailPage() {
       {examReadiness.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Exam readiness</CardTitle>
+            <CardTitle as="h2">Exam readiness</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {examReadiness.map(({ profile, readiness, attempts: mockAttempts }) => (
@@ -361,7 +365,7 @@ export function StudentDetailPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>AI introduction</CardTitle>
+          <CardTitle as="h2">AI introduction</CardTitle>
           <Button type="button" variant="outline" disabled={busy} onClick={() => void refreshSummary()}>
             {busyKind === 'summary' ? (
               <GenerationBusyLabel
@@ -388,7 +392,7 @@ export function StudentDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Editable profile</CardTitle>
+          <CardTitle as="h2">Editable profile</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={(e) => void save(e)}>
@@ -410,7 +414,7 @@ export function StudentDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Parent report</CardTitle>
+          <CardTitle as="h2">Parent report</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

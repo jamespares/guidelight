@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { api } from '@/lib/api'
+import { api, type CefrResponse } from '@/lib/api'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 type CefrItem = {
@@ -21,6 +21,7 @@ type CefrItem = {
   gapIndex?: number
   maxScore: number
 }
+
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60)
@@ -55,6 +56,8 @@ export function EnglishLevelPage() {
   const [passages, setPassages] = useState<Record<string, string>>({})
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [secondsLeft, setSecondsLeft] = useState(3600)
+  const [timeAnnouncement, setTimeAnnouncement] = useState('')
+  const announcedBoundary = useRef<number | null>(null)
   const [result, setResult] = useState<{
     cefr_level: string
     total_score: number
@@ -62,6 +65,7 @@ export function EnglishLevelPage() {
     ieltsBand: string
     over_time_seconds?: number
   } | null>(null)
+  const [responses, setResponses] = useState<CefrResponse[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -80,6 +84,7 @@ export function EnglishLevelPage() {
         ieltsBand: res.ieltsBand ?? '—',
         over_time_seconds: res.test.over_time_seconds ?? 0,
       })
+      setResponses((res.responses as CefrResponse[]) ?? [])
       return
     }
     if (res.phase === 'test' && res.testId) {
@@ -104,6 +109,19 @@ export function EnglishLevelPage() {
     }, 1000)
     return () => window.clearInterval(t)
   }, [phase])
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return
+    if (secondsLeft === 10) {
+      setTimeAnnouncement('10 seconds remaining')
+      return
+    }
+    const minutes = Math.floor(secondsLeft / 60)
+    if (secondsLeft % 60 === 0 && minutes > 0 && announcedBoundary.current !== minutes) {
+      announcedBoundary.current = minutes
+      setTimeAnnouncement(`${minutes} minute${minutes === 1 ? '' : 's'} remaining`)
+    }
+  }, [secondsLeft])
 
   const grouped = useMemo(() => items, [items])
 
@@ -132,9 +150,8 @@ export function EnglishLevelPage() {
     setSubmitting(true)
     setError('')
     try {
-      const res = await api.cefrSubmit(testId, answers)
-      setResult(res)
-      setPhase('result')
+      await api.cefrSubmit(testId, answers)
+      await loadStatus()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
@@ -162,14 +179,18 @@ export function EnglishLevelPage() {
         ) : null}
       </div>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       {phase === 'loading' ? <p className="text-muted-foreground">Loading…</p> : null}
 
       {phase === 'start' ? (
         <Card>
           <CardContent className="space-y-4 p-6">
-            <div className="rounded-lg border border-[hsl(38_80%_70%)] bg-[hsl(38_92%_94%)] p-3 text-sm text-[hsl(32_80%_28%)]">
+            <div className="rounded-lg border border-warning-foreground/30 bg-warning p-3 text-sm text-warning-foreground">
               <strong>Do your own work.</strong> No AI help, no copy-paste, no asking other people.
               Your teacher sees your answers.
             </div>
@@ -187,7 +208,10 @@ export function EnglishLevelPage() {
 
       {phase === 'test' ? (
         <div className="space-y-6">
-          <div className="rounded-lg border border-[hsl(38_80%_70%)] bg-[hsl(38_92%_94%)] p-3 text-sm text-[hsl(32_80%_28%)]">
+          <div aria-live="polite" className="sr-only">
+            {timeAnnouncement}
+          </div>
+          <div className="rounded-lg border border-warning-foreground/30 bg-warning p-3 text-sm text-warning-foreground">
             <strong>Do your own work.</strong> No AI help during the diagnostic.
           </div>
           {grouped.map((item, i) => {
@@ -232,7 +256,8 @@ export function EnglishLevelPage() {
                         }
                       />
                     ) : (
-                      <div className="space-y-2">
+                      <fieldset className="space-y-2">
+                        <legend className="sr-only">{item.prompt}</legend>
                         {(item.options ?? []).map((opt) => (
                           <label key={opt} className="flex items-center gap-2 text-sm">
                             <input
@@ -245,7 +270,7 @@ export function EnglishLevelPage() {
                             {opt}
                           </label>
                         ))}
-                      </div>
+                      </fieldset>
                     )}
                   </CardContent>
                 </Card>
@@ -267,25 +292,70 @@ export function EnglishLevelPage() {
       ) : null}
 
       {phase === 'result' && result ? (
-        <Card>
-          <CardContent className="space-y-3 p-6">
-            <p className="text-2xl font-semibold">
-              Your level: <span className="text-primary">{result.cefr_level}</span>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Score {result.total_score} / {result.max_score} · Indicative IELTS {result.ieltsBand}
-              {result.over_time_seconds
-                ? ` · Overtime ${result.over_time_seconds}s`
-                : ''}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Practise with A1–C2 English Stories and the Focused Reading Machine in Tools.
-            </p>
-            <Button asChild variant="outline">
-              <Link to="/student/tasks">Back to tasks</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="space-y-3 p-6">
+              <p className="text-2xl font-semibold">
+                Your level: <span className="text-primary">{result.cefr_level}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Score {result.total_score} / {result.max_score} · Indicative IELTS {result.ieltsBand}
+                {result.over_time_seconds
+                  ? ` · Overtime ${result.over_time_seconds}s`
+                  : ''}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Practise with A1–C2 English Stories and the Focused Reading Machine in Tools.
+              </p>
+              <Button asChild variant="outline">
+                <Link to="/student/tasks">Back to tasks</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">Question review</h2>
+            {responses.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Detailed responses not available.</p>
+            ) : (
+              responses.map((r, i) => {
+                const isCorrect = r.score > 0 && r.score >= r.maxScore
+                const isPartial = r.score > 0 && r.score < r.maxScore
+                return (
+                  <Card key={r.itemId}>
+                    <CardContent className="space-y-2 p-4">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>Question {i + 1}</span>
+                        <Badge variant="secondary">{r.level}</Badge>
+                        <Badge variant="outline">{r.skill}</Badge>
+                        <Badge variant={isCorrect ? 'accent' : isPartial ? 'warn' : 'danger'}>
+                          {r.score}/{r.maxScore}
+                        </Badge>
+                      </div>
+                      <p className="text-sm font-medium">{r.prompt}</p>
+                      <div className="rounded-lg border border-border bg-secondary p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Your answer
+                        </p>
+                        <p className="mt-1 text-sm">{r.response || <span className="italic text-muted-foreground">No answer</span>}</p>
+                      </div>
+                      {r.type !== 'written' && r.correct ? (
+                        <p className="text-sm text-muted-foreground">
+                          Correct answer: <span className="font-medium text-foreground">{r.correct}</span>
+                        </p>
+                      ) : null}
+                      {r.feedback ? (
+                        <p className="text-sm text-muted-foreground">
+                          Feedback: {r.feedback}
+                        </p>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                )
+              })
+            )}
+          </div>
+        </div>
       ) : null}
     </div>
   )

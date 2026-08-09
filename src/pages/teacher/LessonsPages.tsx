@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -159,7 +160,7 @@ function PlanLessonsForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label>Class</Label>
+        <Label htmlFor="lesson-class">Class</Label>
         <Select
           value={classId}
           onValueChange={(v) => {
@@ -171,7 +172,7 @@ function PlanLessonsForm({
             }
           }}
         >
-          <SelectTrigger>
+          <SelectTrigger id="lesson-class">
             <SelectValue placeholder="Select class" />
           </SelectTrigger>
           <SelectContent>
@@ -250,8 +251,8 @@ function PlanLessonsForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Days of the week (incl. weekends)</Label>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold">Days of the week (incl. weekends)</legend>
         <div className="flex flex-wrap gap-2">
           {ALL_DAYS.map((day) => {
             const on = days.includes(day)
@@ -262,6 +263,7 @@ function PlanLessonsForm({
                 size="sm"
                 variant={on ? 'default' : 'outline'}
                 onClick={() => toggleDay(day)}
+                aria-pressed={on}
               >
                 {day}
               </Button>
@@ -271,7 +273,7 @@ function PlanLessonsForm({
         <p className="text-xs text-muted-foreground">
           Weekly frequency: {days.length} lesson{days.length === 1 ? '' : 's'}
         </p>
-      </div>
+      </fieldset>
 
       <div className="space-y-2">
         <Label htmlFor="lesson-start">Start date</Label>
@@ -284,8 +286,8 @@ function PlanLessonsForm({
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Resources available</Label>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold">Resources available</legend>
         <div className="flex flex-wrap gap-2">
           {RESOURCE_PRESETS.map((r) => {
             const on = resources.includes(r)
@@ -296,6 +298,7 @@ function PlanLessonsForm({
                 size="sm"
                 variant={on ? 'default' : 'outline'}
                 onClick={() => toggleResource(r)}
+                aria-pressed={on}
               >
                 {r}
               </Button>
@@ -307,6 +310,7 @@ function PlanLessonsForm({
             value={customResource}
             onChange={(e) => setCustomResource(e.target.value)}
             placeholder="Add custom resource"
+            aria-label="Add custom resource"
           />
           <Button
             type="button"
@@ -328,16 +332,24 @@ function PlanLessonsForm({
               .map((r) => (
                 <Badge key={r} variant="secondary" className="gap-1">
                   {r}
-                  <button type="button" onClick={() => toggleResource(r)}>
+                  <button
+                    type="button"
+                    onClick={() => toggleResource(r)}
+                    aria-label={`Remove ${r}`}
+                  >
                     ×
                   </button>
                 </Badge>
               ))}
           </div>
         ) : null}
-      </div>
+      </fieldset>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       <Button type="submit" disabled={busy} className="w-full gap-2">
         {busy ? (
@@ -411,7 +423,11 @@ export function LessonsPage() {
         }
       />
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       {!batches.length ? (
         <Card>
@@ -421,15 +437,18 @@ export function LessonsPage() {
         </Card>
       ) : (
         <Table>
+          <TableCaption>Planned lesson batches.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Subject</TableHead>
-              <TableHead>Weeks</TableHead>
-              <TableHead>Starts</TableHead>
-              <TableHead>Days</TableHead>
-              <TableHead />
+              <TableHead scope="col">Title</TableHead>
+              <TableHead scope="col">Class</TableHead>
+              <TableHead scope="col">Subject</TableHead>
+              <TableHead scope="col">Weeks</TableHead>
+              <TableHead scope="col">Starts</TableHead>
+              <TableHead scope="col">Days</TableHead>
+              <TableHead scope="col">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -612,12 +631,16 @@ export function LessonBatchPage() {
         </div>
       </div>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       {view === 'calendar' ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg">
+            <CardTitle as="h2" className="text-lg">
               {monthAnchor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
             </CardTitle>
             <div className="flex gap-2">
@@ -682,13 +705,17 @@ export function LessonBatchPage() {
         </Card>
       ) : (
         <Table>
+          <TableCaption>Lessons in this batch.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Day</TableHead>
-              <TableHead>Week</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead scope="col">Date</TableHead>
+              <TableHead scope="col">Day</TableHead>
+              <TableHead scope="col">Week</TableHead>
+              <TableHead scope="col">Title</TableHead>
+              <TableHead scope="col">Type</TableHead>
+              <TableHead scope="col">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -697,18 +724,16 @@ export function LessonBatchPage() {
                 <TableCell>{l.scheduled_date}</TableCell>
                 <TableCell>{l.day_of_week}</TableCell>
                 <TableCell>{l.week_index}</TableCell>
-                <TableCell>
-                  <Link
-                    className="font-medium hover:underline"
-                    to={`/teacher/lessons/${batch.id}/${l.id}`}
-                  >
-                    {l.title}
-                  </Link>
-                </TableCell>
+                <TableCell className="font-medium">{l.title}</TableCell>
                 <TableCell>
                   <Badge variant={l.plan?.activityStyle === 'communicative' ? 'warn' : 'secondary'}>
                     {activityStyleLabel(l.plan?.activityStyle)}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/teacher/lessons/${batch.id}/${l.id}`}>Open</Link>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -728,15 +753,17 @@ function StageEditor({
   stage: LessonStage
   onChange: (next: LessonStage) => void
 }) {
+  const baseId = label.toLowerCase().replace(/\s+/g, '-')
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{label}</CardTitle>
+        <CardTitle as="h2" className="text-base">{label}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-2">
-          <Label>Duration (minutes)</Label>
+          <Label htmlFor={`${baseId}-duration`}>Duration (minutes)</Label>
           <Input
+            id={`${baseId}-duration`}
             type="number"
             min={1}
             value={stage.durationMins}
@@ -744,8 +771,9 @@ function StageEditor({
           />
         </div>
         <div className="space-y-2">
-          <Label>Steps (one per line)</Label>
+          <Label htmlFor={`${baseId}-steps`}>Steps (one per line)</Label>
           <Textarea
+            id={`${baseId}-steps`}
             rows={4}
             value={(stage.steps ?? []).join('\n')}
             onChange={(e) =>
@@ -757,8 +785,9 @@ function StageEditor({
           />
         </div>
         <div className="space-y-2">
-          <Label>Teacher notes</Label>
+          <Label htmlFor={`${baseId}-notes`}>Teacher notes</Label>
           <Textarea
+            id={`${baseId}-notes`}
             rows={2}
             value={stage.teacherNotes ?? ''}
             onChange={(e) => onChange({ ...stage, teacherNotes: e.target.value })}
@@ -877,17 +906,26 @@ export function LessonDetailPage() {
         </Button>
       </div>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
+      {message ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-emerald-600">{message}</p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Title</Label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Label htmlFor="lesson-title">Title</Label>
+          <Input id="lesson-title" value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>Scheduled date</Label>
+          <Label htmlFor="lesson-scheduled-date">Scheduled date</Label>
           <Input
+            id="lesson-scheduled-date"
             type="date"
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
@@ -897,7 +935,7 @@ export function LessonDetailPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Lesson type</Label>
+          <Label htmlFor="lesson-type">Lesson type</Label>
           <Select
             value={plan.activityStyle}
             onValueChange={(v) =>
@@ -907,7 +945,7 @@ export function LessonDetailPage() {
               })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger id="lesson-type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -921,8 +959,9 @@ export function LessonDetailPage() {
           <p className="text-xs text-muted-foreground">{activityStyleHint(plan.activityStyle)}</p>
         </div>
         <div className="space-y-2">
-          <Label>Career context (optional)</Label>
+          <Label htmlFor="career-context">Career context (optional)</Label>
           <Input
+            id="career-context"
             value={plan.careerContext ?? ''}
             onChange={(e) => setPlan({ ...plan, careerContext: e.target.value })}
             placeholder="Only when there is a career-framed activity"
@@ -931,8 +970,9 @@ export function LessonDetailPage() {
       </div>
 
       <div className="space-y-2">
-        <Label>Learning objective</Label>
+        <Label htmlFor="learning-objective">Learning objective</Label>
         <Textarea
+          id="learning-objective"
           value={plan.learningObjective}
           onChange={(e) => setPlan({ ...plan, learningObjective: e.target.value })}
           rows={2}
@@ -940,8 +980,9 @@ export function LessonDetailPage() {
       </div>
 
       <div className="space-y-2">
-        <Label>Materials (comma-separated)</Label>
+        <Label htmlFor="materials">Materials (comma-separated)</Label>
         <Input
+          id="materials"
           value={(plan.materials ?? []).join(', ')}
           onChange={(e) =>
             setPlan({
@@ -972,24 +1013,27 @@ export function LessonDetailPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label>Differentiation</Label>
+          <Label htmlFor="differentiation">Differentiation</Label>
           <Textarea
+            id="differentiation"
             rows={3}
             value={plan.differentiation ?? ''}
             onChange={(e) => setPlan({ ...plan, differentiation: e.target.value })}
           />
         </div>
         <div className="space-y-2">
-          <Label>Plenary</Label>
+          <Label htmlFor="plenary">Plenary</Label>
           <Textarea
+            id="plenary"
             rows={3}
             value={plan.plenary ?? ''}
             onChange={(e) => setPlan({ ...plan, plenary: e.target.value })}
           />
         </div>
         <div className="space-y-2">
-          <Label>Optional homework</Label>
+          <Label htmlFor="optional-homework">Optional homework</Label>
           <Textarea
+            id="optional-homework"
             rows={3}
             value={plan.homeworkOptional ?? ''}
             onChange={(e) => setPlan({ ...plan, homeworkOptional: e.target.value })}

@@ -1,5 +1,6 @@
 # Local secrets for Guidelight (copy to .dev.vars — never commit)
 # Stripe (required for card checkout / invoices)
-# STRIPE_SECRET_KEY=sk_live_...   # or sk_test_...
+# WARNING: never commit live secrets. Use test keys for local development.
+# STRIPE_SECRET_KEY=sk_test_...   # or sk_live_... in production only
 # STRIPE_WEBHOOK_SECRET=whsec_...
-# Publishable key + portal login URL live in wrangler.jsonc vars (safe to commit)
+# Publishable key + portal login URL should be set via wrangler secrets or env-specific vars.

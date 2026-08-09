@@ -1,0 +1,3 @@
+-- GDPR account deletion support
+-- No new schema required: existing ON DELETE CASCADE foreign keys plus the
+-- audit_events table (created in migration 0012) handle deletion logging.

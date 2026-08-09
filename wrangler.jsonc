@@ -38,7 +38,8 @@
     "AI_MARKUP_BPS": "20000",
     "DEFAULT_MONTHLY_CAP_CENTS": "2000",
     "DEFAULT_STARTER_CREDIT_CENTS": "500",
-    "STRIPE_PUBLISHABLE_KEY": "pk_live_51Sgg3aBYRA6cNlBJ0It49XIgT9m3sfasq999J2K0aLIPW3SuBy7IJ6l70bY9MUovpg1HE2uPV4xBAZotqdS3NTWV003zYv1lJo",
+    // STRIPE_PUBLISHABLE_KEY must be set via `wrangler secret put STRIPE_PUBLISHABLE_KEY`
+    // or env-specific vars. Do not commit Stripe keys to version control.
     "STRIPE_CUSTOMER_PORTAL_LOGIN_URL": "https://billing.stripe.com/p/login/cNiaEW55ZfgP8B47Jw7ok00"
   },
   "triggers": {

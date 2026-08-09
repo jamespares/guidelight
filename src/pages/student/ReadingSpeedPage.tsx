@@ -60,25 +60,7 @@ export function ReadingSpeedPage() {
     return () => el.removeEventListener('scroll', onScroll)
   }, [phase, body])
 
-  useEffect(() => {
-    if (phase !== 'reading') return
-    const block = (e: Event) => e.preventDefault()
-    const keyBlock = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x', 'a'].includes(e.key.toLowerCase())) {
-        e.preventDefault()
-      }
-    }
-    document.addEventListener('contextmenu', block)
-    document.addEventListener('copy', block)
-    document.addEventListener('cut', block)
-    document.addEventListener('keydown', keyBlock)
-    return () => {
-      document.removeEventListener('contextmenu', block)
-      document.removeEventListener('copy', block)
-      document.removeEventListener('cut', block)
-      document.removeEventListener('keydown', keyBlock)
-    }
-  }, [phase])
+
 
   async function start() {
     if (!taskId) return
@@ -136,7 +118,11 @@ export function ReadingSpeedPage() {
         </Link>
         <PageHeader title={title || 'Reading speed'} description="Timed natural-pace reading with spot-checks." />
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
 
       {phase === 'loading' ? <p className="text-muted-foreground">Loading…</p> : null}
 
@@ -158,11 +144,11 @@ export function ReadingSpeedPage() {
         <Card>
           <CardContent className="space-y-4 p-6">
             <p className="text-sm text-muted-foreground">
-              Scroll to the bottom, then finish. Copying is disabled.
+              Scroll to the bottom, then finish. Do your own reading — copying is not allowed.
             </p>
             <pre
               ref={passageRef}
-              className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-4 text-base leading-relaxed select-none"
+              className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-4 text-base leading-relaxed"
             >
               {body}
             </pre>

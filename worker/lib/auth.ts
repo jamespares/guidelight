@@ -1,6 +1,6 @@
 /** Password hashing + session helpers using Web Crypto (Workers-compatible). */
 
-const PBKDF2_ITERATIONS = 100_000
+const PBKDF2_ITERATIONS = 600_000
 const SESSION_DAYS = 14
 
 function bytesToHex(bytes: ArrayBuffer | Uint8Array): string {
@@ -121,8 +121,22 @@ export function slugify(s: string): string {
 
 export function randomPassword(length = 8): string {
   const chars = 'abcdefghjkmnpqrstuvwxyz23456789'
-  const bytes = crypto.getRandomValues(new Uint8Array(length))
-  return [...bytes].map((b) => chars[b % chars.length]).join('')
+  const alphabetSize = chars.length
+  const rejectLimit = Math.floor(256 / alphabetSize) * alphabetSize
+  const out: string[] = []
+  let bytes = crypto.getRandomValues(new Uint8Array(length * 2))
+  let i = 0
+  while (out.length < length) {
+    if (i >= bytes.length) {
+      bytes = crypto.getRandomValues(new Uint8Array(length * 2))
+      i = 0
+    }
+    const b = bytes[i++]
+    if (b < rejectLimit) {
+      out.push(chars[b % alphabetSize])
+    }
+  }
+  return out.join('')
 }
 
 export function json(data: unknown, status = 200, headers: HeadersInit = {}): Response {

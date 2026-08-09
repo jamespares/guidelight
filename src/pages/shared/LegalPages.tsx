@@ -50,6 +50,10 @@ function LegalShell({ title, children }: { title: string; children: ReactNode })
             Privacy
           </Link>
           <span aria-hidden>·</span>
+          <Link to="/accessibility" className="underline-offset-4 hover:text-foreground hover:underline">
+            Accessibility
+          </Link>
+          <span aria-hidden>·</span>
           <a href={SUPPORT_MAILTO} className="underline-offset-4 hover:text-foreground hover:underline">
             Contact
           </a>
@@ -393,7 +397,22 @@ export function PrivacyPolicyPage() {
       </section>
 
       <section className="space-y-3">
-        <H2>8. Children’s and student data</H2>
+        <H2>8. Data portability and deletion</H2>
+        <P>
+          If you are a teacher, you can request a copy of the personal data you have provided and
+          that we process on your behalf by emailing{' '}
+          <a href={SUPPORT_MAILTO} className="text-foreground underline-offset-4 hover:underline">
+            {SUPPORT_EMAIL}
+          </a>
+          . We will also add self-service export and deletion tools inside the product. When you
+          delete your teacher account, we remove your profile, classes, students, tasks, attempts,
+          exam profiles, and billing records from active systems within a reasonable time, subject
+          to any legal or tax retention requirements.
+        </P>
+      </section>
+
+      <section className="space-y-3">
+        <H2>9. Children’s and student data</H2>
         <P>
           {PRODUCT_NAME} is designed for classroom use. Student accounts are created and managed by
           teachers. Teachers and schools are responsible for ensuring they have a lawful basis and
@@ -404,7 +423,7 @@ export function PrivacyPolicyPage() {
       </section>
 
       <section className="space-y-3">
-        <H2>9. Security</H2>
+        <H2>10. Security</H2>
         <P>
           We use industry-standard measures appropriate to a cloud-hosted education app (encrypted
           transport, hashed passwords, session controls, infrastructure provided by Cloudflare). No
@@ -414,7 +433,7 @@ export function PrivacyPolicyPage() {
       </section>
 
       <section className="space-y-3">
-        <H2>10. Changes</H2>
+        <H2>11. Changes</H2>
         <P>
           We may update this Privacy Policy from time to time. The effective date at the top of this
           page will change when we do. Continued use of the service after an update means you
@@ -423,7 +442,7 @@ export function PrivacyPolicyPage() {
       </section>
 
       <section className="space-y-3">
-        <H2>11. Contact</H2>
+        <H2>12. Contact</H2>
         <P>
           {OPERATOR_NAME}
           <br />
@@ -433,6 +452,55 @@ export function PrivacyPolicyPage() {
           <a href={SUPPORT_MAILTO} className="text-foreground underline-offset-4 hover:underline">
             {SUPPORT_EMAIL}
           </a>
+        </P>
+      </section>
+    </LegalShell>
+  )
+}
+
+export function AccessibilityStatementPage() {
+  return (
+    <LegalShell title="Accessibility Statement">
+      <section className="space-y-3">
+        <H2>Our commitment</H2>
+        <P>
+          {PRODUCT_NAME} is committed to making our platform usable by as many people as possible,
+          including students, teachers, and administrators with disabilities. We aim to meet the
+          Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standard.
+        </P>
+      </section>
+
+      <section className="space-y-3">
+        <H2>What we have done</H2>
+        <Ul>
+          <li>Keyboard navigation support throughout the teacher and student dashboards</li>
+          <li>Visible focus indicators on interactive elements</li>
+          <li>Semantic HTML landmarks, headings, and labels</li>
+          <li>Screen-reader announcements for errors, timers, and status messages</li>
+          <li>Colour contrast that meets AA requirements in both light and dark themes</li>
+          <li>Accessible dialog and form components using tested open-source primitives</li>
+        </Ul>
+      </section>
+
+      <section className="space-y-3">
+        <H2>Known limitations</H2>
+        <P>
+          Some third-party content uploaded by teachers (PDFs, images, audio) may not be fully
+          accessible. We rely on teachers to provide accessible materials where possible. Some
+          advanced visualisations and the 3D landing scene are decorative and do not block access
+          to core features.
+        </P>
+      </section>
+
+      <section className="space-y-3">
+        <H2>Feedback and help</H2>
+        <P>
+          If you experience any accessibility barriers, or need content in a different format,
+          please contact us at{' '}
+          <a href={SUPPORT_MAILTO} className="text-foreground underline-offset-4 hover:underline">
+            {SUPPORT_EMAIL}
+          </a>
+          . We will respond as soon as we can and aim to fix issues promptly.
         </P>
       </section>
     </LegalShell>
