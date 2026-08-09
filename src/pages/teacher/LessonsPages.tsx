@@ -429,21 +429,28 @@ export function LessonsPage() {
               <TableHead>Weeks</TableHead>
               <TableHead>Starts</TableHead>
               <TableHead>Days</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {batches.map((b) => (
-              <TableRow key={b.id} className="cursor-pointer">
-                <TableCell>
-                  <Link className="font-medium hover:underline" to={`/teacher/lessons/${b.id}`}>
-                    {b.title || `${b.subject} plan`}
-                  </Link>
+              <TableRow key={b.id}>
+                <TableCell className="font-medium">
+                  {b.title || `${b.subject} plan`}
                 </TableCell>
                 <TableCell>{b.class_name}</TableCell>
                 <TableCell>{b.subject}</TableCell>
                 <TableCell>{b.weeks}</TableCell>
                 <TableCell>{b.start_date}</TableCell>
                 <TableCell>{(b.days_of_week ?? []).join(', ')}</TableCell>
+                <TableCell>
+                  <Link
+                    className="font-semibold underline-offset-4 hover:underline"
+                    to={`/teacher/lessons/${b.id}`}
+                  >
+                    Open
+                  </Link>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
