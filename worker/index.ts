@@ -435,15 +435,17 @@ export default {
 
         const students = []
         for (const s of results ?? []) {
-          const [rate, avgScore] = await Promise.all([
+          const [rate, avgScore, examReadiness] = await Promise.all([
             hwCompletionRate(env, s.id, s.class_id),
             avgTaskScore(env, s.id, s.class_id),
+            aggregateExamReadiness(env, s.class_id, [s.id]),
           ])
           students.push({
             ...s,
             weakspots: JSON.parse(s.weakspots || '[]'),
             hw_completion_rate: rate,
             avg_score: avgScore,
+            exam_readiness: examReadiness,
           })
         }
         return json({ students })
@@ -489,9 +491,10 @@ export default {
           .bind(studentId)
           .all()
 
-        const [rate, avgScore] = await Promise.all([
+        const [rate, avgScore, examReadiness] = await Promise.all([
           hwCompletionRate(env, s.id, s.class_id),
           avgTaskScore(env, s.id, s.class_id),
+          aggregateExamReadiness(env, s.class_id, [s.id]),
         ])
         const { teacher_id: _teacherId, ...safe } = s
         void _teacherId
@@ -501,6 +504,7 @@ export default {
             weakspots: JSON.parse(s.weakspots || '[]'),
             hw_completion_rate: rate,
             avg_score: avgScore,
+            exam_readiness: examReadiness,
           },
           attempts: attempts.results,
         })

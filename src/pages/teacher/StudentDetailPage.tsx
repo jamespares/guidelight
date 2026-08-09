@@ -188,6 +188,12 @@ export function StudentDetailPage() {
             className: 'text-[hsl(var(--insight-score-fg))]',
           },
           {
+            label: 'Exam readiness',
+            value:
+              student.exam_readiness == null ? '—' : `${student.exam_readiness}%`,
+            className: 'text-[hsl(var(--insight-readiness-fg))]',
+          },
+          {
             label: 'HW completion',
             value:
               student.hw_completion_rate == null ? '—' : `${student.hw_completion_rate}%`,

@@ -125,7 +125,7 @@ export function StoryReaderPage() {
     void api.storyEvent(story.slug, 'open').catch(() => undefined)
     const enParas = story.paragraphs.map((p) => p.en)
     void fetch(`/stories/timings/${story.slug}.json`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then(async (r) => (r.ok ? ((await r.json()) as WordTiming[] | null) : null))
       .then((timings: WordTiming[] | null) => {
         if (!timings) {
           const prepared = prepareKaraoke(story.title, enParas, [])

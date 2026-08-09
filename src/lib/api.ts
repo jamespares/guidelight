@@ -51,6 +51,7 @@ export interface StudentRow {
   class_subject: string
   hw_completion_rate: number | null
   avg_score?: number | null
+  exam_readiness?: number | null
   cefr_level?: string | null
   latest_wpm?: number | null
 }

@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 import { WRITING_RUBRICS } from './rubrics'
 import { calculateLevel, findItem } from './test-engine'
 import type { CEFRLevel } from './items'
