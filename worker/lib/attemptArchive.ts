@@ -23,7 +23,7 @@ export function buildAttemptArchiveMd(input: {
   content: TaskContent
   answers: Record<string, unknown>
   feedback: AttemptFeedback
-  /** Extra header lines (e.g. Exam Dojo curriculum / syllabus). */
+  /** Extra header lines (e.g. exam profile id). */
   extraMeta?: Array<[string, string]>
 }): string {
   const lines: string[] = [
@@ -104,36 +104,4 @@ export function ensureQuestionObjectives(questions: Question[]): Question[] {
       q.learningObjective ||
       `Assess understanding of ${q.topic || 'the subject'} for this question.`,
   }))
-}
-
-/** Build a markdown archive for an Exam Dojo practice attempt. */
-export function buildDojoAttemptArchiveMd(input: {
-  studentName: string
-  paperTitle: string
-  subject: string
-  curriculum: string
-  syllabusCode: string
-  submittedAt: string
-  scorePct: number | null
-  content: TaskContent
-  answers: Record<string, unknown>
-  feedback: AttemptFeedback
-}): string {
-  return buildAttemptArchiveMd({
-    studentName: input.studentName,
-    taskTitle: input.paperTitle,
-    taskType: 'exam_dojo',
-    subtype: 'practice',
-    subject: input.subject,
-    submittedAt: input.submittedAt,
-    scorePct: input.scorePct,
-    content: input.content,
-    answers: input.answers,
-    feedback: input.feedback,
-    extraMeta: [
-      ['Source', 'Exam Dojo (AI-reconstructed practice)'],
-      ['Curriculum', input.curriculum || 'n/a'],
-      ['Syllabus code', input.syllabusCode || 'n/a'],
-    ],
-  })
 }

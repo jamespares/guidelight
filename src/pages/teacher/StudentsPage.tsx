@@ -198,7 +198,7 @@ export function StudentsPage() {
             <TableHead>Username</TableHead>
             <TableHead>Class</TableHead>
             <TableHead>Subject(s)</TableHead>
-            <TableHead>Avg score</TableHead>
+            <TableHead>Avg HW score</TableHead>
             <TableHead>English level</TableHead>
             <TableHead>Reading speed</TableHead>
             <TableHead>Current Weakspots</TableHead>

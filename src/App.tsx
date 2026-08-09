@@ -13,9 +13,11 @@ import {
   LessonDetailPage,
   LessonsPage,
 } from './pages/teacher/LessonsPages'
-import { TeacherDojoPage, TeacherDojoReviewPage } from './pages/teacher/ExamDojoPages'
+import {
+  ExamProfileDetailPage,
+  ExamProfilesPage,
+} from './pages/teacher/ExamProfilePages'
 import { AttemptPage, StudentTasksPage, StudentToolsPage } from './pages/student/StudentPages'
-import { ExamDojoHubPage, ExamDojoSitPage } from './pages/student/ExamDojoPages'
 import { ReadingSpeedPage } from './pages/student/ReadingSpeedPage'
 import { EnglishLevelPage } from './pages/student/EnglishLevelPage'
 import {
@@ -93,8 +95,8 @@ export default function App() {
         <Route path="lessons" element={<LessonsPage />} />
         <Route path="lessons/:batchId" element={<LessonBatchPage />} />
         <Route path="lessons/:batchId/:lessonId" element={<LessonDetailPage />} />
-        <Route path="exam-dojo" element={<TeacherDojoPage />} />
-        <Route path="exam-dojo/:id" element={<TeacherDojoReviewPage />} />
+        <Route path="exam-profiles" element={<ExamProfilesPage />} />
+        <Route path="exam-profiles/:id" element={<ExamProfileDetailPage />} />
         <Route path="insights" element={<InsightsPage />} />
         <Route path="reports/:id" element={<ReportPage />} />
         <Route path="settings" element={<SettingsPage role="teacher" />} />
@@ -111,8 +113,6 @@ export default function App() {
       >
         <Route path="tasks" element={<StudentTasksPage />} />
         <Route path="tools" element={<StudentToolsPage />} />
-        <Route path="exam-dojo" element={<ExamDojoHubPage />} />
-        <Route path="exam-dojo/sit/:paperId" element={<ExamDojoSitPage />} />
         <Route path="attempt/:taskId" element={<AttemptPage />} />
         <Route path="reading-speed/:taskId" element={<ReadingSpeedPage />} />
         <Route path="english-level/:taskId" element={<EnglishLevelPage />} />

@@ -1,5 +1,11 @@
 import type { Env, GeneratedLesson, LessonPlan, LessonStage, Question, TaskContent } from '../types'
 import {
+  type ExamFormat,
+  type ExamRubric,
+  type GradeBoundary,
+  formatProfileContext,
+} from '../../shared/exams/readiness'
+import {
   estimateTokens,
   extractUsageTokens,
   recordAiUsage,
@@ -205,8 +211,16 @@ export async function generateTaskContent(
     questionTypes: string[]
     studentProfiles?: Array<{ name: string; interests: string; weakspots: string }>
     meter?: AiMeterContext
+    examFormat?: ExamFormat
+    gradeBoundaries?: GradeBoundary[]
+    rubric?: ExamRubric
   },
 ): Promise<TaskContent> {
+  const profileContext = formatProfileContext({
+    examFormat: input.examFormat,
+    gradeBoundaries: input.gradeBoundaries,
+    rubric: input.rubric,
+  })
   const system = `You are Guidelight, an expert education content generator.
 Return ONLY valid JSON matching this schema:
 {
@@ -245,7 +259,8 @@ Task description: ${input.description}
 Curriculum notes: ${input.curriculum || 'n/a'}
 Reading text (if any): ${input.readingText || 'n/a'}
 Past paper style reference (if any): ${input.pastPaperText?.slice(0, 6000) || 'n/a'}
-Student personalisation hints: ${JSON.stringify(input.studentProfiles ?? []).slice(0, 1500)}`
+Student personalisation hints: ${JSON.stringify(input.studentProfiles ?? []).slice(0, 1500)}
+${profileContext ? `\nExam profile:\n${profileContext}` : ''}`
 
   try {
     const raw = await runChat(env, system, user, {
@@ -276,8 +291,10 @@ export async function markAttempt(
     content: TaskContent
     answers: Record<string, unknown>
     meter?: AiMeterContext
-    /** Override feature tag (e.g. dojo_mark). Defaults to mark_attempt. */
+    /** Override feature tag. Defaults to mark_attempt. */
     feature?: AiMeterContext['feature']
+    rubric?: ExamRubric
+    gradeBoundaries?: GradeBoundary[]
   },
 ): Promise<{
   score_pct: number
@@ -312,6 +329,14 @@ Return ONLY valid JSON:
 Be fair on open responses. Award partial credit where appropriate.
 Echo each question's topic and learningObjective in the feedback item so archives stay scannable.`
 
+  const rubricContext = formatProfileContext({
+    gradeBoundaries: input.gradeBoundaries,
+    rubric: input.rubric,
+  })
+  const systemWithRubric = rubricContext
+    ? `${system}\n\nApply this marking guidance:\n${rubricContext}`
+    : system
+
   const user = `Subject: ${input.subject}
 Questions: ${JSON.stringify(
     input.content.questions.map((q) => ({
@@ -328,7 +353,7 @@ Questions: ${JSON.stringify(
 Student answers: ${JSON.stringify(input.answers)}`
 
   try {
-    const raw = await runChat(env, system, user, {
+    const raw = await runChat(env, systemWithRubric, user, {
       timeoutMs: 45_000,
       meter: input.meter
         ? { ...input.meter, feature: input.feature ?? 'mark_attempt' }
@@ -807,8 +832,6 @@ Slots (in order): ${JSON.stringify(
   }
 }
 
-const OPEN_TYPES = new Set(['short_written', 'extended_written', 'reading_comprehension', 'listen_respond', 'frayer', 'image_analysis'])
-
 function normalizeReconstructedContent(
   parsed: TaskContent,
   fallbackTitle: string,
@@ -831,7 +854,7 @@ function normalizeReconstructedContent(
     title: (parsed.title || fallbackTitle || `${subject} practice paper`).slice(0, 120),
     instructions:
       parsed.instructions ||
-      'This is an AI-reconstructed practice paper for Exam Dojo — not an official exam copy. Answer carefully.',
+      'This is an AI-generated mock exam — not an official exam copy. Answer carefully.',
     questions,
   }
 }
@@ -850,9 +873,17 @@ export async function reconstructPastPaper(
     syllabusCode: string
     title?: string
     meter?: AiMeterContext
+    examFormat?: ExamFormat
+    gradeBoundaries?: GradeBoundary[]
+    rubric?: ExamRubric
   },
 ): Promise<TaskContent> {
-  const system = `You are Guidelight Exam Dojo. Turn a past-paper upload into a usable PRACTICE exam in JSON.
+  const profileContext = formatProfileContext({
+    examFormat: input.examFormat,
+    gradeBoundaries: input.gradeBoundaries,
+    rubric: input.rubric,
+  })
+  const system = `You are Guidelight. Turn a past-paper upload into a usable timed MOCK EXAM in JSON.
 
 Philosophy:
 - Goal: a completable practice paper students can sit in the browser — NOT a perfect archival facsimile.
@@ -884,7 +915,8 @@ Pull answer keys when present; otherwise invent provisional answers suitable for
   const meta = `Subject: ${input.subject}
 Curriculum: ${input.curriculum || 'n/a'}
 Syllabus code: ${input.syllabusCode || 'n/a'}
-Preferred title: ${input.title || 'n/a'}`
+Preferred title: ${input.title || 'n/a'}
+${profileContext ? `\nExam profile:\n${profileContext}` : ''}`
 
   const text = (input.extractedText || '').trim().slice(0, 12_000)
   const images = (input.imageDataUrls || []).slice(0, 4)
@@ -904,7 +936,7 @@ Preferred title: ${input.title || 'n/a'}`
           timeoutMs: 55_000,
           maxTokens: 8192,
           meter: input.meter
-            ? { ...input.meter, feature: 'dojo_reconstruct' }
+            ? { ...input.meter, feature: 'task_gen' }
             : undefined,
         },
       )
@@ -922,7 +954,7 @@ Preferred title: ${input.title || 'n/a'}`
         timeoutMs: 55_000,
         maxTokens: 8192,
         meter: input.meter
-          ? { ...input.meter, feature: 'dojo_reconstruct' }
+          ? { ...input.meter, feature: 'task_gen' }
           : undefined,
       })
     } else {
@@ -953,87 +985,4 @@ Preferred title: ${input.title || 'n/a'}`
     }
   }
 }
-
-type MarkResult = Awaited<ReturnType<typeof markAttempt>>
-
-/**
- * Hybrid Dojo marking: score MCQ/cloze locally when answers exist; AI-mark open questions only.
- */
-export async function markDojoAttempt(
-  env: Env,
-  input: {
-    subject: string
-    content: TaskContent
-    answers: Record<string, unknown>
-    meter?: AiMeterContext
-  },
-): Promise<MarkResult> {
-  const closed: typeof input.content.questions = []
-  const open: typeof input.content.questions = []
-
-  for (const q of input.content.questions) {
-    const hasKey = q.correctAnswer != null && String(q.correctAnswer).length > 0
-    if ((q.type === 'mcq' || q.type === 'cloze' || q.type === 'bloom') && hasKey) {
-      closed.push(q)
-    } else if (OPEN_TYPES.has(q.type) || !hasKey) {
-      open.push(q)
-    } else {
-      closed.push(q)
-    }
-  }
-
-  const closedResult = closed.length
-    ? localMark({ content: { ...input.content, questions: closed }, answers: input.answers })
-    : {
-        score_pct: 0,
-        feedback: {} as MarkResult['feedback'],
-        topic_tags: [] as string[],
-      }
-
-  let openResult: MarkResult = {
-    score_pct: 0,
-    feedback: {},
-    topic_tags: [],
-  }
-
-  if (open.length) {
-    openResult = await markAttempt(env, {
-      subject: input.subject,
-      content: { ...input.content, questions: open },
-      answers: input.answers,
-      meter: input.meter,
-      feature: 'dojo_mark',
-    })
-  }
-
-  const feedback: MarkResult['feedback'] = {
-    ...closedResult.feedback,
-    ...openResult.feedback,
-  }
-
-  let awarded = 0
-  let possible = 0
-  const topic_tags: string[] = []
-  for (const q of input.content.questions) {
-    const fb = feedback[q.id]
-    if (!fb) {
-      feedback[q.id] = {
-        correct: false,
-        feedback: 'Not marked.',
-        topic: q.topic,
-        learningObjective: q.learningObjective,
-        marksAwarded: 0,
-        marksPossible: q.marks ?? 1,
-      }
-    }
-    const item = feedback[q.id]
-    awarded += item.marksAwarded ?? 0
-    possible += item.marksPossible ?? q.marks ?? 1
-    if (item.topic) topic_tags.push(item.topic)
-  }
-
-  const score_pct = possible > 0 ? Math.round((awarded / possible) * 1000) / 10 : 0
-  return { score_pct, feedback, topic_tags: [...new Set(topic_tags)] }
-}
-
 

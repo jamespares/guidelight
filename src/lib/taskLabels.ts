@@ -4,6 +4,7 @@ import type { TaskSubtype } from '@/lib/api'
 export type TaskKind =
   | 'english_level'
   | 'summative'
+  | 'mock_exam'
   | 'diagnostic'
   | 'formative'
   | 'reading_speed'
@@ -19,6 +20,8 @@ export function resolveTaskKind(
       return 'english_level'
     case 'summative':
       return 'summative'
+    case 'mock_exam':
+      return 'mock_exam'
     case 'diagnostic':
       return 'diagnostic'
     case 'formative':
@@ -33,6 +36,7 @@ export function resolveTaskKind(
 const LABELS: Record<TaskKind, string> = {
   english_level: 'English level',
   summative: 'Summative',
+  mock_exam: 'Mock exam',
   diagnostic: 'Diagnostic',
   formative: 'Formative',
   reading_speed: 'Reading speed',
@@ -44,6 +48,8 @@ const BADGE_CLASSES: Record<TaskKind, string> = {
   english_level:
     'border-transparent bg-[hsl(var(--task-english-level-bg))] text-[hsl(var(--task-english-level-fg))]',
   summative:
+    'border-transparent bg-[hsl(var(--task-summative-bg))] text-[hsl(var(--task-summative-fg))]',
+  mock_exam:
     'border-transparent bg-[hsl(var(--task-summative-bg))] text-[hsl(var(--task-summative-fg))]',
   diagnostic:
     'border-transparent bg-[hsl(var(--task-diagnostic-bg))] text-[hsl(var(--task-diagnostic-fg))]',
@@ -83,6 +89,7 @@ const KIND_DESCRIPTIONS: Record<TaskKind, string> = {
   diagnostic: 'Baseline check on your class subject — unlocks personalisation',
   formative: 'Ongoing checks for learning on your class subject',
   summative: 'High-stakes exam-like assessment on your class subject',
+  mock_exam: 'Timed mock exam — contributes to exam readiness score',
   english_level: 'General English proficiency (CEFR) — not tied to class subject',
   reading_speed: 'Reading fluency and comprehension — not tied to class subject',
 }
@@ -96,7 +103,7 @@ export const TASK_KIND_GROUPS: Array<{
   {
     title: 'Class subject',
     note: 'Homework and these assessments cover the class subject (or the subject you pick when creating the task).',
-    kinds: ['homework', 'diagnostic', 'formative', 'summative'],
+    kinds: ['homework', 'diagnostic', 'formative', 'mock_exam'],
   },
   {
     title: 'English & literacy',

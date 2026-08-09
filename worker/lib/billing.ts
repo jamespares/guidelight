@@ -9,8 +9,6 @@ export type AiFeature =
   | 'task_gen'
   | 'mark_attempt'
   | 'lesson_plans'
-  | 'dojo_reconstruct'
-  | 'dojo_mark'
   | 'cefr_mark'
   | 'weakspots'
   | 'report'

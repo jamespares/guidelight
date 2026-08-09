@@ -279,7 +279,7 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             <strong className="text-foreground">Learning activity</strong> — homework and assessment
-            content, attempts, marks, reports, lesson materials, Exam Dojo papers and archives,
+            content, attempts, marks, reports, lesson materials, mock exams and archives,
             reading and CEFR-related activity
           </li>
           <li>

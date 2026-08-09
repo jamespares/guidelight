@@ -26,7 +26,7 @@ export function WeakspotsPanel({
   error?: string
   onPinpoint: () => void
 }) {
-  const progress = useEstimatedProgress(!!busy, AI_WAIT_MS.report)
+  const progress = useEstimatedProgress(!!busy, AI_WAIT_MS.pinpoint)
 
   return (
     <Card>
@@ -56,6 +56,11 @@ export function WeakspotsPanel({
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+        {busy ? (
+          <p className="text-sm text-muted-foreground">
+            Reading attempt archives and analysing recurring skill gaps…
+          </p>
+        ) : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         {summary ? (
           <p className="rounded-lg border border-border bg-secondary/40 p-3 text-sm leading-relaxed">

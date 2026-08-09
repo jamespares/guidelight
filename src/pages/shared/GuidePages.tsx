@@ -137,7 +137,7 @@ function AiCostExplainer() {
         </div>
         <p className="text-xs">
           Costs scale with how many students submit work — marking is the main driver. Planning
-          lessons, drafting homework, and Exam Dojo uploads cost far less because you run them a
+          lessons, drafting homework, and generating mock exams cost far less because you run them a
           handful of times, not hundreds.
         </p>
       </div>
@@ -150,7 +150,7 @@ export function TeacherGuidePage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="Info"
-        description="A clear walkthrough of the teacher portal — classes, lessons, tasks, Exam Dojo, and insights."
+        description="A clear walkthrough of the teacher portal — classes, lessons, tasks, mock exams, and insights."
       />
 
       <Section title="Quick start">
@@ -171,11 +171,13 @@ export function TeacherGuidePage() {
           </li>
           <li>
             Optional: plan a syllabus in <strong className="text-foreground">Lessons</strong>, or
-            upload practice papers in <strong className="text-foreground">Exam Dojo</strong>.
+            set up an exam profile under{' '}
+            <strong className="text-foreground">Assessments → Mock exams</strong> to generate timed
+            practice papers.
           </li>
           <li>
-            Use <strong className="text-foreground">Insights</strong> for scores, submission rates,
-            weakspots, and parent reports.
+            Use <strong className="text-foreground">Insights</strong> for homework scores, submission
+            rates, weakspots, and parent reports.
           </li>
         </ol>
       </Section>
@@ -185,13 +187,11 @@ export function TeacherGuidePage() {
           The sidebar has: <strong className="text-foreground">Students</strong>,{' '}
           <strong className="text-foreground">Lessons</strong>,{' '}
           <strong className="text-foreground">Homework</strong>,{' '}
-          <strong className="text-foreground">Assessments</strong>,{' '}
-          <strong className="text-foreground">Exam Dojo</strong>, and{' '}
-          <strong className="text-foreground">Insights</strong>.{' '}
-          <strong className="text-foreground">Info</strong> and{' '}
-          <strong className="text-foreground">Settings</strong> sit below them. The
-          sidebar also shows your <strong className="text-foreground">AI usage dial</strong> for
-          this month.
+          <strong className="text-foreground">Assessments</strong>, and{' '}
+          <strong className="text-foreground">Insights</strong>. Mock exams live under Assessments.
+          <strong className="text-foreground"> Info</strong> and{' '}
+          <strong className="text-foreground">Settings</strong> sit below them. The sidebar also
+          shows your <strong className="text-foreground">AI usage dial</strong> for this month.
         </p>
       </Section>
 
@@ -206,8 +206,8 @@ export function TeacherGuidePage() {
           passwords are shown only when first created or after you reset them.
         </p>
         <p>
-          The roster shows username, class, subject, average score, English level, reading speed
-          (WPM), weakspots, homework completion, interests, and career ambitions.
+          The roster shows username, class, subject, average homework score, English level, reading
+          speed (WPM), weakspots, homework completion, interests, and career ambitions.
         </p>
         <p>Open a student to:</p>
         <ul className="list-disc space-y-2 pl-5">
@@ -218,11 +218,12 @@ export function TeacherGuidePage() {
           <li>Edit interests and career ambitions, then save.</li>
           <li>Refresh their AI introduction.</li>
           <li>
-            View <strong className="text-foreground">Exam Dojo scores</strong>.
+            View <strong className="text-foreground">Exam readiness</strong> from mock exam
+            attempts (separate from average homework score).
           </li>
           <li>
             Run <strong className="text-foreground">Pinpoint weakspots</strong> across homework and
-            Exam Dojo attempts.
+            mock exam attempts.
           </li>
           <li>
             Add notes and generate a <strong className="text-foreground">parent report</strong>.
@@ -299,27 +300,35 @@ export function TeacherGuidePage() {
         </p>
       </Section>
 
-      <Section title="Exam Dojo">
+      <Section title="Mock exams">
         <p>
-          Filter by class, then upload a past paper with subject, curriculum, and syllabus code.
-          Guidelight drafts a <strong className="text-foreground">passable practice paper</strong>{' '}
-          once — it is labelled and never regenerated.
+          From <strong className="text-foreground">Assessments → Mock exams</strong>, create an{' '}
+          <strong className="text-foreground">exam profile</strong>: title, curriculum, syllabus
+          code, duration, grade boundaries (% → grade), marking rubric, and an optional reference
+          past paper.
         </p>
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Review and edit the title, instructions, and questions.</li>
-          <li>Save your edits, then publish to the class.</li>
+          <li>
+            Press <strong className="text-foreground">Generate mock</strong> — AI (Kimi on Workers
+            AI) drafts a timed paper matching your format and rubric.
+          </li>
+          <li>Review and edit questions on the task review page, then publish to the class.</li>
+          <li>
+            Generate more mocks from the same profile whenever you want fresh practice papers.
+          </li>
         </ol>
         <p>
-          Students sit the interactive version. Scores and full attempt archives appear on their
-          profiles for later insight.
+          Students sit mocks like other timed assessments. After a few attempts, Guidelight shows an{' '}
+          <strong className="text-foreground">exam readiness</strong> estimate (pass/target
+          probability) — separate from average homework score.
         </p>
       </Section>
 
       <Section title="Insights">
         <p>
           Choose <strong className="text-foreground">Whole class</strong> or{' '}
-          <strong className="text-foreground">Individual student</strong>. You will see average %
-          correct, homework submission rate, and charts over time.
+          <strong className="text-foreground">Individual student</strong>. You will see average
+          homework % correct, homework submission rate, and charts over time.
         </p>
         <p>
           Press <strong className="text-foreground">Pinpoint weakspots</strong> to analyse full
@@ -385,7 +394,8 @@ export function StudentGuidePage() {
         <p>
           Open <strong className="text-foreground">Tasks</strong> to see homework and assessments
           assigned to you. Each row shows the title, a coloured type badge, subject, and your last
-          score.
+          score. If your class has an exam profile, you will also see{' '}
+          <strong className="text-foreground">exam readiness</strong> cards above the list.
         </p>
         <p>
           Statuses: <strong className="text-foreground">Start</strong> a new task,{' '}
@@ -396,7 +406,7 @@ export function StudentGuidePage() {
         <p>Badge colours mean:</p>
         <ColourLegend />
         <p>
-          Homework, diagnostic, formative, and summative tasks test your class subject. English
+          Homework, diagnostic, formative, and mock exam tasks test your class subject. English
           level and Reading speed measure general English and literacy — not your class topic.
         </p>
         <p>
@@ -446,9 +456,10 @@ export function StudentGuidePage() {
             Restart anytime; sessions are logged to help you track progress.
           </li>
           <li>
-            <strong className="text-foreground">Exam Dojo</strong> — sit practice papers from your
-            teacher, or upload your own past paper. After you submit, you see your score plus
-            practice estimates for passing and top marks. These are guides only, not guarantees.
+            Timed <strong className="text-foreground">mock exams</strong> appear in Tasks when your
+            teacher publishes them. Your Tasks page also shows{' '}
+            <strong className="text-foreground">exam readiness</strong> — a data-based guide to
+            pass/target grades from your mock scores (not a guarantee).
           </li>
         </ul>
       </Section>

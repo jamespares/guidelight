@@ -3,14 +3,15 @@ import { cn } from '@/lib/utils'
 type Size = 'sm' | 'md'
 type Variant = 'onPrimary' | 'onSurface'
 
-const SIZES: Record<Size, { px: number; stroke: number; text: string }> = {
-  sm: { px: 28, stroke: 2.5, text: 'text-[9px]' },
-  md: { px: 32, stroke: 3, text: 'text-[10px]' },
+const SIZES: Record<Size, { px: number; stroke: number; text: string; sizeClass: string }> = {
+  sm: { px: 28, stroke: 2.5, text: 'text-[9px]', sizeClass: 'h-[28px] w-[28px]' },
+  md: { px: 32, stroke: 3, text: 'text-[10px]', sizeClass: 'h-[32px] w-[32px]' },
 }
 
 /**
  * Compact circular progress dial for AI generation waits.
  * Shows estimated % in the center; pair with a busy label + elapsed time.
+ * data-progress-dial + explicit size classes defeat Button's [&_svg]:size-4 rule.
  */
 export function GenerationProgress({
   value,
@@ -24,7 +25,7 @@ export function GenerationProgress({
   variant?: Variant
   className?: string
 }) {
-  const { px, stroke, text } = SIZES[size]
+  const { px, stroke, text, sizeClass } = SIZES[size]
   const r = (px - stroke) / 2
   const c = 2 * Math.PI * r
   const clamped = Math.max(0, Math.min(100, value))
@@ -42,7 +43,14 @@ export function GenerationProgress({
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <svg width={px} height={px} className="-rotate-90" aria-hidden>
+      <svg
+        width={px}
+        height={px}
+        viewBox={`0 0 ${px} ${px}`}
+        data-progress-dial=""
+        className={cn('-rotate-90', sizeClass)}
+        aria-hidden
+      >
         <circle
           cx={px / 2}
           cy={px / 2}
@@ -92,7 +100,7 @@ export function GenerationBusyLabel({
   return (
     <>
       <GenerationProgress value={percent} size="sm" variant={variant} />
-      <span className="truncate">
+      <span className="min-w-0 truncate">
         {label} · {elapsedLabel}
       </span>
     </>

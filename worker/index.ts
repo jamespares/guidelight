@@ -34,12 +34,9 @@ import {
   isSpecialAssessment,
 } from './lib/cefr'
 import {
-  handleDojoApi,
-  listDojoArchivesForClass,
-  listDojoArchivesForStudent,
-  listDojoScoresForStudent,
-  recomputeWeakspotsWithDojo,
-} from './lib/dojo'
+  handleExamsApi,
+  getMockExamMarkingContext,
+} from './lib/exams'
 
 const PHASE2_TYPES = ['mcq', 'cloze', 'short_written', 'reading_comprehension']
 const ALL_TYPES = [
@@ -113,7 +110,38 @@ async function hasDiagnostic(env: Env, classId: string): Promise<boolean> {
 }
 
 async function recomputeWeakspots(env: Env, studentId: string) {
-  await recomputeWeakspotsWithDojo(env, studentId)
+  const { results } = await env.DB.prepare(
+    `SELECT feedback_json FROM attempts WHERE student_id = ? AND status = 'submitted'`,
+  )
+    .bind(studentId)
+    .all<{ feedback_json: string }>()
+
+  const topicErrors: Record<string, number> = {}
+  for (const a of results ?? []) {
+    try {
+      const fb = JSON.parse(a.feedback_json) as Record<
+        string,
+        { correct?: boolean; topic?: string }
+      >
+      for (const item of Object.values(fb)) {
+        if (item.correct === false && item.topic) {
+          topicErrors[item.topic] = (topicErrors[item.topic] ?? 0) + 1
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const weakspots = Object.entries(topicErrors)
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([topic, count]) => ({ topic, count }))
+
+  await env.DB.prepare(`UPDATE students SET weakspots = ? WHERE id = ?`)
+    .bind(JSON.stringify(weakspots), studentId)
+    .run()
 }
 
 /** Rebuild attempt_archive_md when empty (idempotent). */
@@ -202,7 +230,7 @@ async function hwCompletionRate(env: Env, studentId: string, classId: string): P
   return Math.round(((submitted?.c ?? 0) / total) * 1000) / 10
 }
 
-/** Latest submitted score per completed assigned task (HW + assessments), averaged. */
+/** Latest submitted score per completed assigned homework task, averaged. */
 async function avgTaskScore(env: Env, studentId: string, classId: string): Promise<number | null> {
   const row = await env.DB.prepare(
     `SELECT AVG(latest.score_pct) as avg FROM (
@@ -210,7 +238,7 @@ async function avgTaskScore(env: Env, studentId: string, classId: string): Promi
        FROM tasks t
        JOIN task_assignments ta ON ta.task_id = t.id
        JOIN attempts a ON a.task_id = t.id AND a.student_id = ?
-       WHERE t.class_id = ? AND t.status = 'published'
+       WHERE t.class_id = ? AND t.type = 'homework' AND t.status = 'published'
          AND (ta.student_id IS NULL OR ta.student_id = ?)
          AND a.status = 'submitted' AND a.score_pct IS NOT NULL
          AND a.submitted_at = (
@@ -279,12 +307,16 @@ export default {
         return error('Not found', 404)
       }
 
-      // —— Exam Dojo ——
-      if (path.startsWith('/api/dojo/') || path.startsWith('/api/student/dojo/')) {
+      // —— Exam profiles & mock exams ——
+      if (
+        path.startsWith('/api/exam-profiles') ||
+        path.startsWith('/api/student/exam-') ||
+        (path.startsWith('/api/students/') && path.endsWith('/exam-readiness'))
+      ) {
         const user = await getSession(env, request)
         if (!user) return error('Unauthorized', 401)
-        const dojoRes = await handleDojoApi(request, env, path, user)
-        if (dojoRes) return dojoRes
+        const examsRes = await handleExamsApi(request, env, path, user)
+        if (examsRes) return examsRes
         return error('Not found', 404)
       }
 
@@ -455,10 +487,9 @@ export default {
           .bind(studentId)
           .all()
 
-        const [rate, avgScore, dojoScores] = await Promise.all([
+        const [rate, avgScore] = await Promise.all([
           hwCompletionRate(env, s.id, s.class_id),
           avgTaskScore(env, s.id, s.class_id),
-          listDojoScoresForStudent(env, studentId),
         ])
         const { teacher_id: _teacherId, ...safe } = s
         void _teacherId
@@ -470,7 +501,6 @@ export default {
             avg_score: avgScore,
           },
           attempts: attempts.results,
-          dojoAttempts: dojoScores,
         })
       }
 
@@ -1101,8 +1131,10 @@ export default {
           }>()
         if (!task || task.teacher_id !== user.id) return error('Not found', 404)
 
+        // Mock exams are driven by exam profiles and skip the diagnostic gate
         if (
           task.subtype !== 'diagnostic' &&
+          task.subtype !== 'mock_exam' &&
           !isSpecialAssessment(task.subtype) &&
           !(await hasDiagnostic(env, task.class_id))
         ) {
@@ -1276,6 +1308,7 @@ export default {
             title: string
             type: string
             subtype: string | null
+            exam_profile_id: string | null
           }>()
         if (!task) return error('Task missing', 404)
 
@@ -1297,6 +1330,8 @@ export default {
           }
         }
 
+        const markingContext = await getMockExamMarkingContext(env, task.exam_profile_id)
+
         const marked = await markAttempt(env, {
           subject: task.subject,
           content,
@@ -1304,6 +1339,8 @@ export default {
           meter: billingTeacherId
             ? { teacherId: billingTeacherId, feature: 'mark_attempt' }
             : undefined,
+          rubric: markingContext.rubric,
+          gradeBoundaries: markingContext.gradeBoundaries,
         })
 
         const duration =
@@ -1322,6 +1359,10 @@ export default {
           content,
           answers: body.answers ?? {},
           feedback: marked.feedback,
+          extraMeta:
+            task.subtype === 'mock_exam' && task.exam_profile_id
+              ? [['Exam profile', task.exam_profile_id]]
+              : undefined,
         })
 
         await env.DB.prepare(
@@ -1375,7 +1416,7 @@ export default {
             `SELECT a.score_pct, a.submitted_at, a.student_id, a.feedback_json, t.type
              FROM attempts a JOIN tasks t ON t.id = a.task_id
              JOIN students s ON s.id = a.student_id
-             WHERE s.class_id = ? AND a.status = 'submitted'
+             WHERE s.class_id = ? AND a.status = 'submitted' AND t.type = 'homework'
              ORDER BY a.submitted_at ASC`,
           )
             .bind(id)
@@ -1502,16 +1543,18 @@ export default {
         const attempts = await env.DB.prepare(
           `SELECT a.score_pct, a.submitted_at, a.feedback_json, t.type
            FROM attempts a JOIN tasks t ON t.id = a.task_id
-           WHERE a.student_id = ? AND a.status = 'submitted'
+           WHERE a.student_id = ? AND a.status = 'submitted' AND t.type = 'homework'
            ORDER BY a.submitted_at ASC`,
         )
           .bind(id)
           .all<{ score_pct: number; submitted_at: string; feedback_json: string; type: string }>()
 
-        const scores = (attempts.results ?? []).map((a) => ({
-          date: a.submitted_at,
-          value: a.score_pct,
-        }))
+        const scores = (attempts.results ?? [])
+          .filter((a) => a.score_pct != null)
+          .map((a) => ({
+            date: a.submitted_at,
+            value: a.score_pct,
+          }))
         const avgScore =
           scores.length > 0
             ? Math.round((scores.reduce((sum, x) => sum + x.value, 0) / scores.length) * 10) / 10
@@ -1823,20 +1866,19 @@ export default {
 
         const chunks: Array<{ label: string; md: string }> = []
         for (const row of attempts.results ?? []) {
-          const md = await ensureAttemptArchive(env, row)
-          chunks.push({
-            label: `${row.title || 'Task'} · ${row.submitted_at || ''}`,
-            md,
-          })
+          try {
+            const md = await ensureAttemptArchive(env, row)
+            if (md?.trim()) {
+              chunks.push({
+                label: `${row.title || 'Task'} · ${row.submitted_at || ''}`,
+                md,
+              })
+            }
+          } catch (err) {
+            console.error('ensureAttemptArchive failed for attempt', row.id, err)
+          }
         }
 
-        const dojoChunks = await listDojoArchivesForStudent(env, studentId)
-        for (const d of dojoChunks) {
-          chunks.push({ label: d.label, md: d.md })
-        }
-
-        // Newest-first: homework already DESC; prepend dojo by sorting labels is weak —
-        // interleave by putting dojo after homework is fine; truncateArchives keeps budget.
         if (!chunks.length) {
           return error('No submitted attempts to analyse yet', 400)
         }
@@ -1931,35 +1973,17 @@ export default {
 
         const chunks: Array<{ label: string; md: string }> = []
         for (const row of interleaved) {
-          const md = await ensureAttemptArchive(env, row)
-          chunks.push({
-            label: `${row.display_name} · ${row.title || 'Task'} · ${row.submitted_at || ''}`,
-            md,
-          })
-        }
-
-        const dojoClass = await listDojoArchivesForClass(env, classId)
-        // Fair sample dojo too: round-robin by student, cap contribution
-        const dojoByStudent = new Map<string, typeof dojoClass>()
-        for (const row of dojoClass) {
-          const list = dojoByStudent.get(row.student_id) ?? []
-          list.push(row)
-          dojoByStudent.set(row.student_id, list)
-        }
-        let di = 0
-        let dAdded = true
-        let dojoCount = 0
-        while (dAdded && dojoCount < 40) {
-          dAdded = false
-          for (const list of dojoByStudent.values()) {
-            if (di < list.length) {
-              const row = list[di]
-              chunks.push({ label: row.label, md: row.md })
-              dojoCount += 1
-              dAdded = true
+          try {
+            const md = await ensureAttemptArchive(env, row)
+            if (md?.trim()) {
+              chunks.push({
+                label: `${row.display_name} · ${row.title || 'Task'} · ${row.submitted_at || ''}`,
+                md,
+              })
             }
+          } catch (err) {
+            console.error('ensureAttemptArchive failed for attempt', row.id, err)
           }
-          di += 1
         }
 
         if (!chunks.length) {

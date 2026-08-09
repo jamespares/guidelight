@@ -25,8 +25,6 @@ export const FEATURE_LABELS: Record<string, string> = {
   task_gen: 'Homework & assessments',
   mark_attempt: 'Marking',
   lesson_plans: 'Lesson planning',
-  dojo_reconstruct: 'Exam Dojo upload',
-  dojo_mark: 'Exam Dojo marking',
   cefr_mark: 'English level marking',
   weakspots: 'Weakspot analysis',
   report: 'Reports',

@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { api, type DojoAttemptScore, type StudentRow, type Weakspot } from '@/lib/api'
+import { api, isAiBudgetError, type ExamProfile, type ExamReadiness, type StudentRow, type Weakspot } from '@/lib/api'
+import { CAP_HIT_TEACHER } from '@/lib/trustCopy'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 type BusyKind = 'save' | 'summary' | 'report' | null
@@ -19,7 +20,13 @@ export function StudentDetailPage() {
   const navigate = useNavigate()
   const [student, setStudent] = useState<StudentRow | null>(null)
   const [attempts, setAttempts] = useState<unknown[]>([])
-  const [dojoAttempts, setDojoAttempts] = useState<DojoAttemptScore[]>([])
+  const [examReadiness, setExamReadiness] = useState<
+    Array<{
+      profile: ExamProfile
+      readiness: ExamReadiness
+      attempts: { results?: Array<{ id: string; score_pct: number | null; submitted_at: string | null; title: string }> }
+    }>
+  >([])
   const [interests, setInterests] = useState('')
   const [career, setCareer] = useState('')
   const [summary, setSummary] = useState('')
@@ -46,9 +53,10 @@ export function StudentDetailPage() {
     void (async () => {
       try {
         const res = await api.student(id)
+        const readinessRes = await api.studentExamReadinessDetail(id)
         setStudent(res.student)
         setAttempts(res.attempts)
-        setDojoAttempts(res.dojoAttempts ?? [])
+        setExamReadiness(readinessRes.profiles)
         setInterests(res.student.interests)
         setCareer(res.student.career_ambitions)
         setSummary(res.student.ai_summary)
@@ -144,7 +152,11 @@ export function StudentDetailPage() {
       setWeakspotsSummary(res.summary)
       setWeakspotsUpdatedAt(res.weakspotsUpdatedAt)
     } catch (err) {
-      setPinpointError(err instanceof Error ? err.message : 'Pinpoint failed')
+      if (isAiBudgetError(err)) {
+        setPinpointError(CAP_HIT_TEACHER)
+      } else {
+        setPinpointError(err instanceof Error ? err.message : 'Pinpoint failed')
+      }
     } finally {
       setPinpointBusy(false)
     }
@@ -171,7 +183,7 @@ export function StudentDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         {[
           {
-            label: 'Avg score',
+            label: 'Avg HW score',
             value: student.avg_score == null ? '—' : `${student.avg_score}%`,
             className: 'text-[hsl(var(--insight-score-fg))]',
           },
@@ -281,45 +293,65 @@ export function StudentDetailPage() {
         onPinpoint={() => void pinpoint()}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Exam Dojo scores</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!dojoAttempts.length ? (
-            <p className="text-sm text-muted-foreground">No Exam Dojo attempts yet.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {dojoAttempts.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 pb-2 last:border-0"
-                >
-                  <span>
-                    <span className="font-medium">{a.title || a.subject}</span>
-                    <span className="text-muted-foreground">
-                      {' '}
-                      · {a.subject}
-                      {a.syllabus_code ? ` · ${a.syllabus_code}` : ''}
-                    </span>
-                  </span>
-                  <span className="tabular-nums text-[hsl(var(--insight-score-fg))]">
-                    {a.score_pct == null ? '—' : `${a.score_pct}%`}
-                    {a.submitted_at ? (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {a.submitted_at.slice(0, 10)}
-                      </span>
-                    ) : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-3 text-xs text-muted-foreground">
-            Full attempt archives (markdown) are included when you Pinpoint weakspots.
-          </p>
-        </CardContent>
-      </Card>
+      {examReadiness.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Exam readiness</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {examReadiness.map(({ profile, readiness, attempts: mockAttempts }) => (
+              <div key={profile.id} className="space-y-2 border-b border-border/60 pb-4 last:border-0">
+                <h3 className="font-medium">{profile.title}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {profile.curriculum} {profile.syllabus_code} · Pass {profile.pass_grade} · Target{' '}
+                  {profile.target_grade}
+                </p>
+                {readiness.unlockMessage ? (
+                  <p className="text-sm text-muted-foreground">{readiness.unlockMessage}</p>
+                ) : (
+                  <div className="grid gap-2 text-sm sm:grid-cols-3">
+                    <div>
+                      Avg mock score:{' '}
+                      <strong>{readiness.averageScore != null ? `${readiness.averageScore}%` : '—'}</strong>
+                    </div>
+                    <div>
+                      Pass probability:{' '}
+                      <strong>
+                        {readiness.passProbability != null ? `${readiness.passProbability}%` : '—'}
+                      </strong>
+                    </div>
+                    <div>
+                      Target probability:{' '}
+                      <strong>
+                        {readiness.targetProbability != null
+                          ? `${readiness.targetProbability}%`
+                          : '—'}
+                      </strong>
+                    </div>
+                  </div>
+                )}
+                {readiness.recommendation ? (
+                  <p className="text-sm text-muted-foreground">{readiness.recommendation}</p>
+                ) : null}
+                {(mockAttempts.results ?? []).length > 0 ? (
+                  <ul className="space-y-1 text-sm">
+                    {(mockAttempts.results ?? []).map((a) => (
+                      <li key={a.id} className="flex justify-between gap-2">
+                        <span>{a.title}</span>
+                        <span className="tabular-nums">
+                          {a.score_pct == null ? '—' : `${a.score_pct}%`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No mock exam attempts yet.</p>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">

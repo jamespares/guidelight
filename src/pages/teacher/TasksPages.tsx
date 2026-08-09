@@ -182,14 +182,18 @@ function TaskCreateForm({
             <SelectContent>
               <SelectItem value="diagnostic">Diagnostic (class subject)</SelectItem>
               <SelectItem value="formative">Formative (class subject)</SelectItem>
-              <SelectItem value="summative">Summative (class subject)</SelectItem>
               <SelectItem value="english_level">English level (literacy — not class subject)</SelectItem>
               <SelectItem value="reading_speed">Reading speed (literacy — not class subject)</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Diagnostic, formative, and summative tests cover your class subject. English level and
-            Reading speed measure general English proficiency and literacy — not your class topic.
+            Diagnostic and formative tests cover your class subject. For timed mock exams with
+            readiness tracking, use{' '}
+            <Link to="/teacher/exam-profiles" className="underline">
+              Mock exams
+            </Link>
+            . English level and reading speed measure general English proficiency — not your class
+            topic.
           </p>
         </div>
       ) : (
@@ -433,10 +437,12 @@ function TaskList({
   type,
   title,
   blurb,
+  excludeSubtypes = [],
 }: {
   type: 'homework' | 'assessment'
   title: string
   blurb: string
+  excludeSubtypes?: TaskSubtype[]
 }) {
   const [tasks, setTasks] = useState<TaskRow[]>([])
   const [open, setOpen] = useState(false)
@@ -444,7 +450,11 @@ function TaskList({
 
   async function load() {
     const res = await api.tasks(type)
-    setTasks(res.tasks)
+    setTasks(
+      res.tasks.filter(
+        (t) => !excludeSubtypes.includes(t.subtype as TaskSubtype),
+      ),
+    )
   }
 
   useEffect(() => {
@@ -545,10 +555,21 @@ export function HomeworkPage() {
 
 export function AssessmentsPage() {
   return (
-    <TaskList
-      type="assessment"
-      title="Assessments"
-      blurb="Diagnostic, formative, and summative with hard time limits"
-    />
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2 border-b pb-4">
+        <Button variant="secondary" size="sm" disabled>
+          Quick assessments
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/teacher/exam-profiles">Mock exams</Link>
+        </Button>
+      </div>
+      <TaskList
+        type="assessment"
+        title="Assessments"
+        blurb="Diagnostic and formative with hard time limits. Mock exams are managed separately."
+        excludeSubtypes={['mock_exam']}
+      />
+    </div>
   )
 }

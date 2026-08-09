@@ -70,8 +70,6 @@ DELETE FROM cefr_tests WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%' OR tas
 DELETE FROM reading_machine_sessions WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%' OR material_id LIKE 'demo-%';
 DELETE FROM reading_speed_attempts WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%' OR task_id LIKE 'demo-%';
 DELETE FROM story_events WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%';
-DELETE FROM dojo_attempts WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%' OR paper_id LIKE 'demo-%';
-DELETE FROM dojo_papers WHERE id LIKE 'demo-%' OR class_id LIKE 'demo-%' OR created_by_id LIKE 'demo-%' OR owner_student_id LIKE 'demo-%';
 DELETE FROM insight_events WHERE id LIKE 'demo-%' OR teacher_id LIKE 'demo-%' OR class_id LIKE 'demo-%' OR student_id LIKE 'demo-%';
 DELETE FROM lessons WHERE id LIKE 'demo-%' OR batch_id LIKE 'demo-%';
 DELETE FROM lesson_batches WHERE id LIKE 'demo-%' OR teacher_id LIKE 'demo-%' OR class_id LIKE 'demo-%';
@@ -80,6 +78,7 @@ DELETE FROM task_assignments WHERE id LIKE 'demo-%' OR task_id LIKE 'demo-%' OR 
 DELETE FROM reports WHERE id LIKE 'demo-%' OR teacher_id LIKE 'demo-%';
 DELETE FROM reading_materials WHERE id LIKE 'demo-%' OR class_id LIKE 'demo-%' OR teacher_id LIKE 'demo-%';
 DELETE FROM tasks WHERE id LIKE 'demo-%' OR created_by LIKE 'demo-%' OR class_id LIKE 'demo-%';
+DELETE FROM exam_profiles WHERE id LIKE 'demo-%' OR class_id LIKE 'demo-%' OR created_by LIKE 'demo-%';
 DELETE FROM students WHERE id LIKE 'demo-%' OR class_id LIKE 'demo-%' OR username LIKE 'demo.%';
 DELETE FROM classes WHERE id LIKE 'demo-%' OR teacher_id LIKE 'demo-%';
 DELETE FROM teachers WHERE id LIKE 'demo-%' OR email LIKE 'demo@%';
@@ -1451,7 +1450,33 @@ INSERT INTO lessons (
 );`)
   }
 
-  // ── Exam Dojo ────────────────────────────────────────────────────────────
+  // ── Exam profiles & mock exams ─────────────────────────────────────────
+  const gradeBoundaries = [
+    { grade: '9', minPct: 90 },
+    { grade: '8', minPct: 80 },
+    { grade: '7', minPct: 70 },
+    { grade: '6', minPct: 60 },
+    { grade: '5', minPct: 50 },
+    { grade: '4', minPct: 40, pass: true },
+    { grade: '3', minPct: 30 },
+  ]
+  const examFormat = {
+    sections: [
+      {
+        name: 'Section A',
+        questionTypes: ['mcq', 'cloze', 'short_written'],
+        questionCount: 8,
+        marks: 40,
+      },
+      {
+        name: 'Section B',
+        questionTypes: ['reading_comprehension', 'extended_written'],
+        questionCount: 4,
+        marks: 60,
+      },
+    ],
+  }
+
   const dojoPaper1Content = {
     title: 'Cambridge Secondary — Grammar & reading practice',
     instructions: 'Answer all questions. You have 40 minutes.',
@@ -1545,138 +1570,95 @@ INSERT INTO lessons (
     ],
   }
 
-  const dojoIeltsContent = {
-    title: 'IELTS Academic — Writing Task 2 practice',
-    instructions: 'Plan and write under timed conditions.',
-    questions: [
-      shortWritten(
-        'demo-dq-i1',
-        'Paraphrase: “University education should be free for everyone.”',
-        'paraphrasing',
-      ),
-      shortWritten(
-        'demo-dq-i2',
-        'Write a thesis statement for an opinion essay on free university tuition.',
-        'IELTS Task 2 structure',
-      ),
-      shortWritten(
-        'demo-dq-i3',
-        'Outline body paragraph 1 with a topic sentence and two supporting points.',
-        'IELTS Task 2 structure',
-      ),
-    ],
+  const mockPaper1Content = {
+    ...dojoPaper1Content,
+    title: 'Cambridge Secondary — Mock 1',
   }
-
-  const dojoAvaOwnContent = {
-    title: 'My uploaded sports English paper',
-    instructions: 'Practice paper reconstructed from Ava’s upload (draft).',
-    questions: [
-      mcq(
-        'demo-dq-ava-1',
-        'The player _____ scored wore number 9.',
-        'relative clauses',
-        ['which', 'who', 'where', 'whom'],
-        'who',
-      ),
-      shortWritten('demo-dq-ava-2', 'Describe a match in 40 words using one relative clause.', 'relative clauses'),
-    ],
+  const mockPaper2Content = {
+    ...dojoPaper2Content,
+    title: 'Mid-year English skills — Mock 2',
+  }
+  const mockPaper3Content = {
+    ...dojoPaper3Content,
+    title: 'Reading & vocabulary — Mock 3',
   }
 
   lines.push(`
-INSERT INTO dojo_papers (
-  id, class_id, created_by_role, created_by_id, owner_student_id,
-  title, subject, curriculum, syllabus_code, source_file_name,
-  content_fingerprint, extracted_text, content_json, reconstruction_label,
-  reconstructed_at, status, duration_seconds, pass_threshold, top_threshold,
-  created_at, published_at
+INSERT INTO exam_profiles (
+  id, class_id, created_by, title, subject, curriculum, syllabus_code,
+  duration_seconds, exam_format_json, grade_boundaries_json, rubric_json,
+  reference_past_paper_text, source_file_name, pass_grade, target_grade, status,
+  created_at, updated_at
+) VALUES (
+  'demo-exam-en', ${sqlStr(classEn)}, ${sqlStr(teacherId)},
+  'Cambridge Secondary English', 'English', 'Cambridge Secondary', '0475',
+  2400,
+  ${sqlStr(JSON.stringify(examFormat))},
+  ${sqlStr(JSON.stringify(gradeBoundaries))},
+  ${sqlStr(JSON.stringify({ general: 'Mark extended answers for clarity, accuracy, and use of relative clauses where relevant.' }))},
+  ${sqlStr(footballPassage)},
+  'cambridge-grammar-reading-sep.pdf',
+  '4', '8', 'active',
+  datetime('now', '-18 days'), datetime('now', '-18 days')
+);
+
+INSERT INTO tasks (
+  id, type, subtype, class_id, subject, title, description, difficulty,
+  status, time_limit_seconds, content_json, reading_text, past_paper_text,
+  exam_profile_id, created_by, created_at, published_at
 ) VALUES
 (
-  'demo-dojo-en-1', ${sqlStr(classEn)}, 'teacher', ${sqlStr(teacherId)}, NULL,
-  'Cambridge Secondary — Grammar & reading practice', 'English', 'Cambridge Secondary', '0475',
-  'cambridge-grammar-reading-sep.pdf',
-  'demo-fp-en-1', ${sqlStr(footballPassage)},
-  ${sqlStr(JSON.stringify(dojoPaper1Content))},
-  'ai_reconstructed_practice', datetime('now', '-18 days'),
-  'published', 2400, 50, 80,
-  datetime('now', '-18 days'), datetime('now', '-17 days')
+  'demo-mock-en-1', 'assessment', 'mock_exam', ${sqlStr(classEn)}, 'English',
+  'Cambridge Secondary — Mock 1', 'Timed mock exam', 'medium',
+  'published', 2400, ${sqlStr(JSON.stringify(mockPaper1Content))}, '', '',
+  'demo-exam-en', ${sqlStr(teacherId)}, datetime('now', '-18 days'), datetime('now', '-17 days')
 ),
 (
-  'demo-dojo-en-2', ${sqlStr(classEn)}, 'teacher', ${sqlStr(teacherId)}, NULL,
-  'Mid-year English skills paper', 'English', 'Cambridge Secondary', '0475',
-  'midyear-skills.pdf',
-  'demo-fp-en-2', ${sqlStr(climatePassage)},
-  ${sqlStr(JSON.stringify(dojoPaper2Content))},
-  'ai_reconstructed_practice', datetime('now', '-12 days'),
-  'published', 2100, 50, 80,
-  datetime('now', '-12 days'), datetime('now', '-11 days')
+  'demo-mock-en-2', 'assessment', 'mock_exam', ${sqlStr(classEn)}, 'English',
+  'Mid-year English skills — Mock 2', 'Timed mock exam', 'medium',
+  'published', 2100, ${sqlStr(JSON.stringify(mockPaper2Content))}, '', '',
+  'demo-exam-en', ${sqlStr(teacherId)}, datetime('now', '-12 days'), datetime('now', '-11 days')
 ),
 (
-  'demo-dojo-en-3', ${sqlStr(classEn)}, 'teacher', ${sqlStr(teacherId)}, NULL,
-  'Reading & vocabulary stretch', 'English', 'Cambridge Secondary', '0475',
-  'vocab-stretch.pdf',
-  'demo-fp-en-3', ${sqlStr(climatePassage)},
-  ${sqlStr(JSON.stringify(dojoPaper3Content))},
-  'ai_reconstructed_practice', datetime('now', '-6 days'),
-  'published', 1800, 50, 80,
-  datetime('now', '-6 days'), datetime('now', '-5 days')
-),
-(
-  'demo-dojo-ielts-1', ${sqlStr(classIelts)}, 'teacher', ${sqlStr(teacherId)}, NULL,
-  'IELTS Academic — Writing Task 2 practice', 'English', 'IELTS Academic', 'IELTS-WR',
-  'ielts-task2-practice.pdf',
-  'demo-fp-ielts-1',
-  ${sqlStr('Discuss both views and give your opinion: Should university education be free?')},
-  ${sqlStr(JSON.stringify(dojoIeltsContent))},
-  'ai_reconstructed_practice', datetime('now', '-8 days'),
-  'published', 2400, 50, 80,
-  datetime('now', '-8 days'), datetime('now', '-7 days')
-),
-(
-  'demo-dojo-ava-own', ${sqlStr(classEn)}, 'student', 'demo-stu-ava', 'demo-stu-ava',
-  'My uploaded sports English paper', 'English', 'Cambridge Secondary', '0475',
-  'ava-sports-paper.pdf',
-  'demo-fp-ava-own', ${sqlStr(footballPassage)},
-  ${sqlStr(JSON.stringify(dojoAvaOwnContent))},
-  'ai_reconstructed_practice', datetime('now', '-4 days'),
-  'draft', 1200, 50, 80,
-  datetime('now', '-4 days'), NULL
+  'demo-mock-en-3', 'assessment', 'mock_exam', ${sqlStr(classEn)}, 'English',
+  'Reading & vocabulary — Mock 3', 'Timed mock exam', 'medium',
+  'published', 1800, ${sqlStr(JSON.stringify(mockPaper3Content))}, '', '',
+  'demo-exam-en', ${sqlStr(teacherId)}, datetime('now', '-6 days'), datetime('now', '-5 days')
 );
+
+INSERT INTO task_assignments (id, task_id, student_id) VALUES
+  ('demo-mock-en-1-assign', 'demo-mock-en-1', NULL),
+  ('demo-mock-en-2-assign', 'demo-mock-en-2', NULL),
+  ('demo-mock-en-3-assign', 'demo-mock-en-3', NULL);
 `)
 
-  // Dojo attempts — Ava has 3+ for pass-probability unlock; others varied
-  const dojoAttempts = [
-    // Paper 1 — most of Year 10
-    { id: 'demo-datt-p1-ava', paper: 'demo-dojo-en-1', student: 'demo-stu-ava', score: 76, daysAgo: 16 },
-    { id: 'demo-datt-p1-noah', paper: 'demo-dojo-en-1', student: 'demo-stu-noah', score: 88, daysAgo: 16 },
-    { id: 'demo-datt-p1-mia', paper: 'demo-dojo-en-1', student: 'demo-stu-mia', score: 64, daysAgo: 15 },
-    { id: 'demo-datt-p1-leo', paper: 'demo-dojo-en-1', student: 'demo-stu-leo', score: 51, daysAgo: 15 },
-    { id: 'demo-datt-p1-zoe', paper: 'demo-dojo-en-1', student: 'demo-stu-zoe', score: 94, daysAgo: 14 },
-    { id: 'demo-datt-p1-kai', paper: 'demo-dojo-en-1', student: 'demo-stu-kai', score: 70, daysAgo: 14 },
-    { id: 'demo-datt-p1-iris', paper: 'demo-dojo-en-1', student: 'demo-stu-iris', score: 82, daysAgo: 13 },
-    // Paper 2
-    { id: 'demo-datt-p2-ava', paper: 'demo-dojo-en-2', student: 'demo-stu-ava', score: 81, daysAgo: 10 },
-    { id: 'demo-datt-p2-noah', paper: 'demo-dojo-en-2', student: 'demo-stu-noah', score: 85, daysAgo: 10 },
-    { id: 'demo-datt-p2-zoe', paper: 'demo-dojo-en-2', student: 'demo-stu-zoe', score: 92, daysAgo: 9 },
-    { id: 'demo-datt-p2-mia', paper: 'demo-dojo-en-2', student: 'demo-stu-mia', score: 69, daysAgo: 9 },
-    { id: 'demo-datt-p2-iris', paper: 'demo-dojo-en-2', student: 'demo-stu-iris', score: 78, daysAgo: 8 },
-    // Paper 3 — Ava's third (unlocks stats)
-    { id: 'demo-datt-p3-ava', paper: 'demo-dojo-en-3', student: 'demo-stu-ava', score: 79, daysAgo: 4 },
-    { id: 'demo-datt-p3-noah', paper: 'demo-dojo-en-3', student: 'demo-stu-noah', score: 91, daysAgo: 4 },
-    { id: 'demo-datt-p3-zoe', paper: 'demo-dojo-en-3', student: 'demo-stu-zoe', score: 97, daysAgo: 3 },
-    // IELTS
-    { id: 'demo-datt-ielts-rui', paper: 'demo-dojo-ielts-1', student: 'demo-stu-rui', score: 71, daysAgo: 5 },
-    { id: 'demo-datt-ielts-jin', paper: 'demo-dojo-ielts-1', student: 'demo-stu-jin', score: 58, daysAgo: 5 },
+  const mockAttempts = [
+    { id: 'demo-matt-p1-ava', task: 'demo-mock-en-1', student: 'demo-stu-ava', score: 76, daysAgo: 16 },
+    { id: 'demo-matt-p1-noah', task: 'demo-mock-en-1', student: 'demo-stu-noah', score: 88, daysAgo: 16 },
+    { id: 'demo-matt-p1-mia', task: 'demo-mock-en-1', student: 'demo-stu-mia', score: 64, daysAgo: 15 },
+    { id: 'demo-matt-p1-leo', task: 'demo-mock-en-1', student: 'demo-stu-leo', score: 51, daysAgo: 15 },
+    { id: 'demo-matt-p1-zoe', task: 'demo-mock-en-1', student: 'demo-stu-zoe', score: 94, daysAgo: 14 },
+    { id: 'demo-matt-p1-kai', task: 'demo-mock-en-1', student: 'demo-stu-kai', score: 70, daysAgo: 14 },
+    { id: 'demo-matt-p1-iris', task: 'demo-mock-en-1', student: 'demo-stu-iris', score: 82, daysAgo: 13 },
+    { id: 'demo-matt-p2-ava', task: 'demo-mock-en-2', student: 'demo-stu-ava', score: 81, daysAgo: 10 },
+    { id: 'demo-matt-p2-noah', task: 'demo-mock-en-2', student: 'demo-stu-noah', score: 85, daysAgo: 10 },
+    { id: 'demo-matt-p2-zoe', task: 'demo-mock-en-2', student: 'demo-stu-zoe', score: 92, daysAgo: 9 },
+    { id: 'demo-matt-p2-mia', task: 'demo-mock-en-2', student: 'demo-stu-mia', score: 69, daysAgo: 9 },
+    { id: 'demo-matt-p2-iris', task: 'demo-mock-en-2', student: 'demo-stu-iris', score: 78, daysAgo: 8 },
+    { id: 'demo-matt-p3-ava', task: 'demo-mock-en-3', student: 'demo-stu-ava', score: 79, daysAgo: 4 },
+    { id: 'demo-matt-p3-noah', task: 'demo-mock-en-3', student: 'demo-stu-noah', score: 91, daysAgo: 4 },
+    { id: 'demo-matt-p3-zoe', task: 'demo-mock-en-3', student: 'demo-stu-zoe', score: 97, daysAgo: 3 },
   ]
 
-  for (const a of dojoAttempts) {
+  for (const a of mockAttempts) {
     const feedback = {
       overview: {
         correct: a.score >= 70,
         feedback:
           a.score >= 85
-            ? 'Excellent Dojo sit — maintain this pace.'
+            ? 'Excellent mock exam — maintain this pace.'
             : a.score >= 70
-              ? 'Solid paper. Revisit flagged topics before the next sit.'
+              ? 'Solid paper. Revisit flagged topics before the next mock.'
               : 'Review weak topics and reattempt when ready.',
         topic: 'overall',
         marksAwarded: Math.round(a.score / 10),
@@ -1684,21 +1666,21 @@ INSERT INTO dojo_papers (
       },
     }
     lines.push(`
-INSERT INTO dojo_attempts (
-  id, paper_id, student_id, started_at, submitted_at, duration_ms,
+INSERT INTO attempts (
+  id, task_id, student_id, started_at, submitted_at, duration_ms,
   answers_json, score_pct, feedback_json, topic_tags_json, attempt_archive_md, status
 ) VALUES (
   ${sqlStr(a.id)},
-  ${sqlStr(a.paper)},
+  ${sqlStr(a.task)},
   ${sqlStr(a.student)},
   datetime('now', '-${a.daysAgo} days', '-35 minutes'),
   datetime('now', '-${a.daysAgo} days'),
   ${30 * 60 * 1000 + a.score * 500},
-  ${sqlStr(JSON.stringify({ note: 'demo dojo answers' }))},
+  ${sqlStr(JSON.stringify({ note: 'demo mock answers' }))},
   ${a.score},
   ${sqlStr(JSON.stringify(feedback))},
   ${sqlStr(JSON.stringify(['grammar', 'reading']))},
-  ${sqlStr(`# Dojo attempt archive\n\nScore: ${a.score}%\nPaper: ${a.paper}\n`)},
+  ${sqlStr(`# Mock exam attempt archive\n\nScore: ${a.score}%\nTask: ${a.task}\n`)},
   'submitted'
 );`)
   }
@@ -1769,7 +1751,7 @@ INSERT INTO reports (id, teacher_id, student_id, class_id, content, teacher_note
   'demo-stu-ava',
   ${sqlStr(classEn)},
   ${sqlStr(
-    '## Progress note — Ava C.\n\nAva has improved on homework completion and is reading more confidently at B1. Continue relative-clause drills and keep football-themed prompts for engagement.\n\n**Exam Dojo:** Three papers completed (avg ~79%) — pass-probability estimates are unlocked.\n\n**Next steps:** two short writing tasks with model paragraphs; RSVP practice at ~190 wpm.',
+    '## Progress note — Ava C.\n\nAva has improved on homework completion and is reading more confidently at B1. Continue relative-clause drills and keep football-themed prompts for engagement.\n\n**Exam readiness:** Three mock exams completed (avg ~79%) — pass/target probability estimates are unlocked.\n\n**Next steps:** two short writing tasks with model paragraphs; RSVP practice at ~190 wpm.',
   )},
   'Parents evening draft',
   datetime('now', '-1 days'),
@@ -1781,7 +1763,7 @@ INSERT INTO reports (id, teacher_id, student_id, class_id, content, teacher_note
   NULL,
   ${sqlStr(classEn)},
   ${sqlStr(
-    '## Year 10 English — class snapshot\n\nAverage recent assessment scores sit around the mid-70s. Stronger writers (Zoe, Noah, Iris) can mentor peers on cohesion. Priority whole-class focus: relative clauses and article usage.\n\nReading speed ranges from ~130–270 wpm; recommend weekly RSVP for students below 160.\n\nLesson batch “Grammar & writing foundations” is underway (Mon/Wed). Exam Dojo papers are published for independent practice.',
+    '## Year 10 English — class snapshot\n\nAverage homework scores sit around the mid-70s. Stronger writers (Zoe, Noah, Iris) can mentor peers on cohesion. Priority whole-class focus: relative clauses and article usage.\n\nReading speed ranges from ~130–270 wpm; recommend weekly RSVP for students below 160.\n\nLesson batch “Grammar & writing foundations” is underway (Mon/Wed). Mock exams are published for independent practice with exam readiness tracking.',
   )},
   '',
   datetime('now', '-2 days'),

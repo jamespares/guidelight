@@ -3,7 +3,6 @@ import {
   BookOpenText,
   CalendarDays,
   ClipboardList,
-  Dumbbell,
   Home,
   LineChart,
   LogOut,
@@ -147,7 +146,6 @@ const teacherNav: NavItem[] = [
   { to: '/teacher/lessons', label: 'Lessons', icon: CalendarDays },
   { to: '/teacher/homework', label: 'Homework', icon: BookOpenCheck },
   { to: '/teacher/assessments', label: 'Assessments', icon: ClipboardList },
-  { to: '/teacher/exam-dojo', label: 'Exam Dojo', icon: Dumbbell },
   { to: '/teacher/insights', label: 'Insights', icon: LineChart },
 ]
 

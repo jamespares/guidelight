@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { api, type Question, type TaskContent, type TaskRow } from '@/lib/api'
+import { api, type ExamProfile, type ExamReadiness, type Question, type TaskContent, type TaskRow } from '@/lib/api'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
@@ -119,22 +119,86 @@ function QuestionInput({
 
 export function StudentTasksPage() {
   const [tasks, setTasks] = useState<TaskRow[]>([])
+  const [examProfiles, setExamProfiles] = useState<
+    Array<{ profile: ExamProfile; readiness: ExamReadiness }>
+  >([])
   const [error, setError] = useState('')
 
   useEffect(() => {
-    void api
-      .studentTasks()
-      .then((r) => setTasks(r.tasks))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed'))
+    void (async () => {
+      try {
+        const [t, ep] = await Promise.all([api.studentTasks(), api.studentExamProfiles()])
+        setTasks(t.tasks)
+        setExamProfiles(ep.profiles)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed')
+      }
+    })()
   }, [])
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Tasks"
         description={`${tasks.length} assigned task${tasks.length === 1 ? '' : 's'}`}
       />
-      {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      {examProfiles.length > 0 ? (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Exam readiness
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {examProfiles.map(({ profile, readiness }) => (
+              <Card key={profile.id}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">{profile.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {readiness.unlockMessage ? (
+                    <p className="text-muted-foreground">{readiness.unlockMessage}</p>
+                  ) : (
+                    <>
+                      <p>
+                        Mock exams completed: <strong>{readiness.mockExamsCompleted}</strong>
+                        {readiness.averageScore != null ? (
+                          <>
+                            {' '}
+                            · Avg: <strong>{readiness.averageScore}%</strong>
+                          </>
+                        ) : null}
+                      </p>
+                      {readiness.predictedGrade ? (
+                        <p>
+                          Predicted grade: <strong>{readiness.predictedGrade}</strong>
+                        </p>
+                      ) : null}
+                      {readiness.passProbability != null ? (
+                        <p>
+                          Chance of {profile.pass_grade}:{' '}
+                          <strong>{readiness.passProbability}%</strong>
+                          {readiness.targetProbability != null ? (
+                            <>
+                              {' '}
+                              · Target {profile.target_grade}:{' '}
+                              <strong>{readiness.targetProbability}%</strong>
+                            </>
+                          ) : null}
+                        </p>
+                      ) : null}
+                      {readiness.recommendation ? (
+                        <p className="text-muted-foreground">{readiness.recommendation}</p>
+                      ) : null}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -429,7 +493,7 @@ export function StudentToolsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Tools"
-        description="Practise any time — stories, focused reading, revision utilities, and Exam Dojo."
+        description="Practise any time — stories, focused reading, and revision utilities."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -450,17 +514,6 @@ export function StudentToolsPage() {
           <h2 className="text-lg font-semibold">(RSVP) Focused Reading Machine</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Class texts and your uploads — RSVP practice at a speed you choose.
-          </p>
-        </Link>
-
-        <Link
-          to="/student/exam-dojo"
-          className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
-        >
-          <h2 className="text-lg font-semibold">Exam Dojo</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Sit AI-reconstructed practice papers, track scores, and see what average you need for a
-            stronger chance of your target grade.
           </p>
         </Link>
 

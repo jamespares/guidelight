@@ -1,18 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CalendarPlus, FileText, Printer, Save, Trash2 } from 'lucide-react'
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
+import { eventColor, InsightLineChartCard } from '@/components/InsightLineChart'
 import { PageHeader } from '@/components/PageHeader'
 import { WeakspotsPanel } from '@/components/WeakspotsPanel'
 import { Badge } from '@/components/ui/badge'
@@ -39,73 +29,14 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import {
   api,
+  isAiBudgetError,
   type ClassRow,
   type InsightEvent,
   type StudentRow,
   type Weakspot,
 } from '@/lib/api'
+import { CAP_HIT_TEACHER } from '@/lib/trustCopy'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
-
-/** Distinct strokes for event markers — hashed by event id. */
-const EVENT_COLORS = [
-  '#c45c26',
-  '#2a6f6f',
-  '#b33b5c',
-  '#3d6b3d',
-  '#6b4c9a',
-  '#a67c00',
-  '#1f5f8b',
-  '#8b4513',
-]
-
-function eventColor(id: string): string {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  return EVENT_COLORS[hash % EVENT_COLORS.length]!
-}
-
-type ChartPoint = { label: string; value: number | null; date?: string }
-
-/** Merge event dates into series so ReferenceLines land on categorical axis ticks. */
-function mergeChartWithEvents(
-  series: Array<{ date: string; value: number }>,
-  events: InsightEvent[],
-): ChartPoint[] {
-  const points: ChartPoint[] = series.map((p) => ({
-    ...p,
-    label: p.date?.slice(0, 10) ?? '',
-  }))
-  const labels = new Set(points.map((p) => p.label).filter(Boolean))
-  for (const e of events) {
-    if (!labels.has(e.event_date)) {
-      points.push({ label: e.event_date, value: null })
-      labels.add(e.event_date)
-    }
-  }
-  return points.sort((a, b) => a.label.localeCompare(b.label))
-}
-
-function EventReferenceLines({ events }: { events: InsightEvent[] }) {
-  return (
-    <>
-      {events.map((e) => (
-        <ReferenceLine
-          key={e.id}
-          x={e.event_date}
-          stroke={eventColor(e.id)}
-          strokeWidth={2}
-          strokeDasharray="4 3"
-          label={{
-            value: e.name.length > 18 ? `${e.name.slice(0, 16)}…` : e.name,
-            position: 'insideTop',
-            fill: eventColor(e.id),
-            fontSize: 11,
-          }}
-        />
-      ))}
-    </>
-  )
-}
 
 export function InsightsPage() {
   const [scope, setScope] = useState<'class' | 'student'>('class')
@@ -194,7 +125,11 @@ export function InsightsPage() {
           : prev,
       )
     } catch (err) {
-      setPinpointError(err instanceof Error ? err.message : 'Pinpoint failed')
+      if (isAiBudgetError(err)) {
+        setPinpointError(CAP_HIT_TEACHER)
+      } else {
+        setPinpointError(err instanceof Error ? err.message : 'Pinpoint failed')
+      }
     } finally {
       setPinpointBusy(false)
     }
@@ -242,9 +177,6 @@ export function InsightsPage() {
       setError(err instanceof Error ? err.message : 'Failed to delete event')
     }
   }
-
-  const scoreChart = mergeChartWithEvents(data?.scoreSeries ?? [], events)
-  const hwChart = mergeChartWithEvents(data?.hwSeries ?? [], events)
 
   return (
     <div className="space-y-6">
@@ -369,7 +301,7 @@ export function InsightsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Avg % correct
+              Avg HW % correct
             </div>
             <div className="mt-2 font-display text-3xl font-semibold text-[hsl(var(--insight-score-fg))]">
               {data?.avgScore == null ? '—' : `${data.avgScore}%`}
@@ -388,58 +320,23 @@ export function InsightsPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Scores over time</CardTitle>
-        </CardHeader>
-        <CardContent className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={scoreChart}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="label" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip />
-              <Legend />
-              <EventReferenceLines events={events} />
-              <Line
-                type="monotone"
-                dataKey="value"
-                name="% correct"
-                stroke="hsl(var(--insight-score))"
-                strokeWidth={2.5}
-                connectNulls
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <InsightLineChartCard
+        title="Scores over time"
+        description="Expand for a larger, zoomable view. Dashed lines mark class or student events."
+        series={data?.scoreSeries ?? []}
+        events={events}
+        seriesName="% correct"
+        stroke="hsl(var(--insight-score))"
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Homework submission over time</CardTitle>
-        </CardHeader>
-        <CardContent className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={hwChart}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="label" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip />
-              <Legend />
-              <EventReferenceLines events={events} />
-              <Line
-                type="monotone"
-                dataKey="value"
-                name="submission %"
-                stroke="hsl(var(--insight-hw))"
-                strokeWidth={2}
-                strokeOpacity={0.85}
-                connectNulls
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <InsightLineChartCard
+        title="Homework submission over time"
+        description="Expand for a larger, zoomable view. Dashed lines mark class or student events."
+        series={data?.hwSeries ?? []}
+        events={events}
+        seriesName="submission %"
+        stroke="hsl(var(--insight-hw))"
+      />
 
       <Card>
         <CardHeader>

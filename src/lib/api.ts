@@ -59,6 +59,7 @@ export type TaskSubtype =
   | 'diagnostic'
   | 'formative'
   | 'summative'
+  | 'mock_exam'
   | 'english_level'
   | 'reading_speed'
   | null
@@ -122,6 +123,7 @@ export interface TaskRow {
   published_at?: string
   last_score?: number | null
   attempt_status?: string | null
+  exam_profile_id?: string | null
 }
 
 export type LessonActivityStyle = 'traditional' | 'communicative'
@@ -176,45 +178,66 @@ export interface LessonRow {
   plan: LessonPlan
 }
 
-export interface DojoPaper {
+export interface GradeBoundary {
+  grade: string
+  minPct: number
+  pass?: boolean
+}
+
+export interface ExamFormatSection {
+  name: string
+  questionTypes: QuestionType[]
+  questionCount: number
+  marks: number
+}
+
+export interface ExamFormat {
+  sections: ExamFormatSection[]
+}
+
+export interface ExamRubric {
+  general?: string
+  criteria?: string[]
+}
+
+export interface ExamProfile {
   id: string
   class_id: string
-  owner_student_id?: string | null
   title: string
   subject: string
   curriculum: string
   syllabus_code: string
-  source_file_name?: string
-  reconstruction_label: string
-  reconstructed_at: string | null
-  status: 'processing' | 'draft' | 'ready' | 'published' | 'failed'
   duration_seconds: number | null
-  pass_threshold: number
-  top_threshold: number
-  fail_reason?: string
+  exam_format: ExamFormat
+  grade_boundaries: GradeBoundary[]
+  rubric: ExamRubric
+  reference_past_paper_text?: string
+  source_file_name?: string
+  pass_grade: string
+  target_grade: string
+  status: 'active' | 'archived'
   created_at: string
-  published_at?: string | null
-  created_by_role?: string
-  content?: TaskContent
+  updated_at: string
+  mock_count?: number
 }
 
-export interface DojoStats {
-  papersCompleted: number
+export interface ExamReadiness {
+  mockExamsCompleted: number
   averageScore: number | null
   passProbability: number | null
-  topProbability: number | null
+  targetProbability: number | null
+  predictedGrade: string | null
   unlockMessage?: string
   recommendation?: string
 }
 
-export interface DojoAttemptScore {
+export interface MockExamRow {
   id: string
-  score_pct: number | null
-  submitted_at: string | null
   title: string
-  subject: string
-  curriculum: string
-  syllabus_code: string
+  status: 'draft' | 'published'
+  time_limit_seconds: number | null
+  created_at: string
+  published_at?: string | null
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -361,7 +384,7 @@ export const api = {
     }>('/api/classes', { method: 'POST', body: JSON.stringify(body) }),
   students: () => request<{ students: StudentRow[] }>('/api/students'),
   student: (id: string) =>
-    request<{ student: StudentRow; attempts: unknown[]; dojoAttempts?: DojoAttemptScore[] }>(
+    request<{ student: StudentRow; attempts: unknown[] }>(
       `/api/students/${id}`,
     ),
   updateStudent: (
@@ -591,72 +614,46 @@ export const api = {
       body: JSON.stringify({ slug, event_type }),
     }),
 
-  // Exam Dojo
-  dojoPapers: (classId: string) =>
-    request<{ papers: DojoPaper[] }>(
-      `/api/dojo/papers?classId=${encodeURIComponent(classId)}`,
+  // Exam profiles & mock exams
+  examProfiles: (classId: string) =>
+    request<{ profiles: ExamProfile[] }>(
+      `/api/exam-profiles?classId=${encodeURIComponent(classId)}`,
     ),
-  createDojoPaper: (body: Record<string, unknown>) =>
-    request<{ paper: DojoPaper; reused: boolean }>('/api/dojo/papers', {
+  createExamProfile: (body: Record<string, unknown>) =>
+    request<{ profile: ExamProfile }>('/api/exam-profiles', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  dojoPaper: (id: string) => request<{ paper: DojoPaper }>(`/api/dojo/papers/${id}`),
-  updateDojoPaper: (id: string, body: Record<string, unknown>) =>
-    request<{ paper: DojoPaper }>(`/api/dojo/papers/${id}`, {
+  examProfile: (id: string) =>
+    request<{ profile: ExamProfile }>(`/api/exam-profiles/${id}`),
+  updateExamProfile: (id: string, body: Record<string, unknown>) =>
+    request<{ profile: ExamProfile }>(`/api/exam-profiles/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
-  publishDojoPaper: (id: string) =>
-    request<{ ok: boolean }>(`/api/dojo/papers/${id}/publish`, {
-      method: 'POST',
-      body: '{}',
-    }),
-  studentDojoPapers: () =>
-    request<{ shared: DojoPaper[]; mine: DojoPaper[] }>('/api/student/dojo/papers'),
-  createStudentDojoPaper: (body: Record<string, unknown>) =>
-    request<{ paper: DojoPaper; reused: boolean }>('/api/student/dojo/papers', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
-  startDojoAttempt: (paperId: string) =>
-    request<{ attemptId: string; time_limit_seconds?: number | null; resumed?: boolean }>(
-      `/api/student/dojo/papers/${paperId}/start`,
-      { method: 'POST', body: '{}' },
+  generateMockExam: (profileId: string, body?: Record<string, unknown>) =>
+    request<{ task: { id: string; content: TaskContent; status: string } }>(
+      `/api/exam-profiles/${profileId}/generate-mock`,
+      { method: 'POST', body: JSON.stringify(body ?? {}) },
     ),
-  submitDojoAttempt: (
-    attemptId: string,
-    body: { answers: Record<string, unknown>; duration_ms: number },
-  ) =>
+  examProfileMocks: (profileId: string) =>
+    request<{ mocks: MockExamRow[] }>(`/api/exam-profiles/${profileId}/mocks`),
+  studentExamProfiles: () =>
     request<{
-      score_pct: number
-      feedback: Record<
-        string,
-        {
-          correct: boolean
-          feedback: string
-          topic: string
-          marksAwarded: number
-          marksPossible: number
-        }
-      >
-      stats: DojoStats
-      pass_threshold: number
-      top_threshold: number
-    }>(`/api/student/dojo/attempts/${attemptId}/submit`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
-  studentDojoStats: (opts?: { pass?: number; top?: number; subject?: string }) => {
-    const params = new URLSearchParams()
-    if (opts?.pass != null) params.set('pass', String(opts.pass))
-    if (opts?.top != null) params.set('top', String(opts.top))
-    if (opts?.subject) params.set('subject', opts.subject)
-    const q = params.toString()
-    return request<{ stats: DojoStats; scores: Array<{ score_pct: number }> }>(
-      `/api/student/dojo/stats${q ? `?${q}` : ''}`,
-    )
-  },
+      profiles: Array<{ profile: ExamProfile; readiness: ExamReadiness }>
+    }>('/api/student/exam-profiles'),
+  studentExamReadiness: (examProfileId: string) =>
+    request<{ readiness: ExamReadiness; profile: ExamProfile }>(
+      `/api/student/exam-readiness?examProfileId=${encodeURIComponent(examProfileId)}`,
+    ),
+  studentExamReadinessDetail: (studentId: string) =>
+    request<{
+      profiles: Array<{
+        profile: ExamProfile
+        readiness: ExamReadiness
+        attempts: { results?: Array<{ id: string; score_pct: number | null; submitted_at: string | null; title: string }> }
+      }>
+    }>(`/api/students/${studentId}/exam-readiness`),
 
   billingUsage: () => request<BillingUsage>('/api/billing/usage'),
   billingSetCap: (monthly_cap_cents: number) =>

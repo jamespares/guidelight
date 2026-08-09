@@ -8,6 +8,8 @@ export const AI_WAIT_MS = {
   practice: 25_000,
   report: 30_000,
   marking: 25_000,
+  /** Matches worker pinpoint timeout (~55s) plus archive prep. */
+  pinpoint: 60_000,
 } as const
 
 export function lessonPlanExpectedMs(weeks: number) {
