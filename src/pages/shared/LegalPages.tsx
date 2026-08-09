@@ -490,6 +490,16 @@ export function AccessibilityStatementPage() {
           advanced visualisations and the 3D landing scene are decorative and do not block access
           to core features.
         </P>
+        <P>
+          To protect the integrity of homework and assessments, timed tasks and reading-speed
+          activities disable copy, paste, cut and context-menu actions across the page. This can
+          make those tasks harder to complete for some assistive-technology users. If a student
+          needs an accessible alternative, their teacher can contact us at{' '}
+          <a href={SUPPORT_MAILTO} className="text-foreground underline-offset-4 hover:underline">
+            {SUPPORT_EMAIL}
+          </a>
+          .
+        </P>
       </section>
 
       <section className="space-y-3">

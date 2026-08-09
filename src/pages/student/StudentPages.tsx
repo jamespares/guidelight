@@ -434,6 +434,12 @@ export function AttemptPage() {
   }, [secondsLeft])
 
   useEffect(() => {
+    const block = (e: Event) => e.preventDefault()
+    document.addEventListener('copy', block)
+    document.addEventListener('cut', block)
+    document.addEventListener('paste', block)
+    document.addEventListener('contextmenu', block)
+
     const onVis = () => {
       if (document.visibilityState === 'hidden' && attemptId && taskMeta?.type === 'assessment') {
         void api.flagAttempt(attemptId)
@@ -446,6 +452,10 @@ export function AttemptPage() {
     window.addEventListener('blur', onBlur)
 
     return () => {
+      document.removeEventListener('copy', block)
+      document.removeEventListener('cut', block)
+      document.removeEventListener('paste', block)
+      document.removeEventListener('contextmenu', block)
       document.removeEventListener('visibilitychange', onVis)
       window.removeEventListener('blur', onBlur)
     }
@@ -543,7 +553,7 @@ export function AttemptPage() {
       <p className="text-sm text-muted-foreground">{content.instructions}</p>
       <Card className="border border-warning-foreground/30 bg-warning text-warning-foreground">
         <CardContent className="p-3 text-sm">
-          Do your own work — copying and pasting is not allowed for this task.
+          Copy and paste are disabled for this task.
         </CardContent>
       </Card>
 
