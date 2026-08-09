@@ -79,6 +79,8 @@
   --insight-score-fg: 199 90% 82%;
   --insight-hw: 158 45% 42%;
   --insight-hw-fg: 158 50% 72%;
+  --insight-readiness: 38 80% 55%;
+  --insight-readiness-fg: 38 90% 78%;
 }
 
 .light {
@@ -149,6 +151,8 @@
   --insight-score-fg: 199 80% 24%;
   --insight-hw: 158 45% 30%;
   --insight-hw-fg: 158 50% 20%;
+  --insight-readiness: 38 80% 42%;
+  --insight-readiness-fg: 38 80% 24%;
 }
 
 @theme inline {

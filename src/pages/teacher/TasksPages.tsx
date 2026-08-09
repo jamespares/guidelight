@@ -33,7 +33,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { api, type ClassRow, type StudentRow, type TaskRow, type TaskSubtype } from '@/lib/api'
+import {
+  api,
+  type ClassRow,
+  type ExamProfile,
+  type StudentRow,
+  type TaskRow,
+  type TaskSubtype,
+} from '@/lib/api'
+import { ExamProfileCreateDialog } from '@/pages/teacher/ExamProfilePages'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 import { readPastPaperFile } from '@/lib/pastPaper'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
@@ -189,8 +197,8 @@ function TaskCreateForm({
           <p className="text-xs text-muted-foreground">
             Diagnostic and formative tests cover your class subject. For timed mock exams with
             readiness tracking, use{' '}
-            <Link to="/teacher/exam-profiles" className="underline">
-              Mock exams
+            <Link to="/teacher/assessments" className="underline">
+              Assessments → Exam profiles
             </Link>
             . English level and reading speed measure general English proficiency — not your class
             topic.
@@ -433,6 +441,123 @@ function TaskCreateForm({
   )
 }
 
+function ExamProfilesSection() {
+  const navigate = useNavigate()
+  const [classes, setClasses] = useState<ClassRow[]>([])
+  const [classId, setClassId] = useState('')
+  const [profiles, setProfiles] = useState<ExamProfile[]>([])
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState('')
+
+  async function loadProfiles(cid: string) {
+    if (!cid) return
+    try {
+      const res = await api.examProfiles(cid)
+      setProfiles(res.profiles)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load profiles')
+    }
+  }
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const c = await api.classes()
+        setClasses(c.classes)
+        if (c.classes[0]) setClassId(c.classes[0].id)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load classes')
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    void loadProfiles(classId)
+  }, [classId])
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Exam profiles</h2>
+            <p className="text-sm text-muted-foreground">
+              Configure an exam once, then generate timed mock papers and track readiness.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={classId} onValueChange={setClassId}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Class" />
+              </SelectTrigger>
+              <SelectContent>
+                {classes.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New exam profile
+            </Button>
+          </div>
+        </div>
+
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Exam</TableHead>
+              <TableHead>Curriculum</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Mocks</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {profiles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-muted-foreground">
+                  No exam profiles for this class. Create one to start generating timed mock exams.
+                </TableCell>
+              </TableRow>
+            ) : (
+              profiles.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.title}</TableCell>
+                  <TableCell>
+                    {p.curriculum} {p.syllabus_code}
+                  </TableCell>
+                  <TableCell>
+                    {p.duration_seconds ? `${Math.round(p.duration_seconds / 60)} min` : '—'}
+                  </TableCell>
+                  <TableCell>{p.mock_count ?? 0}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/teacher/exam-profiles/${p.id}`}>Open</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+
+        <ExamProfileCreateDialog
+          classes={classes}
+          defaultClassId={classId}
+          open={open}
+          onOpenChange={setOpen}
+          onCreated={(profile) => navigate(`/teacher/exam-profiles/${profile.id}`)}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
 function TaskList({
   type,
   title,
@@ -556,19 +681,11 @@ export function HomeworkPage() {
 export function AssessmentsPage() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2 border-b pb-4">
-        <Button variant="secondary" size="sm" disabled>
-          Quick assessments
-        </Button>
-        <Button variant="outline" size="sm" asChild>
-          <Link to="/teacher/exam-profiles">Mock exams</Link>
-        </Button>
-      </div>
+      <ExamProfilesSection />
       <TaskList
         type="assessment"
         title="Assessments"
-        blurb="Diagnostic and formative with hard time limits. Mock exams are managed separately."
-        excludeSubtypes={['mock_exam']}
+        blurb="Diagnostic, formative, summative, and timed mock exams"
       />
     </div>
   )

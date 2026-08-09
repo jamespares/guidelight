@@ -36,6 +36,8 @@ import {
 import {
   handleExamsApi,
   getMockExamMarkingContext,
+  readinessForProfile,
+  type ExamProfileRow,
 } from './lib/exams'
 
 const PHASE2_TYPES = ['mcq', 'cloze', 'short_written', 'reading_comprehension']
@@ -1396,6 +1398,32 @@ export default {
         })
       }
 
+      async function aggregateExamReadiness(
+        env: Env,
+        classId: string,
+        studentIds: string[],
+      ): Promise<number | null> {
+        const { results } = await env.DB.prepare(
+          `SELECT * FROM exam_profiles WHERE class_id = ? AND status = 'active'`,
+        )
+          .bind(classId)
+          .all<ExamProfileRow>()
+        const profiles = results ?? []
+        if (profiles.length === 0 || studentIds.length === 0) return null
+
+        const probabilities: number[] = []
+        for (const profile of profiles) {
+          for (const studentId of studentIds) {
+            const readiness = await readinessForProfile(env, studentId, profile)
+            if (readiness.passProbability != null) {
+              probabilities.push(readiness.passProbability)
+            }
+          }
+        }
+        if (probabilities.length === 0) return null
+        return Math.round((probabilities.reduce((a, b) => a + b, 0) / probabilities.length) * 10) / 10
+      }
+
       // —— Insights ——
       if (path === '/api/insights' && request.method === 'GET') {
         const user = await requireRole(env, request, 'teacher')
@@ -1512,12 +1540,14 @@ export default {
             }))
 
           const events = await loadInsightEvents(env, { classId: id })
+          const examReadiness = await aggregateExamReadiness(env, id, studentIds)
 
           return json({
             avgScore,
             scoreSeries: scores,
             hwRate,
             hwSeries,
+            examReadiness,
             weakspots,
             weakspotsSummary,
             weakspotsUpdatedAt,
@@ -1571,12 +1601,14 @@ export default {
           studentId: id,
           classId: s.class_id,
         })
+        const examReadiness = await aggregateExamReadiness(env, s.class_id, [id])
 
         return json({
           avgScore,
           scoreSeries: scores,
           hwRate,
           hwSeries,
+          examReadiness,
           weakspots: JSON.parse(s.weakspots || '[]'),
           weakspotsSummary: s.weakspots_summary || null,
           weakspotsUpdatedAt: s.weakspots_updated_at ?? null,

@@ -48,7 +48,7 @@ function AiCostExplainer() {
   const spendShare = [
     { label: 'Marking student work', share: 80, hint: 'Most of your bill' },
     { label: 'Creating tasks & lessons', share: 12, hint: 'A few dollars' },
-    { label: 'Insights, Dojo & extras', share: 8, hint: 'Small slice' },
+    { label: 'Insights, exam readiness & extras', share: 8, hint: 'Small slice' },
   ]
 
   const scenarios = [
@@ -171,9 +171,8 @@ export function TeacherGuidePage() {
           </li>
           <li>
             Optional: plan a syllabus in <strong className="text-foreground">Lessons</strong>, or
-            set up an exam profile under{' '}
-            <strong className="text-foreground">Assessments → Mock exams</strong> to generate timed
-            practice papers.
+            set up an exam profile under <strong className="text-foreground">Assessments</strong> to
+            generate timed practice papers.
           </li>
           <li>
             Use <strong className="text-foreground">Insights</strong> for homework scores, submission
@@ -188,7 +187,7 @@ export function TeacherGuidePage() {
           <strong className="text-foreground">Lessons</strong>,{' '}
           <strong className="text-foreground">Homework</strong>,{' '}
           <strong className="text-foreground">Assessments</strong>, and{' '}
-          <strong className="text-foreground">Insights</strong>. Mock exams live under Assessments.
+          <strong className="text-foreground">Insights</strong>. Exam profiles and mock exams live under Assessments.
           <strong className="text-foreground"> Info</strong> and{' '}
           <strong className="text-foreground">Settings</strong> sit below them. The sidebar also
           shows your <strong className="text-foreground">AI usage dial</strong> for this month.
@@ -302,7 +301,7 @@ export function TeacherGuidePage() {
 
       <Section title="Mock exams">
         <p>
-          From <strong className="text-foreground">Assessments → Mock exams</strong>, create an{' '}
+          From <strong className="text-foreground">Assessments → Exam profiles</strong>, create an{' '}
           <strong className="text-foreground">exam profile</strong>: title, curriculum, syllabus
           code, duration, grade boundaries (% → grade), marking rubric, and an optional reference
           past paper.

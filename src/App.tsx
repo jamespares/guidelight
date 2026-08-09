@@ -13,10 +13,7 @@ import {
   LessonDetailPage,
   LessonsPage,
 } from './pages/teacher/LessonsPages'
-import {
-  ExamProfileDetailPage,
-  ExamProfilesPage,
-} from './pages/teacher/ExamProfilePages'
+import { ExamProfileDetailPage } from './pages/teacher/ExamProfilePages'
 import { AttemptPage, StudentTasksPage, StudentToolsPage } from './pages/student/StudentPages'
 import { ReadingSpeedPage } from './pages/student/ReadingSpeedPage'
 import { EnglishLevelPage } from './pages/student/EnglishLevelPage'
@@ -95,7 +92,7 @@ export default function App() {
         <Route path="lessons" element={<LessonsPage />} />
         <Route path="lessons/:batchId" element={<LessonBatchPage />} />
         <Route path="lessons/:batchId/:lessonId" element={<LessonDetailPage />} />
-        <Route path="exam-profiles" element={<ExamProfilesPage />} />
+        <Route path="exam-profiles" element={<Navigate to="/teacher/assessments" replace />} />
         <Route path="exam-profiles/:id" element={<ExamProfileDetailPage />} />
         <Route path="insights" element={<InsightsPage />} />
         <Route path="reports/:id" element={<ReportPage />} />

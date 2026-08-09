@@ -453,6 +453,7 @@ export const api = {
       scoreSeries: Array<{ date: string; value: number }>
       hwRate: number | null
       hwSeries: Array<{ date: string; value: number }>
+      examReadiness: number | null
       weakspots: Weakspot[]
       weakspotsSummary?: string | null
       weakspotsUpdatedAt?: string | null

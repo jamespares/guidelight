@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Plus, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +12,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -54,16 +53,20 @@ const DEFAULT_BOUNDARIES: GradeBoundary[] = [
   { grade: '3', minPct: 30 },
 ]
 
-export function ExamProfilesPage() {
-  const navigate = useNavigate()
-  const [classes, setClasses] = useState<ClassRow[]>([])
-  const [classId, setClassId] = useState('')
-  const [profiles, setProfiles] = useState<ExamProfile[]>([])
-  const [error, setError] = useState('')
-  const [open, setOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const draftProgress = useEstimatedProgress(busy, AI_WAIT_MS.draft)
-
+export function ExamProfileCreateDialog({
+  classes,
+  defaultClassId,
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  classes: ClassRow[]
+  defaultClassId?: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onCreated: (profile: ExamProfile) => void
+}) {
+  const [classId, setClassId] = useState(defaultClassId ?? classes[0]?.id ?? '')
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [curriculum, setCurriculum] = useState('IGCSE')
@@ -77,35 +80,33 @@ export function ExamProfilesPage() {
   const [uploadName, setUploadName] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState<string | undefined>()
   const [uploadBusy, setUploadBusy] = useState(false)
-
-  async function loadProfiles(cid: string) {
-    if (!cid) return
-    const res = await api.examProfiles(cid)
-    setProfiles(res.profiles)
-  }
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const draftProgress = useEstimatedProgress(busy, AI_WAIT_MS.draft)
 
   useEffect(() => {
-    void (async () => {
-      const c = await api.classes()
-      setClasses(c.classes)
-      if (c.classes[0]) {
-        setClassId(c.classes[0].id)
-        setSubject(c.classes[0].subject)
-        if (c.classes[0].curriculum) setCurriculum(c.classes[0].curriculum)
-      }
-    })().catch((err) => setError(err instanceof Error ? err.message : 'Failed'))
-  }, [])
+    if (open) {
+      setClassId(defaultClassId ?? classes[0]?.id ?? '')
+      setTitle('')
+      setSyllabusCode('')
+      setDurationMins(45)
+      setPassGrade('4')
+      setTargetGrade('8')
+      setBoundaries(DEFAULT_BOUNDARIES)
+      setRubricGeneral('')
+      setExtractedText('')
+      setUploadName(null)
+      setImageUrl(undefined)
+      setError('')
+    }
+  }, [open, classes, defaultClassId])
 
   useEffect(() => {
-    if (!classId) return
     const cls = classes.find((c) => c.id === classId)
     if (cls) {
       setSubject(cls.subject)
       if (cls.curriculum) setCurriculum(cls.curriculum)
     }
-    void loadProfiles(classId).catch((err) =>
-      setError(err instanceof Error ? err.message : 'Failed'),
-    )
   }, [classId, classes])
 
   async function onFile(file: File | null) {
@@ -144,8 +145,8 @@ export function ExamProfilesPage() {
         source_file_name: uploadName || undefined,
         past_paper_image: imageUrl,
       })
-      setOpen(false)
-      navigate(`/teacher/exam-profiles/${res.profile.id}`)
+      onOpenChange(false)
+      onCreated(res.profile)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
@@ -160,15 +161,20 @@ export function ExamProfilesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Mock exams"
-        description="Configure exam profiles once, then generate timed mock papers with AI"
-        action={
-          <div className="flex flex-wrap items-center gap-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create exam profile</DialogTitle>
+          <DialogDescription>
+            Set curriculum, grade boundaries, rubric, and optional reference past paper.
+          </DialogDescription>
+        </DialogHeader>
+        <form className="space-y-4" onSubmit={(e) => void createProfile(e)}>
+          <div className="space-y-2">
+            <Label>Class</Label>
             <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Class" />
+              <SelectTrigger>
+                <SelectValue placeholder="Select class…" />
               </SelectTrigger>
               <SelectContent>
                 {classes.map((c) => (
@@ -178,205 +184,148 @@ export function ExamProfilesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4" />
-                  New exam profile
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create exam profile</DialogTitle>
-                  <DialogDescription>
-                    Set curriculum, grade boundaries, rubric, and optional reference past paper.
-                  </DialogDescription>
-                </DialogHeader>
-                <form className="space-y-4" onSubmit={(e) => void createProfile(e)}>
-                  <div className="space-y-2">
-                    <Label>Exam title</Label>
-                    <Input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. IGCSE Biology Paper 2"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Curriculum</Label>
-                      <Select value={curriculum} onValueChange={setCurriculum}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CURRICULA.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Syllabus code</Label>
-                      <Input
-                        value={syllabusCode}
-                        onChange={(e) => setSyllabusCode(e.target.value)}
-                        placeholder="e.g. 0610"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Duration (minutes)</Label>
-                    <Input
-                      type="number"
-                      min={10}
-                      max={180}
-                      value={durationMins}
-                      onChange={(e) => setDurationMins(Number(e.target.value))}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Pass grade</Label>
-                      <Select value={passGrade} onValueChange={setPassGrade}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {boundaries.map((b) => (
-                            <SelectItem key={b.grade} value={b.grade}>
-                              {b.grade} (≥{b.minPct}%)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Target grade</Label>
-                      <Select value={targetGrade} onValueChange={setTargetGrade}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {boundaries.map((b) => (
-                            <SelectItem key={b.grade} value={b.grade}>
-                              {b.grade} (≥{b.minPct}%)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Grade boundaries (% minimum)</Label>
-                    <div className="space-y-2 rounded-lg border p-3">
-                      {boundaries.map((b, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <Input
-                            className="w-16"
-                            value={b.grade}
-                            onChange={(e) => updateBoundary(i, 'grade', e.target.value)}
-                          />
-                          <Input
-                            type="number"
-                            className="w-20"
-                            value={b.minPct}
-                            onChange={(e) => updateBoundary(i, 'minPct', Number(e.target.value))}
-                          />
-                          <span className="text-xs text-muted-foreground">%</span>
-                          <label className="flex items-center gap-1 text-xs">
-                            <input
-                              type="checkbox"
-                              checked={!!b.pass}
-                              onChange={(e) => updateBoundary(i, 'pass', e.target.checked)}
-                            />
-                            Pass
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Marking rubric</Label>
-                    <Textarea
-                      value={rubricGeneral}
-                      onChange={(e) => setRubricGeneral(e.target.value)}
-                      placeholder="General marking criteria for AI marking…"
-                      className="min-h-[80px]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Reference past paper (optional)</Label>
-                    <Input
-                      type="file"
-                      accept=".pdf,image/*"
-                      onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
-                      disabled={uploadBusy}
-                    />
-                    {uploadName ? (
-                      <span className="text-xs text-muted-foreground">{uploadName}</span>
-                    ) : null}
-                  </div>
-                  {error ? <p className="text-sm text-destructive">{error}</p> : null}
-                  <Button type="submit" disabled={busy} className="w-full">
-                    {busy ? (
-                      <GenerationBusyLabel progress={draftProgress} label="Creating profile…" />
-                    ) : (
-                      'Create profile'
-                    )}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
           </div>
-        }
-      />
-
-      {error && !open ? <p className="text-sm text-destructive">{error}</p> : null}
-
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Exam</TableHead>
-              <TableHead>Curriculum</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Mocks</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {profiles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground">
-                  No exam profiles yet. Create one to start generating timed mock exams.
-                </TableCell>
-              </TableRow>
+          <div className="space-y-2">
+            <Label>Exam title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. IGCSE Biology Paper 2"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Curriculum</Label>
+              <Select value={curriculum} onValueChange={setCurriculum}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRICULA.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Syllabus code</Label>
+              <Input
+                value={syllabusCode}
+                onChange={(e) => setSyllabusCode(e.target.value)}
+                placeholder="e.g. 0610"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Duration (minutes)</Label>
+            <Input
+              type="number"
+              min={10}
+              max={180}
+              value={durationMins}
+              onChange={(e) => setDurationMins(Number(e.target.value))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Pass grade</Label>
+              <Select value={passGrade} onValueChange={setPassGrade}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {boundaries.map((b) => (
+                    <SelectItem key={b.grade} value={b.grade}>
+                      {b.grade} (≥{b.minPct}%)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Target grade</Label>
+              <Select value={targetGrade} onValueChange={setTargetGrade}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {boundaries.map((b) => (
+                    <SelectItem key={b.grade} value={b.grade}>
+                      {b.grade} (≥{b.minPct}%)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Grade boundaries (% minimum)</Label>
+            <div className="space-y-2 rounded-lg border p-3">
+              {boundaries.map((b, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input
+                    className="w-16"
+                    value={b.grade}
+                    onChange={(e) => updateBoundary(i, 'grade', e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    className="w-20"
+                    value={b.minPct}
+                    onChange={(e) => updateBoundary(i, 'minPct', Number(e.target.value))}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                  <label className="flex items-center gap-1 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={!!b.pass}
+                      onChange={(e) => updateBoundary(i, 'pass', e.target.checked)}
+                    />
+                    Pass
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Marking rubric</Label>
+            <Textarea
+              value={rubricGeneral}
+              onChange={(e) => setRubricGeneral(e.target.value)}
+              placeholder="General marking criteria for AI marking…"
+              className="min-h-[80px]"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Reference past paper (optional)</Label>
+            <Input
+              type="file"
+              accept=".pdf,image/*"
+              onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
+              disabled={uploadBusy}
+            />
+            {uploadName ? (
+              <span className="text-xs text-muted-foreground">{uploadName}</span>
+            ) : null}
+          </div>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <Button type="submit" disabled={busy} className="w-full">
+            {busy ? (
+              <GenerationBusyLabel
+                label="Creating profile…"
+                percent={draftProgress.percent}
+                elapsedLabel={draftProgress.elapsedLabel}
+              />
             ) : (
-              profiles.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.title}</TableCell>
-                  <TableCell>
-                    {p.curriculum} {p.syllabus_code}
-                  </TableCell>
-                  <TableCell>
-                    {p.duration_seconds ? `${Math.round(p.duration_seconds / 60)} min` : '—'}
-                  </TableCell>
-                  <TableCell>{p.mock_count ?? 0}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/teacher/exam-profiles/${p.id}`}>Open</Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              'Create profile'
             )}
-          </TableBody>
-        </Table>
-      </Card>
-    </div>
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -421,8 +370,8 @@ export function ExamProfileDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/teacher/exam-profiles" className="text-sm text-muted-foreground hover:underline">
-          ← Mock exams
+        <Link to="/teacher/assessments" className="text-sm text-muted-foreground hover:underline">
+          ← Assessments
         </Link>
         <PageHeader
           title={profile.title}
@@ -430,7 +379,11 @@ export function ExamProfileDetailPage() {
           action={
             <Button onClick={() => void generateMock()} disabled={generateBusy}>
               {generateBusy ? (
-                <GenerationBusyLabel progress={generateProgress} label="Generating mock…" />
+                <GenerationBusyLabel
+                  label="Generating mock…"
+                  percent={generateProgress.percent}
+                  elapsedLabel={generateProgress.elapsedLabel}
+                />
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />

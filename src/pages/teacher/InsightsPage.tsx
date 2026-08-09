@@ -48,6 +48,7 @@ export function InsightsPage() {
     scoreSeries: Array<{ date: string; value: number }>
     hwRate: number | null
     hwSeries: Array<{ date: string; value: number }>
+    examReadiness: number | null
     weakspots: Weakspot[]
     weakspotsSummary?: string | null
     weakspotsUpdatedAt?: string | null
@@ -297,7 +298,7 @@ export function InsightsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -315,6 +316,16 @@ export function InsightsPage() {
             </div>
             <div className="mt-2 font-display text-3xl font-semibold text-[hsl(var(--insight-hw-fg))]">
               {data?.hwRate == null ? '—' : `${data.hwRate}%`}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Exam readiness
+            </div>
+            <div className="mt-2 font-display text-3xl font-semibold text-[hsl(var(--insight-readiness-fg))]">
+              {data?.examReadiness == null ? '—' : `${data.examReadiness}%`}
             </div>
           </CardContent>
         </Card>
