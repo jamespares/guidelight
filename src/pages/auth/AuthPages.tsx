@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { GraduationCap, KeyRound, LogIn, Mail, UserPlus, Users } from 'lucide-react'
+import { Compass, GraduationCap, KeyRound, Layers, LogIn, Mail, Target, TrendingUp, UserPlus, Users } from 'lucide-react'
 import { GuidelightWordmark } from '@/components/BrandMark'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
@@ -40,7 +40,13 @@ function AuthLegalFooter() {
   )
 }
 
-function AuthShell({ children }: { children: ReactNode }) {
+function AuthShell({
+  children,
+  mainClassName,
+}: {
+  children: ReactNode
+  mainClassName?: string
+}) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-6">
       <Suspense fallback={null}>
@@ -49,7 +55,10 @@ function AuthShell({ children }: { children: ReactNode }) {
       <div className="absolute right-4 top-4 z-20">
         <ThemeToggle className="border-border/40 bg-card/30 shadow-sm backdrop-blur-xl hover:bg-card/45" />
       </div>
-      <main id="main-content" className="relative z-10 w-full max-w-md">
+      <main
+        id="main-content"
+        className={cn('relative z-10 w-full max-w-md', mainClassName)}
+      >
         {children}
       </main>
       <div className="relative z-10 w-full max-w-md">
@@ -61,32 +70,84 @@ function AuthShell({ children }: { children: ReactNode }) {
 
 export function Landing() {
   return (
-    <AuthShell>
-      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
-        <CardHeader className="space-y-4 px-6 pb-6 pt-4 text-center">
+    <AuthShell mainClassName="max-w-3xl">
+      <Card className="border-border/30 bg-card/40 shadow-lg backdrop-blur-xl">
+        <CardHeader className="space-y-4 px-6 pb-4 pt-5 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Classroom intelligence, finally in your hands
+          </p>
           <CardTitle as="h1" className="flex justify-center text-3xl">
             <GuidelightWordmark />
           </CardTitle>
-          <CardDescription className="text-base">
-            Lead your students to excellence with AI-powered lesson planning, assessments and insights.
+          <CardDescription className="text-base leading-relaxed">
+            Close the gap between where students are and where they need to be.
           </CardDescription>
-          <p className="text-xs text-muted-foreground">
-            No subscription — teachers pay only for the AI they use.
-          </p>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button asChild className="flex-1">
-            <Link to="/login/teacher">
-              <GraduationCap className="h-4 w-4" />
-              Teacher sign in
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="flex-1">
-            <Link to="/login/student">
-              <Users className="h-4 w-4" />
-              Student sign in
-            </Link>
-          </Button>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <Target className="h-4 w-4" />
+                The problem
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                It often feels like there&apos;s a lot of ocean between where your students are and
+                where you need them to be — and that distance feels even further when you
+                don&apos;t have the data to guide your journey.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <Compass className="h-4 w-4" />
+                The solution
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Guidelight is an AI-native system for planning, assessment, and performance
+                analysis. AI drafts; you review and approve — so your expertise stays front and
+                centre.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <Layers className="h-4 w-4" />
+                How it works
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Start with a diagnostic, generate editable semester plans, assign personalised
+                homework and assessments, then watch insights build a clear picture of every
+                learner.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <TrendingUp className="h-4 w-4" />
+                The impact
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Less noise, more clarity: see who is rising, who is stuck, and where to steer next
+                — so every student can reach their potential.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-xs font-medium text-muted-foreground">
+            AI drafts. You decide. Pay only for what you use.
+          </p>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button asChild className="flex-1">
+              <Link to="/login/teacher">
+                <GraduationCap className="h-4 w-4" />
+                Teacher sign in
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="flex-1">
+              <Link to="/login/student">
+                <Users className="h-4 w-4" />
+                Student sign in
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </AuthShell>
