@@ -10,6 +10,7 @@ import {
 } from './lib/auth'
 import {
   generateLessonPlans,
+  generateModelEssay,
   generatePracticeOrFlashcards,
   generateReport,
   generateStudentSummary,
@@ -86,6 +87,7 @@ async function fetchStudentTasks(env: Env, studentId: string) {
   const { results } = await env.DB.prepare(
     `SELECT t.id, t.type, t.subtype, t.title, t.subject, t.difficulty,
             t.time_limit_seconds, t.published_at,
+            (t.model_essay <> '') AS is_essay,
             (SELECT score_pct FROM attempts WHERE task_id = t.id AND student_id = ? AND status = 'submitted' ORDER BY submitted_at DESC LIMIT 1) as last_score,
             (SELECT status FROM attempts WHERE task_id = t.id AND student_id = ? ORDER BY started_at DESC LIMIT 1) as attempt_status
      FROM tasks t
@@ -1197,6 +1199,8 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           past_paper_image?: string
           time_limit_seconds?: number | null
           use_all_question_types?: boolean
+          question_types?: string[]
+          rubric_text?: string
           exam_profile_id?: string
         }
 
@@ -1260,9 +1264,12 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           .bind(body.class_id)
           .all<{ display_name: string; interests: string; weakspots: string }>()
 
-        const questionTypes = body.use_all_question_types || body.type === 'assessment'
-          ? ALL_TYPES
-          : PHASE2_TYPES
+        const requestedTypes = (body.question_types ?? []).filter((t) => ALL_TYPES.includes(t))
+        const questionTypes = requestedTypes.length
+          ? requestedTypes
+          : body.use_all_question_types || body.type === 'assessment'
+            ? ALL_TYPES
+            : PHASE2_TYPES
 
         try {
           await assertAiBudget(env, user.id)
@@ -1317,12 +1324,36 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           if ('key' in audio) q.audioUrl = `/api/tts/${audio.key}`
         }
 
+        // Essay tasks: write a model essay aligned to the uploaded rubric.
+        // Stored on the task row (never inside content_json) so students only
+        // see it after submitting. Failure leaves it empty — creation still succeeds.
+        let modelEssay = ''
+        const essayQuestion =
+          requestedTypes.length === 1 && requestedTypes[0] === 'extended_written'
+            ? (content.questions ?? [])[0]
+            : undefined
+        if (essayQuestion) {
+          try {
+            modelEssay = await generateModelEssay(env, {
+              prompt: essayQuestion.prompt,
+              subject,
+              difficulty,
+              ageRange: (cls as { age_range: string }).age_range,
+              rubricText: body.rubric_text,
+              meter,
+            })
+          } catch (err) {
+            console.error('generateModelEssay failed', err)
+          }
+        }
+
         const id = generateId()
         await env.DB.prepare(
           `INSERT INTO tasks (
             id, type, subtype, class_id, subject, title, description, difficulty,
-            status, time_limit_seconds, content_json, reading_text, past_paper_text, created_by
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)`,
+            status, time_limit_seconds, content_json, reading_text, past_paper_text,
+            rubric_text, model_essay, created_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?)`,
         )
           .bind(
             id,
@@ -1337,6 +1368,8 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             JSON.stringify(content),
             body.reading_text ?? '',
             pastPaperText,
+            body.rubric_text ?? '',
+            modelEssay,
             user.id,
           )
           .run()
@@ -1367,12 +1400,14 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         if (user.role === 'teacher' && task.teacher_id !== user.id) return error('Forbidden', 403)
         if (user.role === 'student' && task.status !== 'published') return error('Not found', 404)
 
-        // Strip correct answers for students
+        // Strip correct answers and the model essay for students (revealed after submit)
         let content = JSON.parse(task.content_json || '{}') as TaskContent
+        let modelEssay: unknown = task.model_essay
         if (user.role === 'student') {
           content = stripTaskAnswers(content)
+          modelEssay = undefined
         }
-        return json({ task: { ...task, content, content_json: undefined } })
+        return json({ task: { ...task, model_essay: modelEssay, content, content_json: undefined } })
       }
 
       // Teacher preview: student-shaped content (answers stripped) for drafts or published tasks
@@ -1629,6 +1664,8 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             type: string
             subtype: string | null
             exam_profile_id: string | null
+            rubric_text: string
+            model_essay: string
           }>()
         if (!task) return error('Task missing', 404)
 
@@ -1659,8 +1696,9 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           meter: billingTeacherId
             ? { teacherId: billingTeacherId, feature: 'mark_attempt' }
             : undefined,
-          rubric: markingContext.rubric,
+          rubric: task.rubric_text ? { general: task.rubric_text } : markingContext.rubric,
           gradeBoundaries: markingContext.gradeBoundaries,
+          modelAnswer: task.model_essay || undefined,
         })
 
         const duration =
@@ -1713,6 +1751,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         return json({
           score_pct: marked.score_pct,
           feedback: marked.feedback,
+          model_essay: task.model_essay || null,
         })
       }
 

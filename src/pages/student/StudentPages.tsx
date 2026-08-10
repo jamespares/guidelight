@@ -161,7 +161,19 @@ export function StudentTasksPage() {
                 <TableCell>{t.last_score == null ? '—' : `${t.last_score}%`}</TableCell>
                 <TableCell>
                   {t.attempt_status === 'submitted' ? (
-                    <span className="text-muted-foreground">Submitted</span>
+                    t.is_essay ? (
+                      <span className="text-muted-foreground">
+                        Submitted ·{' '}
+                        <Link
+                          className="font-semibold text-foreground underline-offset-4 hover:underline"
+                          to={`/student/attempt/${t.id}`}
+                        >
+                          Rewrite
+                        </Link>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Submitted</span>
+                    )
                   ) : (
                     <Link
                       className="font-semibold underline-offset-4 hover:underline"
@@ -195,6 +207,7 @@ export function AttemptPage() {
     time_limit_seconds: number | null
     title: string
     reading_text?: string
+    rubric_text?: string
   } | null>(null)
   const [attemptId, setAttemptId] = useState<string | null>(null)
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
@@ -205,6 +218,7 @@ export function AttemptPage() {
   const [result, setResult] = useState<{
     score_pct: number
     feedback: Record<string, { correct: boolean; feedback: string }>
+    model_essay?: string | null
   } | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -231,6 +245,7 @@ export function AttemptPage() {
           time_limit_seconds: t.task.time_limit_seconds,
           title: t.task.title,
           reading_text: t.task.reading_text,
+          rubric_text: t.task.rubric_text,
         })
         const start = await api.startAttempt(taskId)
         setAttemptId(start.attemptId)
@@ -347,11 +362,21 @@ export function AttemptPage() {
                     {formatAnswerForReview(ans) || <span className="italic text-muted-foreground">No answer</span>}
                   </p>
                 </div>
-                {fb ? <p className="text-sm">{fb.feedback}</p> : null}
+                {fb ? <p className="text-sm whitespace-pre-wrap">{fb.feedback}</p> : null}
               </CardContent>
             </Card>
           )
         })}
+        {result.model_essay ? (
+          <Card>
+            <CardContent className="space-y-2 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Model answer — what a top-band response looks like
+              </p>
+              <p className="text-sm whitespace-pre-wrap">{result.model_essay}</p>
+            </CardContent>
+          </Card>
+        ) : null}
         <Button type="button" onClick={() => navigate('/student/tasks')}>
           Back to tasks
         </Button>
@@ -364,27 +389,39 @@ export function AttemptPage() {
   }
 
   return (
-    <AttemptView
-      content={content}
-      taskMeta={taskMeta}
-      answers={answers}
-      onAnswer={(qid, v) => setAnswers((prev) => ({ ...prev, [qid]: v }))}
-      secondsLeft={secondsLeft}
-      elapsed={elapsed}
-      error={error}
-      timeAnnouncement={timeAnnouncement}
-      busy={busy}
-      onSubmit={() => void submit(false)}
-      submitLabel={
-        busy ? (
-          <GenerationBusyLabel
-            label="Marking…"
-            percent={markProgress.percent}
-            elapsedLabel={markProgress.elapsedLabel}
-          />
-        ) : undefined
-      }
-    />
+    <div className="space-y-4">
+      {taskMeta.rubric_text ? (
+        <Card>
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Marking criteria — your essay is marked against this
+            </p>
+            <p className="text-sm whitespace-pre-wrap">{taskMeta.rubric_text}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+      <AttemptView
+        content={content}
+        taskMeta={taskMeta}
+        answers={answers}
+        onAnswer={(qid, v) => setAnswers((prev) => ({ ...prev, [qid]: v }))}
+        secondsLeft={secondsLeft}
+        elapsed={elapsed}
+        error={error}
+        timeAnnouncement={timeAnnouncement}
+        busy={busy}
+        onSubmit={() => void submit(false)}
+        submitLabel={
+          busy ? (
+            <GenerationBusyLabel
+              label="Marking…"
+              percent={markProgress.percent}
+              elapsedLabel={markProgress.elapsedLabel}
+            />
+          ) : undefined
+        }
+      />
+    </div>
   )
 }
 

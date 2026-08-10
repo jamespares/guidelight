@@ -298,6 +298,34 @@ ${profileContext ? `\nExam profile:\n${profileContext}` : ''}`
   }
 }
 
+export async function generateModelEssay(
+  env: Env,
+  input: {
+    prompt: string
+    subject: string
+    difficulty: string
+    ageRange: string
+    rubricText?: string
+    meter?: AiMeterContext
+  },
+): Promise<string> {
+  const system = `You are Guidelight. Write a model essay answering the question below.
+- Aim for the top band of the provided exam-board rubric / mark scheme.
+- Match the students' age range and the task difficulty — impressive but believable as a strong student's work.
+- Plain text only: no title, no headings, no meta-commentary, no markdown fences.`
+  const user = `Subject: ${input.subject}
+Age range: ${input.ageRange}
+Difficulty: ${input.difficulty}
+Question: ${input.prompt}
+${input.rubricText ? `\nExam-board rubric / mark scheme:\n${input.rubricText.slice(0, 6000)}` : ''}`
+  const raw = await runChat(env, system, user, {
+    timeoutMs: 55_000,
+    maxTokens: 4096,
+    meter: input.meter ? { ...input.meter, feature: 'task_gen' } : undefined,
+  })
+  return raw.trim()
+}
+
 export async function markAttempt(
   env: Env,
   input: {
@@ -309,6 +337,8 @@ export async function markAttempt(
     feature?: AiMeterContext['feature']
     rubric?: ExamRubric
     gradeBoundaries?: GradeBoundary[]
+    /** Model essay for the task, used to calibrate marking. Never echoed back. */
+    modelAnswer?: string
   },
 ): Promise<{
   score_pct: number
@@ -364,7 +394,15 @@ Questions: ${JSON.stringify(
       marks: q.marks,
     })),
   )}
-Student answers: ${JSON.stringify(input.answers)}`
+Student answers: ${JSON.stringify(input.answers)}${
+    input.modelAnswer
+      ? `\nModel answer (use to calibrate marking; do NOT echo it back):\n${input.modelAnswer.slice(0, 6000)}`
+      : ''
+  }${
+    rubricContext
+      ? '\nStructure written feedback around each rubric criterion — what was achieved, what to improve, and how.'
+      : ''
+  }`
 
   try {
     const raw = await runChat(env, systemWithRubric, user, {

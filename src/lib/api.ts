@@ -133,6 +133,10 @@ export interface TaskRow {
   last_score?: number | null
   attempt_status?: string | null
   exam_profile_id?: string | null
+  rubric_text?: string
+  model_essay?: string
+  /** SQLite 0/1 flag from the student task list — task is an essay with a model answer. */
+  is_essay?: number
 }
 
 export type LessonActivityStyle = 'traditional' | 'communicative'
@@ -512,6 +516,7 @@ export const api = {
         string,
         { correct: boolean; feedback: string; topic: string; marksAwarded: number; marksPossible: number }
       >
+      model_essay?: string | null
     }>(`/api/attempts/${id}/submit`, { method: 'POST', body: JSON.stringify(body) }),
   insights: (scope: 'class' | 'student', id: string) =>
     request<{

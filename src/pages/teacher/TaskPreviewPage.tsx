@@ -70,6 +70,26 @@ export function TaskPreviewPage() {
           </Link>
         </CardContent>
       </Card>
+      {task.rubric_text ? (
+        <Card>
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Marking criteria — students see this before writing
+            </p>
+            <p className="text-sm whitespace-pre-wrap">{task.rubric_text}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+      {task.model_essay ? (
+        <Card>
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Model essay — students see this after submitting
+            </p>
+            <p className="text-sm whitespace-pre-wrap">{task.model_essay}</p>
+          </CardContent>
+        </Card>
+      ) : null}
       <AttemptView
         preview
         content={task.content}
