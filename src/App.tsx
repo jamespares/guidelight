@@ -4,6 +4,7 @@ import { TeacherLayout, StudentLayout, ParentLayout } from './components/Layouts
 import { useAuth } from './lib/auth'
 import { ParentAuth, StudentAuth, TeacherAuth, VerifyEmailPage, ResetPasswordPage } from './pages/auth/AuthPages'
 import { Landing } from './pages/landing/LandingPage'
+import { RoleSelectPage } from './pages/landing/RoleSelectPage'
 import { InsightsPage, ReportPage } from './pages/teacher/InsightsPage'
 import { StudentDetailPage } from './pages/teacher/StudentDetailPage'
 import { StudentsPage } from './pages/teacher/StudentsPage'
@@ -93,6 +94,7 @@ export default function App() {
           )
         }
       />
+      <Route path="/get-started" element={<RoleSelectPage />} />
       <Route path="/login/teacher" element={<TeacherAuth />} />
       <Route path="/login/student" element={<StudentAuth />} />
       <Route path="/login/parent" element={<ParentAuth />} />

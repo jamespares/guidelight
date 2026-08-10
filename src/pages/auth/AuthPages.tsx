@@ -40,7 +40,7 @@ export function AuthLegalFooter() {
   )
 }
 
-function AuthShell({
+export function AuthShell({
   children,
   mainClassName,
 }: {

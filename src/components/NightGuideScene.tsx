@@ -2,13 +2,12 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { Water } from 'three/addons/objects/Water.js'
 import { Sky } from 'three/addons/objects/Sky.js'
-import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js'
 import { useTheme } from '@/lib/theme'
 
 /**
  * Calm blue ocean with a Guidelight beacon in the sky:
- * day — a distant twinkling star; night — the moon.
- * Celestial body is pinned in screen-space so it always reads in frame.
+ * both light and dark themes show the same distant twinkling star, pinned in
+ * screen-space so it always reads in frame.
  */
 export function NightGuideScene({ className }: { className?: string }) {
   const mountRef = useRef<HTMLDivElement>(null)
@@ -93,13 +92,6 @@ export function NightGuideScene({ className }: { className?: string }) {
     scene.add(bodyGroup)
 
     const ownedTextures: THREE.Texture[] = []
-    let lensflare: Lensflare | null = null
-
-    // Day Guidelight star (pinned where the moon sits at night)
-    let starCore: THREE.Sprite | null = null
-    let starGlow: THREE.Sprite | null = null
-    let starRays: THREE.Sprite | null = null
-    const starBaseScale = { core: 4, glow: 14, ray: 18 }
 
     // Pin celestial body to upper-left of the viewport (always visible)
     const screenNdc = new THREE.Vector3(-0.62, 0.58, 0.5)
@@ -150,106 +142,25 @@ export function NightGuideScene({ className }: { className?: string }) {
       ),
     )
 
+    let starCore: THREE.Sprite | null = null
+    let starGlow: THREE.Sprite | null = null
+    let starRays: THREE.Sprite | null = null
+
     if (isDay) {
-      // Sun disc lights the scene; Guidelight star sits where the moon is at night
+      // Sun disc lights the scene; Guidelight star sits in its pinned position
       setDaySun(28, 180)
-
-      const coreMap = makeRadialGlow('rgba(255,255,255,1)', 'rgba(255,240,200,0.55)')
-      const glowMap = makeRadialGlow('rgba(255,248,220,1)', 'rgba(200,220,255,0.35)')
-      const rayMap = makeStarRays()
-      ownedTextures.push(coreMap, glowMap, rayMap)
-
-      starGlow = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glowMap,
-          transparent: true,
-          opacity: 0.35,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          toneMapped: false,
-        }),
-      )
-      starGlow.scale.set(starBaseScale.glow, starBaseScale.glow, 1)
-      bodyGroup.add(starGlow)
-
-      starRays = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: rayMap,
-          transparent: true,
-          opacity: 0.55,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          toneMapped: false,
-          rotation: Math.PI / 4,
-        }),
-      )
-      starRays.scale.set(starBaseScale.ray, starBaseScale.ray, 1)
-      bodyGroup.add(starRays)
-
-      starCore = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: coreMap,
-          transparent: true,
-          opacity: 0.7,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          toneMapped: false,
-        }),
-      )
-      starCore.scale.set(starBaseScale.core, starBaseScale.core, 1)
-      bodyGroup.add(starCore)
-
+      ;({ starCore, starGlow, starRays } = createGuideStar(bodyGroup, ownedTextures))
       placeBodyInView(420)
       bakeEnv()
     } else {
-      const moonMap = textureLoader.load('/textures/moon_1024.jpg')
-      moonMap.colorSpace = THREE.SRGBColorSpace
-      ownedTextures.push(moonMap)
-
-      const moon = new THREE.Mesh(
-        new THREE.SphereGeometry(22, 48, 48),
-        new THREE.MeshStandardMaterial({
-          map: moonMap,
-          roughness: 1,
-          metalness: 0,
-          emissiveMap: moonMap,
-          emissive: new THREE.Color(0xffffff),
-          emissiveIntensity: 1.1,
-          toneMapped: false,
-        }),
-      )
-      bodyGroup.add(moon)
-
-      const glow = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: makeRadialGlow('rgba(240,244,252,1)', 'rgba(150,170,210,0.4)'),
-          transparent: true,
-          opacity: 0.9,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          toneMapped: false,
-        }),
-      )
-      glow.scale.set(95, 95, 1)
-      bodyGroup.add(glow)
-      ownedTextures.push(glow.material.map!)
-
-      const flare0 = textureLoader.load('/textures/lensflare/lensflare0.png')
-      const flare3 = textureLoader.load('/textures/lensflare/lensflare3.png')
-      ownedTextures.push(flare0, flare3)
-      lensflare = new Lensflare()
-      lensflare.addElement(new LensflareElement(flare0, 220, 0, new THREE.Color(0xd8e2f5)))
-      lensflare.addElement(new LensflareElement(flare3, 36, 0.5))
-      const flareLight = new THREE.PointLight(0xd8e2f5, 0, 0)
-      bodyGroup.add(flareLight)
-      flareLight.add(lensflare)
-
+      // Same Guidelight star at night, lighting the scene from the pinned position
+      ;({ starCore, starGlow, starRays } = createGuideStar(bodyGroup, ownedTextures))
       placeBodyInView(420)
       setLightingFromBody()
       bakeEnv()
     }
 
-    // Don't reflect moon/star into the water (avoids dark blotches)
+    // Don't reflect star into the water (avoids dark blotches)
     const waterBeforeRender = water.onBeforeRender.bind(water)
     water.onBeforeRender = (renderer, scene, camera, geometry, material, group) => {
       bodyGroup.visible = false
@@ -304,11 +215,11 @@ export function NightGuideScene({ className }: { className?: string }) {
       starCore.material.opacity = 0.4 + b * 0.6
       starGlow.material.opacity = 0.12 + b * 0.5
       starRays.material.opacity = 0.15 + b * 0.8
-      const cs = starBaseScale.core * (0.8 + b * 0.7)
+      const cs = GUIDE_STAR_SCALE.core * (0.8 + b * 0.7)
       starCore.scale.set(cs, cs, 1)
-      const gs = starBaseScale.glow * (0.85 + b * 0.55)
+      const gs = GUIDE_STAR_SCALE.glow * (0.85 + b * 0.55)
       starGlow.scale.set(gs, gs, 1)
-      const rs = starBaseScale.ray * (0.7 + b * 0.9)
+      const rs = GUIDE_STAR_SCALE.ray * (0.7 + b * 0.9)
       starRays.scale.set(rs, rs, 1)
       starRays.material.rotation = Math.PI / 4 + Math.sin(t * 0.35) * 0.08
     }
@@ -331,7 +242,7 @@ export function NightGuideScene({ className }: { className?: string }) {
 
       placeBodyInView(420)
       if (!isDay) setLightingFromBody()
-      if (isDay) updateGuideStar(t)
+      updateGuideStar(t)
 
       renderer.render(scene, camera)
       raf = requestAnimationFrame(tick)
@@ -343,7 +254,7 @@ export function NightGuideScene({ className }: { className?: string }) {
       placeBodyInView(420)
       if (!isDay) setLightingFromBody()
       // Steady mid-brightness Guidelight (no flash cycle)
-      if (isDay) updateGuideStar(0.4)
+      updateGuideStar(0.4)
       renderer.render(scene, camera)
     }
 
@@ -352,7 +263,6 @@ export function NightGuideScene({ className }: { className?: string }) {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibility)
-      lensflare?.dispose()
       if (envRT) envRT.dispose()
       pmrem.dispose()
       water.geometry.dispose()
@@ -387,6 +297,8 @@ export function NightGuideScene({ className }: { className?: string }) {
   )
 }
 
+const GUIDE_STAR_SCALE = { core: 4, glow: 14, ray: 18 }
+
 function makeRadialGlow(inner: string, mid: string) {
   const c = document.createElement('canvas')
   c.width = c.height = 256
@@ -402,7 +314,7 @@ function makeRadialGlow(inner: string, mid: string) {
   return tex
 }
 
-/** Soft four-point star rays for the daytime Guidelight. */
+/** Soft four-point star rays for the Guidelight. */
 function makeStarRays() {
   const size = 256
   const c = document.createElement('canvas')
@@ -436,4 +348,53 @@ function makeStarRays() {
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   return tex
+}
+
+function createGuideStar(group: THREE.Group, ownedTextures: THREE.Texture[]) {
+  const coreMap = makeRadialGlow('rgba(255,255,255,1)', 'rgba(255,240,200,0.55)')
+  const glowMap = makeRadialGlow('rgba(255,248,220,1)', 'rgba(200,220,255,0.35)')
+  const rayMap = makeStarRays()
+  ownedTextures.push(coreMap, glowMap, rayMap)
+
+  const starGlow = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: glowMap,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    }),
+  )
+  starGlow.scale.set(GUIDE_STAR_SCALE.glow, GUIDE_STAR_SCALE.glow, 1)
+  group.add(starGlow)
+
+  const starRays = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: rayMap,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      rotation: Math.PI / 4,
+    }),
+  )
+  starRays.scale.set(GUIDE_STAR_SCALE.ray, GUIDE_STAR_SCALE.ray, 1)
+  group.add(starRays)
+
+  const starCore = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: coreMap,
+      transparent: true,
+      opacity: 0.7,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    }),
+  )
+  starCore.scale.set(GUIDE_STAR_SCALE.core, GUIDE_STAR_SCALE.core, 1)
+  group.add(starCore)
+
+  return { starCore, starGlow, starRays }
 }
