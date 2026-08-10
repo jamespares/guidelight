@@ -122,6 +122,14 @@ const HOW_IT_WORKS_STEPS = [
 
 const GLASS = 'border-border/30 bg-card/40 shadow-lg backdrop-blur-xl'
 
+/** Text placed directly on the ocean scene — dark over the day sea, light over the night sea. */
+const ON_SCENE =
+  'text-slate-700 [text-shadow:0_1px_2px_rgba(255,255,255,0.4)] dark:text-white/85 dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)]'
+const ON_SCENE_STRONG =
+  'text-slate-900 [text-shadow:0_1px_3px_rgba(255,255,255,0.4)] dark:text-white dark:[text-shadow:0_1px_3px_rgba(0,0,0,0.5)]'
+const ON_SCENE_MUTED =
+  'text-slate-600 [text-shadow:0_1px_2px_rgba(255,255,255,0.4)] dark:text-white/75 dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)]'
+
 /* ------------------------------------------------------------------ */
 /* Presentational helpers                                               */
 /* ------------------------------------------------------------------ */
@@ -145,15 +153,13 @@ function Section({
 function SectionHeading({ eyebrow, title, copy }: { eyebrow: string; title: string; copy?: string }) {
   return (
     <div className="mx-auto mb-10 max-w-2xl space-y-3 text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
+      <p className={cn('text-xs font-semibold uppercase tracking-[0.14em]', ON_SCENE_MUTED)}>
         {eyebrow}
       </p>
-      <h2 className="font-display text-2xl font-semibold tracking-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] sm:text-3xl">
+      <h2 className={cn('font-display text-2xl font-semibold tracking-tight sm:text-3xl', ON_SCENE_STRONG)}>
         {title}
       </h2>
-      {copy ? (
-        <p className="leading-relaxed text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">{copy}</p>
-      ) : null}
+      {copy ? <p className={cn('leading-relaxed', ON_SCENE)}>{copy}</p> : null}
     </div>
   )
 }
@@ -226,55 +232,34 @@ export function Landing() {
         </Suspense>
       </div>
 
-      {/* Sticky nav */}
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-background/30 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-6">
-          <a href="#top" aria-label="Back to top">
-            <GuidelightWordmark className="text-lg" />
-          </a>
-          <nav className="hidden items-center gap-5 text-sm text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.4)] md:flex">
-            <a href="#how-it-works" className="hover:text-white hover:underline underline-offset-4">
-              How it works
-            </a>
-            <a href="#insights" className="hover:text-white hover:underline underline-offset-4">
-              Insights
-            </a>
-            <a href="#why" className="hover:text-white hover:underline underline-offset-4">
-              Why Guidelight
-            </a>
-          </nav>
-          <div className="flex items-center gap-2">
-            <ThemeToggle className="border-border/40 bg-card/30 shadow-sm backdrop-blur-xl hover:bg-card/45" />
-            <Button asChild size="sm" className="hidden sm:inline-flex">
-              <Link to="/login/teacher">Sign in</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Floating theme toggle — no header bar, the ocean stays unobstructed */}
+      <div className="fixed right-4 top-4 z-20">
+        <ThemeToggle className="border-border/40 bg-card/30 shadow-sm backdrop-blur-xl hover:bg-card/45" />
+      </div>
 
       <main id="main-content" className="relative z-10">
         {/* Hero */}
-        <Section id="top" className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center text-center">
+        <Section id="top" className="flex min-h-screen flex-col items-center justify-center text-center">
           <div className="max-w-2xl space-y-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
+            <p className={cn('text-xs font-semibold uppercase tracking-[0.14em]', ON_SCENE_MUTED)}>
               Classroom intelligence, finally in your hands
             </p>
             <h1 className="flex justify-center text-4xl sm:text-5xl">
               <GuidelightWordmark />
             </h1>
-            <p className="text-lg leading-relaxed text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]">
+            <p className={cn('text-lg leading-relaxed', ON_SCENE_STRONG)}>
               Guidelight turns planning, assessment, and student data into clear direction — so
               every learner can close the gap.
             </p>
             <SignInButtons className="mx-auto max-w-md" />
-            <p className="text-xs font-medium text-white/75 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
+            <p className={cn('text-xs font-medium', ON_SCENE_MUTED)}>
               AI drafts. You decide. Pay only for what you use.
             </p>
           </div>
           <a
             href="#problem"
             aria-label="Scroll to learn more"
-            className="absolute bottom-6 text-white/70 transition-colors hover:text-white"
+            className="absolute bottom-6 text-slate-600 transition-colors hover:text-slate-900 dark:text-white/70 dark:hover:text-white"
           >
             <ChevronDown className="h-6 w-6 animate-bounce" />
           </a>
@@ -345,7 +330,7 @@ export function Landing() {
             {/* connector line (desktop) */}
             <div
               aria-hidden
-              className="absolute left-0 right-0 top-10 hidden border-t-2 border-dashed border-white/25 lg:block"
+              className="absolute left-0 right-0 top-10 hidden border-t-2 border-dashed border-slate-500/40 lg:block dark:border-white/25"
             />
             {HOW_IT_WORKS_STEPS.map((step, i) => (
               <li key={step.title} className="relative">

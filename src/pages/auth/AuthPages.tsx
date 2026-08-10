@@ -18,19 +18,20 @@ import { TRUST_LANDING } from '@/lib/trustCopy'
 import { cn } from '@/lib/utils'
 
 export function AuthLegalFooter() {
-  // Light text always — auth sits on the dark ocean scene in both themes.
+  // Sits directly on the ocean scene — dark text over the day sea, light over the night sea.
+  const linkHover = 'underline-offset-4 hover:text-slate-900 hover:underline dark:hover:text-white'
   return (
-    <footer className="mt-6 space-y-1 text-center text-xs text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
+    <footer className="mt-6 space-y-1 text-center text-xs text-slate-600 [text-shadow:0_1px_2px_rgba(255,255,255,0.4)] dark:text-white/85 dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
       <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <Link to="/terms" className="underline-offset-4 hover:text-white hover:underline">
+        <Link to="/terms" className={linkHover}>
           Terms
         </Link>
         <span aria-hidden>·</span>
-        <Link to="/privacy" className="underline-offset-4 hover:text-white hover:underline">
+        <Link to="/privacy" className={linkHover}>
           Privacy
         </Link>
         <span aria-hidden>·</span>
-        <a href={SUPPORT_MAILTO} className="underline-offset-4 hover:text-white hover:underline">
+        <a href={SUPPORT_MAILTO} className={linkHover}>
           Contact
         </a>
       </nav>
