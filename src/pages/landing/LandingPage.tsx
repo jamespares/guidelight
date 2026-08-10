@@ -37,7 +37,7 @@ export function Landing() {
             <GuidelightWordmark showStar={false} className="text-5xl sm:text-6xl" />
           </div>
 
-          <p className="text-lg font-medium leading-relaxed text-slate-700 [text-shadow:0_1px_2px_rgba(255,255,255,0.4)] dark:text-white/85 dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)] sm:text-xl">
+          <p className="text-lg font-semibold leading-relaxed text-slate-700 dark:text-white sm:text-xl">
             Lead your students to excellence
           </p>
 
@@ -59,7 +59,7 @@ export function Landing() {
 
       {/* Legal footer */}
       <div className="relative z-10 px-6 pb-6">
-        <AuthLegalFooter />
+        <AuthLegalFooter variant="plain" />
       </div>
     </div>
   )
