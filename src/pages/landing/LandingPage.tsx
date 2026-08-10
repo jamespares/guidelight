@@ -96,27 +96,27 @@ const HOW_IT_WORKS_STEPS = [
   {
     icon: ClipboardCheck,
     title: 'Diagnose',
-    copy: 'A multimedia diagnostic captures current knowledge, interests and ambitions — drafted by AI, reviewed by you.',
+    copy: 'A multimedia diagnostic captures each student’s knowledge, interests and ambitions.',
   },
   {
     icon: CalendarDays,
     title: 'Plan',
-    copy: 'Generate a tailored semester plan with scaffolded lessons. Edit anything in the app; export for your team.',
+    copy: 'Generate a tailored semester plan with scaffolded, editable lessons.',
   },
   {
     icon: NotebookPen,
     title: 'Assign & mark',
-    copy: 'Homework aligned to your curriculum and student interests. Marking returns scores and feedback you approve.',
+    copy: 'AI drafts personalised homework; marking returns scores and feedback you approve.',
   },
   {
     icon: ShieldCheck,
     title: 'Assess',
-    copy: 'Timed formative and summative papers with integrity measures build a readiness signal over time.',
+    copy: 'Timed exam-style papers with integrity measures build a readiness signal.',
   },
   {
     icon: TrendingUp,
     title: 'Understand',
-    copy: 'Insights show who is rising, who is stuck, and where to steer next — while there is still time.',
+    copy: 'See who is rising, who is stuck, and where to steer next.',
   },
 ]
 
@@ -248,8 +248,7 @@ export function Landing() {
               <GuidelightWordmark />
             </h1>
             <p className={cn('text-lg leading-relaxed', ON_SCENE_STRONG)}>
-              Guidelight turns planning, assessment, and student data into clear direction — so
-              every learner can close the gap.
+              Close the gap between where students are and where they need to be.
             </p>
             <SignInButtons className="mx-auto max-w-md" />
             <p className={cn('text-xs font-medium', ON_SCENE_MUTED)}>
@@ -270,7 +269,6 @@ export function Landing() {
           <SectionHeading
             eyebrow="The gap"
             title="A lot of ocean between here and there"
-            copy="That distance feels even further when you don’t have the data to guide your journey."
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Card className={GLASS}>
@@ -281,9 +279,8 @@ export function Landing() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm leading-relaxed text-muted-foreground">
-                It often feels like there’s a lot of ocean between where your students are and
-                where you need them to be — and that distance feels even further when you don’t
-                have the data to guide your journey.
+                You know where your students need to be. Without the right data, the gap between
+                there and here is guesswork.
               </CardContent>
             </Card>
             <Card className={GLASS}>
@@ -295,8 +292,7 @@ export function Landing() {
               </CardHeader>
               <CardContent className="text-sm leading-relaxed text-muted-foreground">
                 Guidelight is an AI-native system for planning, assessment, and performance
-                analysis. AI drafts; you review and approve — so your expertise stays front and
-                centre.
+                analysis. AI drafts the work; you review and approve it.
               </CardContent>
             </Card>
           </div>
@@ -304,7 +300,7 @@ export function Landing() {
             <CardContent className="space-y-4 pt-6">
               <GapDiagram className="mx-auto max-w-md" />
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
-                <span>Whatever your curriculum:</span>
+                <span>Works with your curriculum:</span>
                 {['IB', 'IGCSE', 'GCSE', 'IELTS', 'CEFR'].map((c) => (
                   <span
                     key={c}
@@ -313,7 +309,6 @@ export function Landing() {
                     {c}
                   </span>
                 ))}
-                <span>— Guidelight is ready to light the way.</span>
               </div>
             </CardContent>
           </Card>
@@ -324,7 +319,7 @@ export function Landing() {
           <SectionHeading
             eyebrow="How it works"
             title="One loop, every term"
-            copy="Start with a diagnostic, plan the semester, assign personalised work, assess under exam conditions, and watch the picture sharpen."
+            copy="From first diagnostic to exam readiness."
           />
           <ol className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {/* connector line (desktop) */}
@@ -356,7 +351,7 @@ export function Landing() {
           <SectionHeading
             eyebrow="Insights"
             title="Not more noise — a clearer picture"
-            copy="See how a class is performing, how each student is moving over time, and exactly where to intervene."
+            copy="As attempts build up, Guidelight shows you class and student progress — sample data shown."
           />
           <div className="space-y-4">
             <InsightLineChartCard
@@ -367,27 +362,13 @@ export function Landing() {
               seriesName="Class average (%)"
               stroke="#2a6f6f"
             />
-            <div className="grid gap-4 lg:grid-cols-2">
-              <WeakspotsPanel
-                title="Class weakspots"
-                weakspots={CLASS_WEAKSPOTS}
-                summary="Whole-class priorities: relative clauses, articles, and prepositions. Stretch stronger writers on formal register and hedging."
-                updatedAt="2025-11-08T09:30"
-                onPinpoint={() => {}}
-              />
-              <Card className={GLASS}>
-                <CardHeader>
-                  <CardTitle className="text-base">Pay only for what you use</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <UsageDial usedCents={340} capCents={2000} />
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    No subscription. You pay only for the AI you use, with a monthly cap you
-                    control and automatic invoices you can claim back from your school.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            <WeakspotsPanel
+              title="Class weakspots"
+              weakspots={CLASS_WEAKSPOTS}
+              summary="Whole-class priorities: relative clauses, articles, and prepositions. Stretch stronger writers on formal register and hedging."
+              updatedAt="2025-11-08T09:30"
+              onPinpoint={() => {}}
+            />
           </div>
         </Section>
 
@@ -406,8 +387,8 @@ export function Landing() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm leading-relaxed text-muted-foreground">
-                A CEFR-aligned assessment across speaking, listening, reading, and writing — so
-                you know whether language is the barrier, and at which level to teach.
+                A CEFR-aligned assessment across speaking, listening, reading and writing shows
+                whether language is the barrier.
               </CardContent>
             </Card>
             <Card className={GLASS}>
@@ -418,8 +399,7 @@ export function Landing() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm leading-relaxed text-muted-foreground">
-                Natural-pace reading checks help you plan assigned reading realistically and
-                support students who need to build pace.
+                Natural-pace reading checks help you plan assigned reading realistically.
               </CardContent>
             </Card>
           </div>
@@ -431,13 +411,13 @@ export function Landing() {
             eyebrow="Why Guidelight"
             title="Your expertise stays front and centre"
           />
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid items-start gap-4 sm:grid-cols-3">
             <Card className={GLASS}>
               <CardContent className="space-y-3 pt-6">
                 <UserCheck className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold text-foreground">AI drafts, you decide</h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Nothing important reaches a student before you review and approve it.
+                  Nothing reaches a student before you review and approve it.
                 </p>
               </CardContent>
             </Card>
@@ -451,10 +431,10 @@ export function Landing() {
             <Card className={GLASS}>
               <CardContent className="space-y-3 pt-6">
                 <Coins className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-foreground">Pay-as-you-go</h3>
+                <h3 className="font-semibold text-foreground">Pay-as-you-go pricing</h3>
+                <UsageDial usedCents={340} capCents={2000} />
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  No subscription — pay only for the intelligence you use, with a spending cap
-                  you control.
+                  No subscription — pay only for the AI you use, with a monthly cap you control.
                 </p>
               </CardContent>
             </Card>
