@@ -27,4 +27,5 @@ dist-ssr
 
 # Local marketing/demo workspace (large recordings) and scratch screenshots
 /demo/
+public/demo/
 public/Screenshot *.png
