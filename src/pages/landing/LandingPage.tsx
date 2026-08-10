@@ -162,27 +162,31 @@ function SectionHeading({ eyebrow, title, copy }: { eyebrow: string; title: stri
 function GapDiagram({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 480 160"
+      viewBox="0 0 480 170"
       role="img"
       aria-label="Diagram: a beam of light bridging the gap between where students are and where they need to be"
       className={cn('h-auto w-full', className)}
     >
-      {/* ocean */}
-      <path d="M0 128 Q60 118 120 128 T240 128 T360 128 T480 128 V160 H0 Z" className="fill-primary/25" />
+      {/* ocean strip */}
+      <path
+        d="M0 136 Q60 128 120 136 T240 136 T360 136 T480 136 V170 H0 Z"
+        className="fill-primary/20"
+      />
+      {/* slender beam from the star to the left cliff */}
+      <path d="M398 47 L152 94 L152 104 L398 53 Z" className="fill-amber-300/30" />
+      <path d="M398 49 L152 97 L152 101 L398 51 Z" className="fill-amber-200/50" />
       {/* left cliff */}
-      <path d="M0 160 V96 h96 l24 32 v32 Z" className="fill-muted-foreground/40" />
+      <path d="M0 170 V108 H150 L176 140 V170 Z" className="fill-muted-foreground/35" />
       {/* right cliff (higher) */}
-      <path d="M480 160 V64 h-96 l-24 32 v64 Z" className="fill-muted-foreground/40" />
-      {/* beam */}
-      <path d="M96 100 L384 68 L384 84 L96 116 Z" className="fill-amber-300/50" />
-      {/* star on right cliff */}
-      <circle cx="420" cy="52" r="6" className="fill-amber-200" />
-      <circle cx="420" cy="52" r="12" className="fill-amber-200/30" />
+      <path d="M480 170 V78 H330 L304 140 V170 Z" className="fill-muted-foreground/35" />
+      {/* guiding star above the right cliff */}
+      <circle cx="400" cy="50" r="11" className="fill-amber-200/25" />
+      <circle cx="400" cy="50" r="4" className="fill-amber-200" />
       {/* labels */}
-      <text x="48" y="88" textAnchor="middle" className="fill-foreground text-[11px] font-medium">
+      <text x="75" y="94" textAnchor="middle" className="fill-foreground text-[11px] font-medium">
         Where students are
       </text>
-      <text x="432" y="56" textAnchor="middle" className="fill-foreground text-[11px] font-medium">
+      <text x="400" y="26" textAnchor="middle" className="fill-foreground text-[11px] font-medium">
         Where they need to be
       </text>
     </svg>
@@ -313,7 +317,7 @@ export function Landing() {
           </div>
           <Card className={cn(GLASS, 'mt-4')}>
             <CardContent className="space-y-4 pt-6">
-              <GapDiagram />
+              <GapDiagram className="mx-auto max-w-md" />
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
                 <span>Whatever your curriculum:</span>
                 {['IB', 'IGCSE', 'GCSE', 'IELTS', 'CEFR'].map((c) => (
