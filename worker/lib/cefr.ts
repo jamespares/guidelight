@@ -946,7 +946,7 @@ export async function createSpecialTask(
     kind: 'english_level',
     title,
     instructions:
-      'Full CEFR diagnostic (~66 questions, about one hour). Covers vocabulary, listening, reading, grammar and writing from A1 to C2.',
+      'Full CEFR diagnostic (~72 questions, about one hour). Covers vocabulary, listening, reading, grammar and writing from A1 to C2.',
     questions: [],
   }
   await env.DB.prepare(

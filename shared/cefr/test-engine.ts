@@ -1,7 +1,7 @@
 import { ITEMS, ITEMS_BY_ID, LEVEL_ORDER, type CEFRLevel, type Item } from './items';
 
 export const TEST_TIME_LIMIT_SECONDS = 60 * 60; // 1 hour
-export const MASTERY_THRESHOLD = 0.6; // 60% to "pass" a level
+export const MASTERY_THRESHOLD = 0.8; // 80% to "pass" a level
 
 export interface TestResponseInput {
   itemId: string;
@@ -48,7 +48,7 @@ function pickRotated<T>(pool: T[], n: number, formIndex: number): T[] {
   return out;
 }
 
-/** Items for one CEFR band: vocab → dictation → listening → reading → grammar (A1–B1) → writing. */
+/** Items for one CEFR band: vocab → dictation → listening → reading → grammar → writing. */
 function itemsForLevel(
   level: CEFRLevel,
   formIndex: number,
@@ -61,9 +61,7 @@ function itemsForLevel(
   block.push(...pickRotated(byLevelAndType(level, 'dictation'), 1, formIndex));
   block.push(...pickRotated(byLevelAndType(level, 'listening'), 2, formIndex));
   block.push(...pickRotated(byLevelAndSkill(level, 'reading'), 5, formIndex));
-  if (level === 'A1' || level === 'A2' || level === 'B1') {
-    block.push(...pickRotated(byLevelAndSkill(level, 'grammar'), 2, formIndex));
-  }
+  block.push(...pickRotated(byLevelAndSkill(level, 'grammar'), 2, formIndex));
   block.push(...pickRotated(byLevelAndSkill(level, 'writing'), 1, formIndex + interestOffset));
   return block;
 }

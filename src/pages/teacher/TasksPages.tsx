@@ -87,6 +87,8 @@ function TaskCreateForm({
   const [useClassSubject, setUseClassSubject] = useState(true)
   const [description, setDescription] = useState('')
   const [questionCount, setQuestionCount] = useState(8)
+  const [questionStyle, setQuestionStyle] = useState<'mixed' | 'essay'>('mixed')
+  const [rubricText, setRubricText] = useState('')
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [readingText, setReadingText] = useState('')
   const [pastPaper, setPastPaper] = useState('')
@@ -217,7 +219,10 @@ function TaskCreateForm({
                 ? 'Reading speed assessment'
                 : ''),
           difficulty,
-          question_count: isSpecial ? 0 : questionCount,
+          question_count: isSpecial ? 0 : questionStyle === 'essay' ? 1 : questionCount,
+          question_types: !isSpecial && questionStyle === 'essay' ? ['extended_written'] : undefined,
+          rubric_text:
+            !isSpecial && questionStyle === 'essay' ? rubricText || undefined : undefined,
           reading_text: readingText || undefined,
           past_paper_text: isSpecial ? undefined : pastPaper || undefined,
           past_paper_image: isSpecial ? undefined : pastPaperImage || undefined,
@@ -446,16 +451,33 @@ function TaskCreateForm({
       {!isSpecial && !isMock ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="qcount">Number of questions</Label>
-            <Input
-              id="qcount"
-              type="number"
-              min={3}
-              max={30}
-              value={questionCount}
-              onChange={(e) => setQuestionCount(Number(e.target.value))}
-            />
+            <Label htmlFor="qstyle">Question style</Label>
+            <Select
+              value={questionStyle}
+              onValueChange={(v) => setQuestionStyle(v as 'mixed' | 'essay')}
+            >
+              <SelectTrigger id="qstyle">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mixed">Mixed question types</SelectItem>
+                <SelectItem value="essay">Essay — one long written answer</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          {questionStyle === 'mixed' ? (
+            <div className="space-y-2">
+              <Label htmlFor="qcount">Number of questions</Label>
+              <Input
+                id="qcount"
+                type="number"
+                min={3}
+                max={30}
+                value={questionCount}
+                onChange={(e) => setQuestionCount(Number(e.target.value))}
+              />
+            </div>
+          ) : null}
           {type === 'assessment' ? (
             <div className="space-y-2">
               <Label htmlFor="task-time-limit">Hard time limit (minutes)</Label>
@@ -469,7 +491,19 @@ function TaskCreateForm({
               />
             </div>
           ) : (
-            <div />
+            <div className="space-y-2">
+              <Label htmlFor="hw-time-limit">Time limit (minutes, optional)</Label>
+              <Input
+                id="hw-time-limit"
+                type="number"
+                min={0}
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(Number(e.target.value))}
+              />
+              <p className="text-xs text-muted-foreground">
+                0 = untimed. Students see a countdown; work is not auto-submitted at 0:00.
+              </p>
+            </div>
           )}
         </div>
       ) : subtype === 'english_level' ? (
@@ -484,8 +518,25 @@ function TaskCreateForm({
             required
           />
           <p className="text-xs text-muted-foreground">
-            Full CEFR diagnostic (~66 questions). Default 60 minutes.
+            Full CEFR diagnostic (~72 questions). Default 60 minutes.
           </p>
+        </div>
+      ) : null}
+
+      {!isSpecial && !isMock && questionStyle === 'essay' ? (
+        <div className="space-y-2">
+          <Label htmlFor="rubric">Exam-board rubric / mark scheme (optional but recommended)</Label>
+          <p className="text-xs text-muted-foreground">
+            Paste the criteria, band descriptors, or exemplar notes. Students see this before
+            writing; marking and the model essay are aligned to it.
+          </p>
+          <Textarea
+            id="rubric"
+            value={rubricText}
+            onChange={(e) => setRubricText(e.target.value)}
+            className="min-h-[140px]"
+            placeholder="e.g. AO1: clear argument (8 marks)… Band 5: sustained, convincing…"
+          />
         </div>
       ) : null}
 

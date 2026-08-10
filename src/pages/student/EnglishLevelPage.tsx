@@ -195,7 +195,7 @@ export function EnglishLevelPage() {
               Your teacher sees your answers.
             </div>
             <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-              <li>~66 questions grouped by level from A1 to C2</li>
+              <li>~72 questions grouped by level from A1 to C2</li>
               <li>Each level mixes vocabulary, listening, reading, grammar and writing</li>
               <li>About one hour — overtime is flagged</li>
             </ul>

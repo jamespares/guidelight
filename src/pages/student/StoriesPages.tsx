@@ -229,6 +229,11 @@ export function StoryReaderPage() {
           ) : null}
 
           <div className="flex flex-wrap gap-3 text-sm">
+            {story.hasAudio ? (
+              <a className="underline-offset-4 hover:underline" href={story.audio} download>
+                Audio
+              </a>
+            ) : null}
             <a className="underline-offset-4 hover:underline" href={story.md} download>
               Markdown
             </a>

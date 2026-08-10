@@ -33,6 +33,27 @@ function escapeTsString(str) {
   return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
 }
 
+// Build a map of gloss -> set of levels where that gloss is a correct answer.
+// Used to avoid a gloss appearing as a distractor at a different CEFR level.
+const GLOSS_LEVELS = (() => {
+  const map = new Map();
+  for (const lvl of LEVELS) {
+    const vocab = standards.levels[lvl].vocabulary;
+    const allWords = [
+      ...(vocab.nouns || []),
+      ...(vocab.verbs || []),
+      ...(vocab.adjectives || []),
+      ...(vocab.adverbs || []),
+    ];
+    for (const w of allWords) {
+      const set = map.get(w.gloss) || new Set();
+      set.add(lvl);
+      map.set(w.gloss, set);
+    }
+  }
+  return map;
+})();
+
 function generateVocabItems(level) {
   const vocab = standards.levels[level].vocabulary;
   const allWords = [
@@ -49,9 +70,13 @@ function generateVocabItems(level) {
     const distractors = [];
     while (distractors.length < 3) {
       const candidate = allGlosses[Math.floor(Math.random() * allGlosses.length)];
-      if (candidate !== correct && !distractors.includes(candidate)) {
-        distractors.push(candidate);
-      }
+      if (candidate === correct) continue;
+      if (distractors.includes(candidate)) continue;
+      // Do not use a gloss that is a correct answer at any other CEFR level.
+      const candidateLevels = GLOSS_LEVELS.get(candidate) || new Set();
+      const appearsElsewhere = [...candidateLevels].some((l) => l !== level);
+      if (appearsElsewhere) continue;
+      distractors.push(candidate);
     }
     const options = shuffle([correct, ...distractors]);
     return {
@@ -85,6 +110,24 @@ const GRAMMAR_CLOZE = {
     { prompt: 'If it rains, we ____ stay home.', options: ['will', 'would', 'stayed', 'stay'], correct: 'will' },
     { prompt: 'The man ____ lives next door is a teacher.', options: ['who', 'which', 'that', 'whose'], correct: 'who' },
     { prompt: 'English ____ spoken here.', options: ['is', 'was', 'has been', 'being'], correct: 'is' },
+  ],
+  B2: [
+    { prompt: 'I ____ working all day, so I am exhausted.', options: ['have been', 'had been', 'am', 'was'], correct: 'have been' },
+    { prompt: 'She asked me where ____ .', options: ['I lived', 'did I live', 'do I live', 'I live'], correct: 'I lived' },
+    { prompt: 'The road ____ at the moment.', options: ['is being repaired', 'repairs', 'is repairing', 'repaired'], correct: 'is being repaired' },
+    { prompt: 'You ____ have told me — I already knew.', options: ['needn\'t', 'mustn\'t', 'couldn\'t', 'shouldn\'t'], correct: 'needn\'t' },
+  ],
+  C1: [
+    { prompt: '____ have I seen such chaos in my life.', options: ['Never', 'Not', 'No', 'None'], correct: 'Never' },
+    { prompt: 'It was John who ____ the prize.', options: ['won', 'wins', 'winning', 'had won'], correct: 'won' },
+    { prompt: 'She is thought ____ the best candidate.', options: ['to be', 'being', 'is', 'was'], correct: 'to be' },
+    { prompt: 'I\'d rather you ____ in here.', options: ['didn\'t smoke', 'don\'t smoke', 'not smoke', 'won\'t smoke'], correct: 'didn\'t smoke' },
+  ],
+  C2: [
+    { prompt: '____ for your help, we would have failed.', options: ['But', 'Except', 'Without', 'Unless'], correct: 'But' },
+    { prompt: 'The meeting over, everyone ____ home.', options: ['drifted', 'drifting', 'was drifted', 'had drifted'], correct: 'drifted' },
+    { prompt: 'Strange ____ it may seem, it\'s true.', options: ['as', 'though', 'although', 'while'], correct: 'as' },
+    { prompt: 'He left early lest he ____ recognised.', options: ['be', 'was', 'were', 'is'], correct: 'be' },
   ],
 };
 
@@ -530,8 +573,8 @@ export const ITEMS_BY_ID: Record<string, Item> = Object.fromEntries(
 export const LEVEL_ORDER: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 `;
 
-fs.writeFileSync(path.join(ROOT, 'src/data/items.ts'), output, 'utf8');
-console.log(`Generated ${items.length} items in src/data/items.ts`);
+fs.writeFileSync(path.join(ROOT, 'shared/cefr/items.ts'), output, 'utf8');
+console.log(`Generated ${items.length} items in shared/cefr/items.ts`);
 
 // Manifest consumed by scripts/generate-audio.py (Edge TTS → MP3 → R2).
 const manifest = buildAudioManifest();
@@ -554,5 +597,5 @@ export const WRITING_RUBRICS: Record<CEFRLevel, string> = {
 ${LEVELS.map((l) => `  ${l}: '${rubrics[l].replace(/\\/g, '\\\\').replace(/'/g, "\\'")}',`).join('\n')}
 };
 `;
-fs.writeFileSync(path.join(ROOT, 'src/data/rubrics.ts'), rubricsTs, 'utf8');
-console.log('Wrote src/data/rubrics.ts');
+fs.writeFileSync(path.join(ROOT, 'shared/cefr/rubrics.ts'), rubricsTs, 'utf8');
+console.log('Wrote shared/cefr/rubrics.ts');
