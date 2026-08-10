@@ -1,6 +1,10 @@
 /** Password hashing + session helpers using Web Crypto (Workers-compatible). */
 
-const PBKDF2_ITERATIONS = 600_000
+// Cloudflare Workers' native PBKDF2 supports iteration counts up to 100,000.
+// Newer hashes use this limit. Legacy hashes (up to 600,000) are verified with a
+// pure-JS PBKDF2-HMAC-SHA256 fallback and then transparently re-hashed on login.
+const PBKDF2_ITERATIONS = 100_000
+const LEGACY_MAX_ITERATIONS = 600_000
 const SESSION_DAYS = 14
 
 function bytesToHex(bytes: ArrayBuffer | Uint8Array): string {
@@ -37,25 +41,74 @@ export async function hashPassword(password: string): Promise<string> {
   return `pbkdf2$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${bytesToHex(derived)}`
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+async function pbkdf2HmacSha256Js(
+  password: Uint8Array,
+  salt: Uint8Array,
+  iterations: number,
+  dkLen: number,
+): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    password,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const blocks = Math.ceil(dkLen / 32)
+  const out = new Uint8Array(blocks * 32)
+  for (let i = 1; i <= blocks; i++) {
+    const saltIdx = new Uint8Array(salt.length + 4)
+    saltIdx.set(salt)
+    new DataView(saltIdx.buffer).setUint32(salt.length, i, false)
+    let u = new Uint8Array(await crypto.subtle.sign('HMAC', key, saltIdx))
+    const t = new Uint8Array(u)
+    for (let j = 2; j <= iterations; j++) {
+      u = new Uint8Array(await crypto.subtle.sign('HMAC', key, u))
+      for (let k = 0; k < 32; k++) t[k] ^= u[k]
+    }
+    out.set(t, (i - 1) * 32)
+  }
+  return out.slice(0, dkLen)
+}
+
+export async function verifyPassword(
+  password: string,
+  stored: string,
+): Promise<{ valid: boolean; newHash?: string }> {
   const parts = stored.split('$')
-  if (parts.length !== 4 || parts[0] !== 'pbkdf2') return false
+  if (parts.length !== 4 || parts[0] !== 'pbkdf2') return { valid: false }
   const iterations = Number(parts[1])
   const salt = hexToBytes(parts[2])
   const expected = parts[3]
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(password),
-    'PBKDF2',
-    false,
-    ['deriveBits'],
-  )
-  const derived = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
-    keyMaterial,
-    256,
-  )
-  return bytesToHex(derived) === expected
+  const passwordBytes = new TextEncoder().encode(password)
+
+  let derived: ArrayBuffer
+  if (iterations <= PBKDF2_ITERATIONS) {
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      passwordBytes,
+      'PBKDF2',
+      false,
+      ['deriveBits'],
+    )
+    derived = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+      keyMaterial,
+      256,
+    )
+  } else if (iterations <= LEGACY_MAX_ITERATIONS) {
+    derived = (await pbkdf2HmacSha256Js(passwordBytes, salt, iterations, 32)).buffer
+  } else {
+    return { valid: false }
+  }
+
+  const valid = bytesToHex(derived) === expected
+  if (!valid) return { valid: false }
+
+  if (iterations > PBKDF2_ITERATIONS) {
+    return { valid: true, newHash: await hashPassword(password) }
+  }
+  return { valid: true }
 }
 
 export function sessionExpiry(): string {

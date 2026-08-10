@@ -270,9 +270,17 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
         email_verified: number
       }>()
 
-    if (!teacher || !(await verifyPassword(body.password, teacher.password_hash))) {
+    const verification = teacher
+      ? await verifyPassword(body.password, teacher.password_hash)
+      : { valid: false }
+    if (!teacher || !verification.valid) {
       await logAuth(env, 'teacher_login_failure', null, request)
       return error('Invalid email or password', 401)
+    }
+    if (verification.newHash) {
+      await env.DB.prepare(`UPDATE teachers SET password_hash = ? WHERE id = ?`)
+        .bind(verification.newHash, teacher.id)
+        .run()
     }
 
     if (!teacher.email_verified) {
@@ -444,9 +452,17 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
         password_hash: string
       }>()
 
-    if (!student || !(await verifyPassword(body.password, student.password_hash))) {
+    const verification = student
+      ? await verifyPassword(body.password, student.password_hash)
+      : { valid: false }
+    if (!student || !verification.valid) {
       await logAuth(env, 'student_login_failure', null, request)
       return error('Invalid username or password', 401)
+    }
+    if (verification.newHash) {
+      await env.DB.prepare(`UPDATE students SET password_hash = ? WHERE id = ?`)
+        .bind(verification.newHash, student.id)
+        .run()
     }
 
     const session = await createSession(env, student.id, 'student')
@@ -490,9 +506,17 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
         parent_password_hash: string
       }>()
 
-    if (!student || !(await verifyPassword(body.password, student.parent_password_hash))) {
+    const verification = student
+      ? await verifyPassword(body.password, student.parent_password_hash)
+      : { valid: false }
+    if (!student || !verification.valid) {
       await logAuth(env, 'parent_login_failure', null, request)
       return error('Invalid username or password', 401)
+    }
+    if (verification.newHash) {
+      await env.DB.prepare(`UPDATE students SET parent_password_hash = ? WHERE id = ?`)
+        .bind(verification.newHash, student.id)
+        .run()
     }
 
     const session = await createSession(env, student.parent_username, 'parent')
