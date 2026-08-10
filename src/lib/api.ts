@@ -482,6 +482,9 @@ export const api = {
   ) => request<{ ok: boolean }>(`/api/lessons/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   task: (id: string) =>
     request<{ task: TaskRow & { content: TaskContent } }>(`/api/tasks/${id}`),
+  // Teacher-only: student-shaped content (answers stripped) for previewing a task
+  taskPreview: (id: string) =>
+    request<{ task: TaskRow & { content: TaskContent } }>(`/api/tasks/${id}/preview`),
   updateTask: (id: string, body: Record<string, unknown>) =>
     request(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   publishTask: (id: string, body?: { assign_all?: boolean; student_ids?: string[] }) =>

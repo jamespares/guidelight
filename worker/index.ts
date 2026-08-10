@@ -65,6 +65,18 @@ async function classOwned(env: Env, classId: string, teacherId: string) {
     .first()
 }
 
+// Remove correct answers so students (and teacher previews) never receive them
+function stripTaskAnswers(content: TaskContent): TaskContent {
+  return {
+    ...content,
+    questions: (content.questions ?? []).map((q) => ({
+      ...q,
+      correctAnswer: undefined,
+      blanks: undefined,
+    })),
+  }
+}
+
 async function fetchStudentTasks(env: Env, studentId: string) {
   const student = await env.DB.prepare(`SELECT class_id FROM students WHERE id = ?`)
     .bind(studentId)
@@ -1358,15 +1370,31 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         // Strip correct answers for students
         let content = JSON.parse(task.content_json || '{}') as TaskContent
         if (user.role === 'student') {
-          content = {
-            ...content,
-            questions: (content.questions ?? []).map((q) => ({
-              ...q,
-              correctAnswer: undefined,
-              blanks: undefined,
-            })),
-          }
+          content = stripTaskAnswers(content)
         }
+        return json({ task: { ...task, content, content_json: undefined } })
+      }
+
+      // Teacher preview: student-shaped content (answers stripped) for drafts or published tasks
+      const taskPreviewMatch = path.match(/^\/api\/tasks\/([^/]+)\/preview$/)
+      if (taskPreviewMatch && request.method === 'GET') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const taskId = taskPreviewMatch[1]
+        const task = await env.DB.prepare(
+          `SELECT t.*, c.teacher_id, c.name as class_name FROM tasks t
+           JOIN classes c ON c.id = t.class_id WHERE t.id = ?`,
+        )
+          .bind(taskId)
+          .first<{
+            id: string
+            teacher_id: string
+            content_json: string
+            [key: string]: unknown
+          }>()
+        if (!task || task.teacher_id !== user.id) return error('Not found', 404)
+
+        const content = stripTaskAnswers(JSON.parse(task.content_json || '{}') as TaskContent)
         return json({ task: { ...task, content, content_json: undefined } })
       }
 

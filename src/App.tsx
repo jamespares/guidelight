@@ -10,6 +10,7 @@ import { StudentDetailPage } from './pages/teacher/StudentDetailPage'
 import { StudentsPage } from './pages/teacher/StudentsPage'
 import { AssessmentsPage, HomeworkPage } from './pages/teacher/TasksPages'
 import { TaskReviewPage } from './pages/teacher/TaskReviewPage'
+import { TaskPreviewPage } from './pages/teacher/TaskPreviewPage'
 import {
   LessonBatchPage,
   LessonDetailPage,
@@ -117,6 +118,7 @@ export default function App() {
         <Route path="homework" element={<HomeworkPage />} />
         <Route path="assessments" element={<AssessmentsPage />} />
         <Route path="tasks/:id" element={<TaskReviewPage />} />
+        <Route path="tasks/:id/preview" element={<TaskPreviewPage />} />
         <Route path="lessons" element={<LessonsPage />} />
         <Route path="lessons/:batchId" element={<LessonBatchPage />} />
         <Route path="lessons/:batchId/:lessonId" element={<LessonDetailPage />} />

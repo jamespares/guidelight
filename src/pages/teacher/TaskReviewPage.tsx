@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Save, Send, Volume2 } from 'lucide-react'
+import { Save, Send, Volume2, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -157,12 +157,22 @@ export function TaskReviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          to={task.type === 'homework' ? '/teacher/homework' : '/teacher/assessments'}
-          className="text-sm text-muted-foreground hover:underline"
-        >
-          ← Back
-        </Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            to={task.type === 'homework' ? '/teacher/homework' : '/teacher/assessments'}
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            ← Back
+          </Link>
+          {!isSpecial ? (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link to={`/teacher/tasks/${task.id}/preview`}>
+                <Eye className="h-4 w-4" />
+                Preview as student
+              </Link>
+            </Button>
+          ) : null}
+        </div>
         <PageHeader
           title={`Review: ${content.title || task.title}`}
           description={
