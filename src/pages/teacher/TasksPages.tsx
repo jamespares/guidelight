@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileUp, Plus, Sparkles, X } from 'lucide-react'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -36,15 +37,12 @@ import {
 } from '@/components/ui/table'
 import {
   api,
-  type ClassRow,
-  type ExamProfile,
-  type StudentRow,
-  type TaskRow,
   type TaskSubtype,
 } from '@/lib/api'
 import { ExamProfileCreateDialog } from '@/pages/teacher/ExamProfilePages'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 import { readPastPaperFile } from '@/lib/pastPaper'
+import { queryKeys } from '@/lib/queryKeys'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 function TaskCreateForm({
@@ -56,8 +54,20 @@ function TaskCreateForm({
   defaultSubtype?: TaskSubtype
   onCreated: (id: string) => void
 }) {
-  const [classes, setClasses] = useState<ClassRow[]>([])
-  const [students, setStudents] = useState<StudentRow[]>([])
+  const { data: classes = [] } = useQuery({
+    queryKey: queryKeys.classes.all,
+    queryFn: async () => {
+      const res = await api.classes()
+      return res.classes
+    },
+  })
+  const { data: students = [] } = useQuery({
+    queryKey: queryKeys.students.all,
+    queryFn: async () => {
+      const res = await api.students()
+      return res.students
+    },
+  })
   const [classId, setClassId] = useState('')
   const [subject, setSubject] = useState('')
   const [useClassSubject, setUseClassSubject] = useState(true)
@@ -80,13 +90,10 @@ function TaskCreateForm({
   const draftProgress = useEstimatedProgress(busy && !isSpecial, AI_WAIT_MS.draft)
 
   useEffect(() => {
-    void (async () => {
-      const [c, s] = await Promise.all([api.classes(), api.students()])
-      setClasses(c.classes)
-      setStudents(s.students)
-      if (c.classes[0]) setClassId(c.classes[0].id)
-    })()
-  }, [])
+    if (classes.length > 0 && !classId) {
+      setClassId(classes[0].id)
+    }
+  }, [classes, classId])
 
   useEffect(() => {
     const cls = classes.find((c) => c.id === classId)
@@ -450,37 +457,33 @@ function TaskCreateForm({
 
 function ExamProfilesSection() {
   const navigate = useNavigate()
-  const [classes, setClasses] = useState<ClassRow[]>([])
   const [classId, setClassId] = useState('')
-  const [profiles, setProfiles] = useState<ExamProfile[]>([])
   const [open, setOpen] = useState(false)
-  const [error, setError] = useState('')
+  const [error] = useState('')
 
-  async function loadProfiles(cid: string) {
-    if (!cid) return
-    try {
-      const res = await api.examProfiles(cid)
-      setProfiles(res.profiles)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load profiles')
+  const { data: classes = [] } = useQuery({
+    queryKey: queryKeys.classes.all,
+    queryFn: async () => {
+      const res = await api.classes()
+      return res.classes
+    },
+  })
+
+  useEffect(() => {
+    if (classes.length > 0 && !classId) {
+      setClassId(classes[0].id)
     }
-  }
+  }, [classes, classId])
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const c = await api.classes()
-        setClasses(c.classes)
-        if (c.classes[0]) setClassId(c.classes[0].id)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load classes')
-      }
-    })()
-  }, [])
-
-  useEffect(() => {
-    void loadProfiles(classId)
-  }, [classId])
+  const { data: profiles = [], isLoading } = useQuery({
+    queryKey: queryKeys.examProfiles.all(classId),
+    queryFn: async () => {
+      if (!classId) return []
+      const res = await api.examProfiles(classId)
+      return res.profiles
+    },
+    enabled: !!classId,
+  })
 
   return (
     <Card>
@@ -533,7 +536,13 @@ function ExamProfilesSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {profiles.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
+            ) : profiles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-muted-foreground">
                   No exam profiles for this class. Create one to start generating timed mock exams.
@@ -584,22 +593,17 @@ function TaskList({
   blurb: string
   excludeSubtypes?: TaskSubtype[]
 }) {
-  const [tasks, setTasks] = useState<TaskRow[]>([])
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
 
-  async function load() {
-    const res = await api.tasks(type)
-    setTasks(
-      res.tasks.filter(
-        (t) => !excludeSubtypes.includes(t.subtype as TaskSubtype),
-      ),
-    )
-  }
-
-  useEffect(() => {
-    void load()
-  }, [type])
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: queryKeys.tasks.all(type),
+    queryFn: async () => {
+      const res = await api.tasks(type)
+      return res.tasks.filter((t) => !excludeSubtypes.includes(t.subtype as TaskSubtype))
+    },
+  })
 
   return (
     <div>
@@ -624,9 +628,10 @@ function TaskList({
               <TaskCreateForm
                 type={type}
                 defaultSubtype={type === 'assessment' ? 'diagnostic' : null}
-                onCreated={(id) => {
+                onCreated={(taskId) => {
                   setOpen(false)
-                  navigate(`/teacher/tasks/${id}`)
+                  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all(type) })
+                  navigate(`/teacher/tasks/${taskId}`)
                 }}
               />
             </DialogContent>
@@ -649,7 +654,13 @@ function TaskList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tasks.length === 0 ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-muted-foreground">
+                Loading…
+              </TableCell>
+            </TableRow>
+          ) : tasks.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6} className="text-muted-foreground">
                 No {type} yet.

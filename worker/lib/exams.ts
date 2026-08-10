@@ -9,6 +9,7 @@ import {
 import {
   computeExamReadiness,
   type ExamFormat,
+  type ExamReadiness,
   type ExamRubric,
   type GradeBoundary,
   questionCountFromFormat,
@@ -122,7 +123,14 @@ export async function getExamProfileRow(
   env: Env,
   profileId: string,
 ): Promise<ExamProfileRow | null> {
-  return env.DB.prepare(`SELECT * FROM exam_profiles WHERE id = ?`)
+  return env.DB.prepare(
+    `SELECT id, class_id, created_by, title, subject, curriculum, syllabus_code,
+            duration_seconds, exam_format_json, grade_boundaries_json, rubric_json,
+            reference_past_paper_text, source_file_name, pass_grade, target_grade,
+            status, created_at, updated_at
+     FROM exam_profiles
+     WHERE id = ?`,
+  )
     .bind(profileId)
     .first<ExamProfileRow>()
 }
@@ -161,6 +169,122 @@ export async function readinessForProfile(
     targetGrade: profile.target_grade || undefined,
     examTitle: profile.title,
   })
+}
+
+/** Batch-fetch mock scores for many students against one exam profile. */
+export async function mockScoresForStudents(
+  env: Env,
+  studentIds: string[],
+  examProfileId: string,
+): Promise<Map<string, number[]>> {
+  if (studentIds.length === 0) return new Map()
+  const placeholders = studentIds.map(() => '?').join(',')
+  const { results } = await env.DB.prepare(
+    `SELECT a.student_id, a.score_pct FROM attempts a
+     JOIN tasks t ON t.id = a.task_id
+     WHERE a.student_id IN (${placeholders}) AND t.exam_profile_id = ? AND t.subtype = 'mock_exam'
+       AND a.status = 'submitted' AND a.score_pct IS NOT NULL
+     ORDER BY a.submitted_at ASC`,
+  )
+    .bind(...studentIds, examProfileId)
+    .all<{ student_id: string; score_pct: number }>()
+
+  const map = new Map<string, number[]>()
+  for (const studentId of studentIds) {
+    map.set(studentId, [])
+  }
+  for (const row of results ?? []) {
+    const list = map.get(row.student_id) ?? []
+    list.push(row.score_pct)
+    map.set(row.student_id, list)
+  }
+  return map
+}
+
+/** Batch-fetch mock scores for many (student, profile) pairs at once. */
+export async function mockScoresForStudentProfiles(
+  env: Env,
+  studentIds: string[],
+  profileIds: string[],
+): Promise<Map<string, number[]>> {
+  if (studentIds.length === 0 || profileIds.length === 0) return new Map()
+  const studentPlaceholders = studentIds.map(() => '?').join(',')
+  const profilePlaceholders = profileIds.map(() => '?').join(',')
+  const { results } = await env.DB.prepare(
+    `SELECT a.student_id, t.exam_profile_id, a.score_pct
+     FROM attempts a
+     JOIN tasks t ON t.id = a.task_id
+     WHERE a.student_id IN (${studentPlaceholders})
+       AND t.exam_profile_id IN (${profilePlaceholders})
+       AND t.subtype = 'mock_exam'
+       AND a.status = 'submitted'
+       AND a.score_pct IS NOT NULL
+     ORDER BY a.submitted_at ASC`,
+  )
+    .bind(...studentIds, ...profileIds)
+    .all<{ student_id: string; exam_profile_id: string; score_pct: number }>()
+
+  const map = new Map<string, number[]>()
+  for (const row of results ?? []) {
+    const key = `${row.student_id}:${row.exam_profile_id}`
+    const list = map.get(key) ?? []
+    list.push(row.score_pct)
+    map.set(key, list)
+  }
+  return map
+}
+
+/** Compute exam readiness for many students in one class, batching DB reads. */
+export async function examReadinessForStudents(
+  env: Env,
+  classId: string,
+  studentIds: string[],
+): Promise<Map<string, number | null>> {
+  if (studentIds.length === 0) return new Map()
+
+  const { results: profileRows } = await env.DB.prepare(
+    `SELECT * FROM exam_profiles WHERE class_id = ? AND status = 'active'`,
+  )
+    .bind(classId)
+    .all<ExamProfileRow>()
+  const profiles = profileRows ?? []
+
+  const defaultResult = new Map<string, number | null>()
+  for (const studentId of studentIds) {
+    defaultResult.set(studentId, null)
+  }
+  if (profiles.length === 0) return defaultResult
+
+  const profileIds = profiles.map((p) => p.id)
+  const scoresByKey = await mockScoresForStudentProfiles(env, studentIds, profileIds)
+
+  const result = new Map<string, number | null>()
+  for (const studentId of studentIds) {
+    const probabilities: number[] = []
+    for (const profile of profiles) {
+      const scores = scoresByKey.get(`${studentId}:${profile.id}`) ?? []
+      const readiness = computeExamReadiness({
+        scores,
+        gradeBoundaries: parseJson<GradeBoundary[]>(
+          profile.grade_boundaries_json,
+          DEFAULT_GRADE_BOUNDARIES,
+        ),
+        passGrade: profile.pass_grade || undefined,
+        targetGrade: profile.target_grade || undefined,
+        examTitle: profile.title,
+      })
+      if (readiness.passProbability != null) {
+        probabilities.push(readiness.passProbability)
+      }
+    }
+    result.set(
+      studentId,
+      probabilities.length === 0
+        ? null
+        : Math.round((probabilities.reduce((a, b) => a + b, 0) / probabilities.length) * 10) / 10,
+    )
+  }
+  return result
 }
 
 export async function generateMockFromProfile(
@@ -278,8 +402,12 @@ export async function handleExamsApi(
     if (!owned) return error('Not found', 404)
 
     const { results } = await env.DB.prepare(
-      `SELECT p.*,
-        (SELECT COUNT(*) FROM tasks t WHERE t.exam_profile_id = p.id) as mock_count
+      `SELECT p.id, p.class_id, p.created_by, p.title, p.subject, p.curriculum,
+              p.syllabus_code, p.duration_seconds, p.exam_format_json,
+              p.grade_boundaries_json, p.rubric_json, p.reference_past_paper_text,
+              p.source_file_name, p.pass_grade, p.target_grade, p.status,
+              p.created_at, p.updated_at,
+              (SELECT COUNT(*) FROM tasks t WHERE t.exam_profile_id = p.id) as mock_count
        FROM exam_profiles p
        WHERE p.class_id = ? AND p.status = 'active'
        ORDER BY p.created_at DESC`,
@@ -556,34 +684,54 @@ export async function handleExamsApi(
     if (user.role !== 'teacher') return error('Forbidden', 403)
     const studentId = studentReadinessMatch[1]
     const s = await env.DB.prepare(
-      `SELECT s.*, c.teacher_id FROM students s JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
+      `SELECT s.class_id, c.teacher_id FROM students s JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
     )
       .bind(studentId)
-      .first<{ class_id: string; teacher_id: string; display_name: string }>()
+      .first<{ class_id: string; teacher_id: string }>()
     if (!s || s.teacher_id !== user.id) return error('Not found', 404)
 
     const { results } = await env.DB.prepare(
-      `SELECT * FROM exam_profiles WHERE class_id = ? AND status = 'active' ORDER BY created_at DESC`,
+      `SELECT id, class_id, created_by, title, subject, curriculum, syllabus_code,
+              duration_seconds, exam_format_json, grade_boundaries_json, rubric_json,
+              reference_past_paper_text, source_file_name, pass_grade, target_grade,
+              status, created_at, updated_at
+       FROM exam_profiles WHERE class_id = ? AND status = 'active' ORDER BY created_at DESC`,
     )
       .bind(s.class_id)
       .all<ExamProfileRow>()
+    const profiles = results ?? []
+    const profileIds = profiles.map((p) => p.id)
 
-    const profiles = await Promise.all(
-      (results ?? []).map(async (p) => ({
+    const [scoresByKey, attemptsByProfile] = await Promise.all([
+      mockScoresForStudentProfiles(env, [studentId], profileIds),
+      Promise.all(
+        profiles.map((p) =>
+          env.DB
+            .prepare(
+              `SELECT a.id, a.score_pct, a.submitted_at, t.title
+               FROM attempts a JOIN tasks t ON t.id = a.task_id
+               WHERE a.student_id = ? AND t.exam_profile_id = ? AND a.status = 'submitted'
+               ORDER BY a.submitted_at DESC LIMIT 20`,
+            )
+            .bind(studentId, p.id)
+            .all(),
+        ),
+      ),
+    ])
+
+    return json({
+      profiles: profiles.map((p, i) => ({
         profile: publicProfile(p),
-        readiness: await readinessForProfile(env, studentId, p),
-        attempts: await env.DB.prepare(
-          `SELECT a.id, a.score_pct, a.submitted_at, t.title
-           FROM attempts a JOIN tasks t ON t.id = a.task_id
-           WHERE a.student_id = ? AND t.exam_profile_id = ? AND a.status = 'submitted'
-           ORDER BY a.submitted_at DESC LIMIT 20`,
-        )
-          .bind(studentId, p.id)
-          .all(),
+        readiness: computeExamReadiness({
+          scores: scoresByKey.get(`${studentId}:${p.id}`) ?? [],
+          gradeBoundaries: parseJson<GradeBoundary[]>(p.grade_boundaries_json, DEFAULT_GRADE_BOUNDARIES),
+          passGrade: p.pass_grade || undefined,
+          targetGrade: p.target_grade || undefined,
+          examTitle: p.title,
+        }),
+        attempts: attemptsByProfile[i],
       })),
-    )
-
-    return json({ profiles })
+    })
   }
 
   if (path === '/api/student/exam-profiles' && request.method === 'GET') {
@@ -594,18 +742,31 @@ export async function handleExamsApi(
     if (!s) return error('Not found', 404)
 
     const { results } = await env.DB.prepare(
-      `SELECT * FROM exam_profiles WHERE class_id = ? AND status = 'active' ORDER BY created_at DESC`,
+      `SELECT id, class_id, created_by, title, subject, curriculum, syllabus_code,
+              duration_seconds, exam_format_json, grade_boundaries_json, rubric_json,
+              reference_past_paper_text, source_file_name, pass_grade, target_grade,
+              status, created_at, updated_at
+       FROM exam_profiles WHERE class_id = ? AND status = 'active' ORDER BY created_at DESC`,
     )
       .bind(s.class_id)
       .all<ExamProfileRow>()
+    const profiles = results ?? []
+    const profileIds = profiles.map((p) => p.id)
 
-    const profiles = await Promise.all(
-      (results ?? []).map(async (p) => ({
+    const scoresByKey = await mockScoresForStudentProfiles(env, [user.id], profileIds)
+
+    return json({
+      profiles: profiles.map((p) => ({
         profile: publicProfile(p),
-        readiness: await readinessForProfile(env, user.id, p),
+        readiness: computeExamReadiness({
+          scores: scoresByKey.get(`${user.id}:${p.id}`) ?? [],
+          gradeBoundaries: parseJson<GradeBoundary[]>(p.grade_boundaries_json, DEFAULT_GRADE_BOUNDARIES),
+          passGrade: p.pass_grade || undefined,
+          targetGrade: p.target_grade || undefined,
+          examTitle: p.title,
+        }),
       })),
-    )
-    return json({ profiles })
+    })
   }
 
   return null

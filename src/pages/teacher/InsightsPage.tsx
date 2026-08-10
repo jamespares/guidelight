@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarPlus, FileText, Printer, Save, Trash2 } from 'lucide-react'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { eventColor, InsightLineChartCard } from '@/components/InsightLineChart'
@@ -27,21 +28,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  api,
-  isAiBudgetError,
-  type ClassRow,
-  type InsightEvent,
-  type StudentRow,
-  type Weakspot,
-} from '@/lib/api'
+import { api, isAiBudgetError, type InsightEvent, type Weakspot } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { CAP_HIT_TEACHER } from '@/lib/trustCopy'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 export function InsightsPage() {
   const [scope, setScope] = useState<'class' | 'student'>('class')
-  const [classes, setClasses] = useState<ClassRow[]>([])
-  const [students, setStudents] = useState<StudentRow[]>([])
   const [id, setId] = useState('')
   const [data, setData] = useState<{
     avgScore: number | null
@@ -67,28 +60,45 @@ export function InsightsPage() {
   const [eventError, setEventError] = useState('')
   const reportProgress = useEstimatedProgress(busy, AI_WAIT_MS.report)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const { data: classes = [] } = useQuery({
+    queryKey: queryKeys.classes.all,
+    queryFn: async () => {
+      const res = await api.classes()
+      return res.classes
+    },
+  })
+
+  const { data: students = [] } = useQuery({
+    queryKey: queryKeys.students.all,
+    queryFn: async () => {
+      const res = await api.students()
+      return res.students
+    },
+  })
+
+  useEffect(() => {
+    if (classes.length > 0 && !id) {
+      setId(classes[0].id)
+    }
+  }, [classes, id])
+
+  const { data: insightsData, isLoading: insightsLoading } = useQuery({
+    queryKey:
+      scope === 'class' ? queryKeys.insights.class(id) : queryKeys.insights.student(id),
+    queryFn: async () => {
+      if (!id) throw new Error('No id')
+      return await api.insights(scope, id)
+    },
+    enabled: !!id,
+  })
+
+  useEffect(() => {
+    if (insightsData) setData(insightsData)
+  }, [insightsData])
 
   const events = data?.events ?? []
-
-  useEffect(() => {
-    void (async () => {
-      const [c, s] = await Promise.all([api.classes(), api.students()])
-      setClasses(c.classes)
-      setStudents(s.students)
-      if (c.classes[0]) setId(c.classes[0].id)
-    })()
-  }, [])
-
-  useEffect(() => {
-    if (!id) return
-    void (async () => {
-      try {
-        setData(await api.insights(scope, id))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed')
-      }
-    })()
-  }, [scope, id])
 
   async function report() {
     setBusy(true)
@@ -125,6 +135,10 @@ export function InsightsPage() {
             }
           : prev,
       )
+      await queryClient.invalidateQueries({
+        queryKey:
+          scope === 'class' ? queryKeys.insights.class(id) : queryKeys.insights.student(id),
+      })
     } catch (err) {
       if (isAiBudgetError(err)) {
         setPinpointError(CAP_HIT_TEACHER)
@@ -259,6 +273,9 @@ export function InsightsPage() {
         <div aria-live="polite" role="status">
           <p className="text-sm text-destructive">{error}</p>
         </div>
+      ) : null}
+      {insightsLoading ? (
+        <p className="text-sm text-muted-foreground">Loading insights…</p>
       ) : null}
 
       <Card>

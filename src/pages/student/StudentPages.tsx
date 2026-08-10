@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Play, Send, Sparkles } from 'lucide-react'
 import { GenerationBusyLabel, GenerationProgress } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -17,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { api, type ExamProfile, type ExamReadiness, type Question, type TaskContent, type TaskRow } from '@/lib/api'
+import { api, type Question, type TaskContent } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
@@ -186,23 +188,25 @@ function QuestionInput({
 }
 
 export function StudentTasksPage() {
-  const [tasks, setTasks] = useState<TaskRow[]>([])
-  const [examProfiles, setExamProfiles] = useState<
-    Array<{ profile: ExamProfile; readiness: ExamReadiness }>
-  >([])
-  const [error, setError] = useState('')
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    error: tasksError,
+  } = useQuery({
+    queryKey: queryKeys.studentTasks.all,
+    queryFn: async () => {
+      const res = await api.studentTasks()
+      return res.tasks
+    },
+  })
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const [t, ep] = await Promise.all([api.studentTasks(), api.studentExamProfiles()])
-        setTasks(t.tasks)
-        setExamProfiles(ep.profiles)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed')
-      }
-    })()
-  }, [])
+  const { data: examProfiles = [] } = useQuery({
+    queryKey: ['student-exam-profiles'],
+    queryFn: async () => {
+      const res = await api.studentExamProfiles()
+      return res.profiles
+    },
+  })
 
   return (
     <div className="space-y-6">
@@ -210,9 +214,9 @@ export function StudentTasksPage() {
         title="Tasks"
         description={`${tasks.length} assigned task${tasks.length === 1 ? '' : 's'}`}
       />
-      {error ? (
+      {tasksError?.message ? (
         <div aria-live="polite" role="status">
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive">{tasksError.message}</p>
         </div>
       ) : null}
 
@@ -285,7 +289,13 @@ export function StudentTasksPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tasks.length === 0 ? (
+          {tasksLoading ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-muted-foreground">
+                Loading…
+              </TableCell>
+            </TableRow>
+          ) : tasks.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="text-muted-foreground">
                 No tasks yet.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Save, Send } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Save, Send, Volume2 } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,42 +19,89 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { api, type Question, type StudentRow, type TaskContent, type TaskRow } from '@/lib/api'
+import { api, type Question, type TaskContent, type TtsVoice } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 
 export function TaskReviewPage() {
   const { id } = useParams()
-  const [task, setTask] = useState<(TaskRow & { content: TaskContent }) | null>(null)
+  const queryClient = useQueryClient()
   const [content, setContent] = useState<TaskContent | null>(null)
-  const [students, setStudents] = useState<StudentRow[]>([])
   const [assignMode, setAssignMode] = useState<'class' | 'individuals'>('class')
   const [selected, setSelected] = useState<string[]>([])
-  const [attempts, setAttempts] = useState<Array<Record<string, unknown>>>([])
+  const [voices, setVoices] = useState<TtsVoice[]>([])
+  const [voiceSel, setVoiceSel] = useState<Record<string, string>>({})
+  const [audioBusyId, setAudioBusyId] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
-  async function load() {
-    if (!id) return
-    const res = await api.task(id)
-    setTask(res.task)
-    setContent(res.task.content)
-    const s = await api.students()
-    setStudents(s.students.filter((x) => x.class_id === res.task.class_id))
-    if (res.task.status === 'published') {
-      const a = await api.taskAttempts(id)
-      setAttempts(a.attempts)
-    }
-  }
+  const {
+    data: task,
+    isLoading: taskLoading,
+    error: taskError,
+  } = useQuery({
+    queryKey: queryKeys.tasks.detail(id ?? ''),
+    queryFn: async () => {
+      if (!id) throw new Error('No task id')
+      const res = await api.task(id)
+      return res.task
+    },
+    enabled: !!id,
+  })
+
+  const { data: students = [] } = useQuery({
+    queryKey: queryKeys.students.all,
+    queryFn: async () => {
+      const res = await api.students()
+      return res.students
+    },
+  })
+
+  const { data: attempts = [] } = useQuery({
+    queryKey: queryKeys.tasks.attempts(id ?? ''),
+    queryFn: async () => {
+      if (!id) throw new Error('No task id')
+      const res = await api.taskAttempts(id)
+      return res.attempts
+    },
+    enabled: !!id && task?.status === 'published',
+  })
 
   useEffect(() => {
-    void load().catch((err) => setError(err instanceof Error ? err.message : 'Failed'))
-  }, [id])
+    if (task) setContent(task.content)
+  }, [task])
+
+  useEffect(() => {
+    api
+      .ttsVoices()
+      .then((r) => setVoices(r.voices))
+      .catch(() => setVoices([{ id: 'English_expressive_narrator', label: 'Expressive narrator' }]))
+  }, [])
 
   function updateQuestion(qi: number, patch: Partial<Question>) {
     if (!content) return
     const questions = content.questions.map((q, i) => (i === qi ? { ...q, ...patch } : q))
     setContent({ ...content, questions })
+  }
+
+  async function generateAudio(qi: number, q: Question) {
+    if (!q.audioScript?.trim()) return
+    setAudioBusyId(q.id)
+    setError('')
+    try {
+      const res = await api.ttsGenerate({
+        text: q.audioScript,
+        voice: voiceSel[q.id],
+        class_id: task?.class_id,
+      })
+      updateQuestion(qi, { audioUrl: res.url })
+      setMessage(res.cached ? 'Audio ready (reused cached clip)' : 'Audio generated — preview below')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Audio generation failed')
+    } finally {
+      setAudioBusyId('')
+    }
   }
 
   async function saveDraft() {
@@ -63,6 +111,7 @@ export function TaskReviewPage() {
     try {
       await api.updateTask(id, { content, title: content.title })
       setMessage('Draft saved')
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
@@ -81,7 +130,12 @@ export function TaskReviewPage() {
         student_ids: assignMode === 'individuals' ? selected : undefined,
       })
       setMessage('Published to student dashboard')
-      await load()
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all('homework') }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all('assessment') }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.studentTasks.all }),
+      ])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
@@ -89,7 +143,10 @@ export function TaskReviewPage() {
     }
   }
 
-  if (!task || !content) return <p className="text-muted-foreground">{error || 'Loading…'}</p>
+  if (taskLoading) return <p className="text-muted-foreground">Loading…</p>
+  if (!task || !content) return <p className="text-muted-foreground">{error || taskError?.message || 'Not found'}</p>
+
+  const classStudents = students.filter((s) => s.class_id === task.class_id)
 
   const isSpecial =
     task.subtype === 'english_level' ||
@@ -235,8 +292,47 @@ export function TaskReviewPage() {
                 <Textarea
                   id={`q-${q.id}-audio`}
                   value={q.audioScript}
-                  onChange={(e) => updateQuestion(i, { audioScript: e.target.value })}
+                  onChange={(e) =>
+                    updateQuestion(i, { audioScript: e.target.value, audioUrl: undefined })
+                  }
                 />
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    aria-label="Narration voice"
+                    className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+                    value={voiceSel[q.id] ?? voices[0]?.id ?? 'English_expressive_narrator'}
+                    onChange={(e) =>
+                      setVoiceSel((prev) => ({ ...prev, [q.id]: e.target.value }))
+                    }
+                  >
+                    {voices.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={audioBusyId === q.id || !q.audioScript.trim()}
+                    onClick={() => void generateAudio(i, q)}
+                  >
+                    <Volume2 className="h-4 w-4" />
+                    {audioBusyId === q.id
+                      ? 'Generating…'
+                      : q.audioUrl
+                        ? 'Regenerate audio'
+                        : 'Generate audio'}
+                  </Button>
+                </div>
+                {q.audioUrl ? (
+                  <audio controls src={q.audioUrl} className="w-full max-w-md" />
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    No audio yet — students will hear on-device speech until you generate it.
+                  </p>
+                )}
               </div>
             ) : null}
           </CardContent>
@@ -276,7 +372,7 @@ export function TaskReviewPage() {
             {assignMode === 'individuals' ? (
               <fieldset className="space-y-2">
                 <legend className="sr-only">Select students</legend>
-                {students.map((s) => (
+                {classStudents.map((s) => (
                   <div key={s.id} className="flex items-center gap-2">
                     <Checkbox
                       id={`stu-${s.id}`}

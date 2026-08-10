@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,12 +24,23 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { api, type StudentRow } from '@/lib/api'
+import { api } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 
 export function StudentsPage() {
-  const [students, setStudents] = useState<StudentRow[]>([])
+  const queryClient = useQueryClient()
+  const {
+    data: students = [],
+    isLoading,
+    error: queryError,
+  } = useQuery({
+    queryKey: queryKeys.students.all,
+    queryFn: async () => {
+      const res = await api.students()
+      return res.students
+    },
+  })
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [credentials, setCredentials] = useState<
     Array<{ display_name: string; username: string; password: string }> | null
@@ -40,22 +52,6 @@ export function StudentsPage() {
   const [ageRange, setAgeRange] = useState('')
   const [namesText, setNamesText] = useState('')
   const [saving, setSaving] = useState(false)
-
-  async function load() {
-    setLoading(true)
-    try {
-      const res = await api.students()
-      setStudents(res.students)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    void load()
-  }, [])
 
   async function onCreate(e: FormEvent) {
     e.preventDefault()
@@ -76,7 +72,8 @@ export function StudentsPage() {
       setCurriculum('')
       setAgeRange('')
       setNamesText('')
-      await load()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.all })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.classes.all })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
@@ -172,7 +169,9 @@ export function StudentsPage() {
         }
       />
 
-      {error && !open ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
+      {(error || queryError?.message) && !open ? (
+        <p className="mb-4 text-sm text-destructive">{error || queryError?.message}</p>
+      ) : null}
 
       {credentials ? (
         <Card className="mb-6">
@@ -209,7 +208,7 @@ export function StudentsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {loading ? (
+          {isLoading ? (
             <TableRow>
               <TableCell colSpan={12} className="text-muted-foreground">
                 Loading…

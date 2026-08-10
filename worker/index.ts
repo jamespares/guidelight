@@ -19,6 +19,7 @@ import {
   pinpointWeakspotsFromArchives,
 } from './lib/ai'
 import { normalizeDaysOfWeek, scheduleLessonSlots } from './lib/lessonSchedule'
+import { synthesizeSpeech, TTS_VOICES } from './lib/tts'
 import { buildAttemptArchiveMd, truncateArchives } from './lib/attemptArchive'
 import { getSession, handleAuth, requireRole } from './lib/session'
 import {
@@ -43,7 +44,7 @@ import {
 import {
   handleExamsApi,
   getMockExamMarkingContext,
-  readinessForProfile,
+  examReadinessForStudents,
   type ExamProfileRow,
 } from './lib/exams'
 
@@ -216,51 +217,99 @@ function weakspotLabel(w: { skill?: string; topic?: string }): string {
   return w.skill || w.topic || 'Unknown'
 }
 
-async function hwCompletionRate(env: Env, studentId: string, classId: string): Promise<number | null> {
-  const assigned = await env.DB.prepare(
-    `SELECT COUNT(DISTINCT t.id) as c FROM tasks t
-     LEFT JOIN task_assignments a ON a.task_id = t.id
-     WHERE t.class_id = ? AND t.type = 'homework' AND t.status = 'published'
-       AND (a.student_id IS NULL OR a.student_id = ?)`,
-  )
-    .bind(classId, studentId)
-    .first<{ c: number }>()
+/** Batch homework completion rates for every student across multiple classes. */
+async function hwCompletionRatesForClass(
+  env: Env,
+  classIds: string[],
+  studentIds: string[],
+): Promise<Map<string, number | null>> {
+  if (studentIds.length === 0 || classIds.length === 0) return new Map()
+  const studentPlaceholders = studentIds.map(() => '?').join(',')
+  const classPlaceholders = classIds.map(() => '?').join(',')
 
-  const submitted = await env.DB.prepare(
-    `SELECT COUNT(DISTINCT att.task_id) as c FROM attempts att
-     JOIN tasks t ON t.id = att.task_id
-     WHERE att.student_id = ? AND t.type = 'homework' AND att.status = 'submitted'`,
-  )
-    .bind(studentId)
-    .first<{ c: number }>()
+  const [{ results: assignedRows }, { results: submittedRows }] = await Promise.all([
+    env.DB.prepare(
+      `SELECT a.student_id, COUNT(DISTINCT t.id) as c
+       FROM tasks t
+       JOIN task_assignments a ON a.task_id = t.id
+       WHERE t.class_id IN (${classPlaceholders}) AND t.type = 'homework' AND t.status = 'published'
+         AND (a.student_id IS NULL OR a.student_id IN (${studentPlaceholders}))
+       GROUP BY a.student_id`,
+    )
+      .bind(...classIds, ...studentIds)
+      .all<{ student_id: string | null; c: number }>(),
+    env.DB.prepare(
+      `SELECT att.student_id, COUNT(DISTINCT att.task_id) as c
+       FROM attempts att
+       JOIN tasks t ON t.id = att.task_id
+       WHERE att.student_id IN (${studentPlaceholders}) AND t.type = 'homework'
+         AND att.status = 'submitted'
+       GROUP BY att.student_id`,
+    )
+      .bind(...studentIds)
+      .all<{ student_id: string; c: number }>(),
+  ])
 
-  const total = assigned?.c ?? 0
-  if (total === 0) return null
-  return Math.round(((submitted?.c ?? 0) / total) * 1000) / 10
+  const wholeClassAssigned =
+    (assignedRows ?? []).find((r) => r.student_id === null)?.c ?? 0
+  const specificAssigned = new Map<string, number>()
+  for (const row of assignedRows ?? []) {
+    if (row.student_id) specificAssigned.set(row.student_id, row.c)
+  }
+  const submitted = new Map<string, number>()
+  for (const row of submittedRows ?? []) {
+    submitted.set(row.student_id, row.c)
+  }
+
+  const result = new Map<string, number | null>()
+  for (const studentId of studentIds) {
+    const total = wholeClassAssigned + (specificAssigned.get(studentId) ?? 0)
+    result.set(
+      studentId,
+      total === 0 ? null : Math.round(((submitted.get(studentId) ?? 0) / total) * 1000) / 10,
+    )
+  }
+  return result
 }
 
-/** Latest submitted score per completed assigned homework task, averaged. */
-async function avgTaskScore(env: Env, studentId: string, classId: string): Promise<number | null> {
-  const row = await env.DB.prepare(
-    `SELECT AVG(latest.score_pct) as avg FROM (
-       SELECT a.score_pct
-       FROM tasks t
-       JOIN task_assignments ta ON ta.task_id = t.id
-       JOIN attempts a ON a.task_id = t.id AND a.student_id = ?
-       WHERE t.class_id = ? AND t.type = 'homework' AND t.status = 'published'
-         AND (ta.student_id IS NULL OR ta.student_id = ?)
-         AND a.status = 'submitted' AND a.score_pct IS NOT NULL
-         AND a.submitted_at = (
-           SELECT MAX(a2.submitted_at) FROM attempts a2
-           WHERE a2.task_id = t.id AND a2.student_id = ? AND a2.status = 'submitted'
-         )
-     ) latest`,
-  )
-    .bind(studentId, classId, studentId, studentId)
-    .first<{ avg: number | null }>()
+/** Batch average homework scores for every student across multiple classes. */
+async function avgTaskScoresForClass(
+  env: Env,
+  classIds: string[],
+  studentIds: string[],
+): Promise<Map<string, number | null>> {
+  if (studentIds.length === 0 || classIds.length === 0) return new Map()
+  const studentPlaceholders = studentIds.map(() => '?').join(',')
+  const classPlaceholders = classIds.map(() => '?').join(',')
 
-  if (row?.avg == null) return null
-  return Math.round(row.avg * 10) / 10
+  const { results } = await env.DB.prepare(
+    `WITH ranked AS (
+       SELECT a.student_id, a.score_pct,
+         ROW_NUMBER() OVER (PARTITION BY a.student_id, a.task_id ORDER BY a.submitted_at DESC) AS rn
+       FROM attempts a
+       JOIN tasks t ON t.id = a.task_id
+       JOIN task_assignments ta ON ta.task_id = t.id
+       WHERE t.class_id IN (${classPlaceholders}) AND t.type = 'homework' AND t.status = 'published'
+         AND a.student_id IN (${studentPlaceholders})
+         AND a.status = 'submitted' AND a.score_pct IS NOT NULL
+         AND (ta.student_id IS NULL OR ta.student_id = a.student_id)
+     )
+     SELECT student_id, ROUND(AVG(score_pct) * 10) / 10 AS avg_score
+     FROM ranked
+     WHERE rn = 1
+     GROUP BY student_id`,
+  )
+    .bind(...classIds, ...studentIds)
+    .all<{ student_id: string; avg_score: number }>()
+
+  const result = new Map<string, number | null>()
+  for (const studentId of studentIds) {
+    result.set(studentId, null)
+  }
+  for (const row of results ?? []) {
+    result.set(row.student_id, row.avg_score)
+  }
+  return result
 }
 
 async function handleFetch(request: Request, env: Env): Promise<Response> {
@@ -271,7 +320,26 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
     // —— Health ——
     if (path === '/health' && request.method === 'GET') {
       await env.DB.prepare('SELECT 1').first()
-      return json({ ok: true, timestamp: new Date().toISOString() })
+      const forwardedProto = request.headers.get('X-Forwarded-Proto')
+      let cfScheme: string | undefined
+      try {
+        const cfVisitor = request.headers.get('CF-Visitor')
+        if (cfVisitor) cfScheme = (JSON.parse(cfVisitor) as { scheme?: string }).scheme
+      } catch {
+        /* ignore malformed header */
+      }
+      const isHttps =
+        new URL(request.url).protocol === 'https:' ||
+        forwardedProto === 'https' ||
+        cfScheme === 'https'
+      return json({
+        ok: true,
+        timestamp: new Date().toISOString(),
+        security: {
+          https: isHttps,
+          hsts: 'max-age=63072000; includeSubDomains; preload',
+        },
+      })
     }
 
     // —— GDPR account export / deletion ——
@@ -343,7 +411,11 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         const user = await requireRole(env, request, 'teacher')
         if (user instanceof Response) return user
         const { results } = await env.DB.prepare(
-          `SELECT * FROM classes WHERE teacher_id = ? ORDER BY created_at DESC`,
+          `SELECT id, teacher_id, name, subject, curriculum, age_range,
+                  student_count, created_at
+           FROM classes
+           WHERE teacher_id = ?
+           ORDER BY created_at DESC`,
         )
           .bind(user.id)
           .all()
@@ -423,13 +495,14 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         if (user instanceof Response) return user
         const { results } = await env.DB.prepare(
           `SELECT s.id, s.class_id, s.display_name, s.interests, s.career_ambitions,
-                  s.weakspots, s.weakspots_summary, s.weakspots_updated_at, s.username, s.ai_summary, s.created_at,
+                  s.weakspots, s.weakspots_summary, s.weakspots_updated_at, s.username, s.created_at,
                   s.cefr_level, s.latest_wpm,
                   c.name as class_name, c.subject as class_subject
            FROM students s
            JOIN classes c ON c.id = s.class_id
            WHERE c.teacher_id = ?
-           ORDER BY s.display_name`,
+           ORDER BY s.display_name
+           LIMIT 1000`,
         )
           .bind(user.id)
           .all<{
@@ -442,28 +515,44 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             weakspots_summary: string
             weakspots_updated_at: string | null
             username: string
-            ai_summary: string
             cefr_level: string | null
             latest_wpm: number | null
             class_name: string
             class_subject: string
           }>()
 
-        const students = []
-        for (const s of results ?? []) {
-          const [rate, avgScore, examReadiness] = await Promise.all([
-            hwCompletionRate(env, s.id, s.class_id),
-            avgTaskScore(env, s.id, s.class_id),
-            aggregateExamReadiness(env, s.class_id, [s.id]),
-          ])
-          students.push({
-            ...s,
-            weakspots: JSON.parse(s.weakspots || '[]'),
-            hw_completion_rate: rate,
-            avg_score: avgScore,
-            exam_readiness: examReadiness,
-          })
+        const rows = results ?? []
+        const classIds = [...new Set(rows.map((r) => r.class_id))]
+        const studentIds = rows.map((r) => r.id)
+
+        const [hwRates, avgScores, readinessByClass] = await Promise.all([
+          hwCompletionRatesForClass(env, classIds, studentIds),
+          avgTaskScoresForClass(env, classIds, studentIds),
+          Promise.all(
+            classIds.map(async (classId) => ({
+              classId,
+              readiness: await examReadinessForStudents(
+                env,
+                classId,
+                rows.filter((r) => r.class_id === classId).map((r) => r.id),
+              ),
+            })),
+          ),
+        ])
+        const readinessByStudent = new Map<string, number | null>()
+        for (const { readiness } of readinessByClass) {
+          for (const [studentId, value] of readiness) {
+            readinessByStudent.set(studentId, value)
+          }
         }
+
+        const students = rows.map((s) => ({
+          ...s,
+          weakspots: JSON.parse(s.weakspots || '[]'),
+          hw_completion_rate: hwRates.get(s.id) ?? null,
+          avg_score: avgScores.get(s.id) ?? null,
+          exam_readiness: readinessByStudent.get(s.id) ?? null,
+        }))
         return json({ students })
       }
 
@@ -499,18 +588,25 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           }>()
         if (!s || s.teacher_id !== user.id) return error('Not found', 404)
 
-        const attempts = await env.DB.prepare(
-          `SELECT a.*, t.title, t.type, t.subtype FROM attempts a
-           JOIN tasks t ON t.id = a.task_id
-           WHERE a.student_id = ? ORDER BY a.started_at DESC`,
-        )
-          .bind(studentId)
-          .all()
+        const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit') ?? '100')))
+        const offset = Math.max(0, Number(url.searchParams.get('offset') ?? '0'))
 
-        const [rate, avgScore, examReadiness] = await Promise.all([
-          hwCompletionRate(env, s.id, s.class_id),
-          avgTaskScore(env, s.id, s.class_id),
-          aggregateExamReadiness(env, s.class_id, [s.id]),
+        const [attempts, [rate], [avgScore], [examReadiness]] = await Promise.all([
+          env.DB.prepare(
+            `SELECT a.id, a.task_id, a.student_id, a.started_at, a.submitted_at, a.duration_ms,
+                    a.score_pct, a.focus_leave_count, a.flagged, a.status,
+                    t.title, t.type, t.subtype
+             FROM attempts a
+             JOIN tasks t ON t.id = a.task_id
+             WHERE a.student_id = ?
+             ORDER BY a.started_at DESC
+             LIMIT ? OFFSET ?`,
+          )
+            .bind(studentId, limit, offset)
+            .all(),
+          hwCompletionRatesForClass(env, [s.class_id], [s.id]).then((m) => [m.get(s.id) ?? null]),
+          avgTaskScoresForClass(env, [s.class_id], [s.id]).then((m) => [m.get(s.id) ?? null]),
+          examReadinessForStudents(env, s.class_id, [s.id]).then((m) => [m.get(s.id) ?? null]),
         ])
         const { teacher_id: _teacherId, ...safe } = s
         void _teacherId
@@ -665,7 +761,10 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         const user = await requireRole(env, request, 'teacher')
         if (user instanceof Response) return user
         const { results } = await env.DB.prepare(
-          `SELECT b.*, c.name as class_name
+          `SELECT b.id, b.teacher_id, b.class_id, b.subject, b.curriculum, b.age_range,
+                  b.duration_minutes, b.weekly_frequency, b.days_of_week, b.resources_json,
+                  b.weeks, b.start_date, b.title, b.created_at,
+                  c.name as class_name
            FROM lesson_batches b
            JOIN classes c ON c.id = b.class_id
            WHERE b.teacher_id = ?
@@ -832,7 +931,10 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         if (user instanceof Response) return user
         const batchId = batchMatch[1]
         const batch = await env.DB.prepare(
-          `SELECT b.*, c.name as class_name
+          `SELECT b.id, b.teacher_id, b.class_id, b.subject, b.curriculum, b.age_range,
+                  b.duration_minutes, b.weekly_frequency, b.days_of_week, b.resources_json,
+                  b.weeks, b.start_date, b.title, b.created_at,
+                  c.name as class_name
            FROM lesson_batches b
            JOIN classes c ON c.id = b.class_id
            WHERE b.id = ? AND b.teacher_id = ?`,
@@ -842,7 +944,11 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         if (!batch) return error('Not found', 404)
 
         const { results } = await env.DB.prepare(
-          `SELECT * FROM lessons WHERE batch_id = ? ORDER BY sequence_index ASC`,
+          `SELECT id, batch_id, week_index, sequence_index, scheduled_date,
+                  day_of_week, title, plan_json
+           FROM lessons
+           WHERE batch_id = ?
+           ORDER BY sequence_index ASC`,
         )
           .bind(batchId)
           .all()
@@ -926,14 +1032,20 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         const user = await requireRole(env, request, 'teacher')
         if (user instanceof Response) return user
         const type = url.searchParams.get('type')
-        let query = `SELECT t.*, c.name as class_name FROM tasks t
-          JOIN classes c ON c.id = t.class_id WHERE c.teacher_id = ?`
+        let query = `SELECT t.id, t.type, t.subtype, t.class_id, t.subject, t.title,
+                            t.description, t.difficulty, t.status, t.time_limit_seconds,
+                            t.created_by, t.created_at, t.published_at, t.exam_profile_id,
+                            c.name as class_name
+                     FROM tasks t
+                     JOIN classes c ON c.id = t.class_id
+                     WHERE c.teacher_id = ?`
         const binds: string[] = [user.id]
         if (type) {
           query += ` AND t.type = ?`
           binds.push(type)
         }
-        query += ` ORDER BY t.created_at DESC`
+        query += ` ORDER BY t.created_at DESC
+                   LIMIT 500`
         const stmt = env.DB.prepare(query)
         const { results } = await stmt.bind(...binds).all()
         return json({ tasks: results })
@@ -1032,6 +1144,18 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           })),
           meter,
         })
+
+        // Generate TTS audio for listening questions (MiniMax via Workers AI).
+        // Per-question failure leaves audioUrl unset — the student's browser
+        // speechSynthesis fallback still covers playback.
+        for (const q of content.questions ?? []) {
+          if (q.type !== 'listen_respond' || !q.audioScript) continue
+          const audio = await synthesizeSpeech(env, {
+            text: q.audioScript,
+            meter: { ...meter, feature: 'tts' },
+          })
+          if ('key' in audio) q.audioUrl = `/api/tts/${audio.key}`
+        }
 
         const id = generateId()
         await env.DB.prepare(
@@ -1429,25 +1553,13 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         classId: string,
         studentIds: string[],
       ): Promise<number | null> {
-        const { results } = await env.DB.prepare(
-          `SELECT * FROM exam_profiles WHERE class_id = ? AND status = 'active'`,
-        )
-          .bind(classId)
-          .all<ExamProfileRow>()
-        const profiles = results ?? []
-        if (profiles.length === 0 || studentIds.length === 0) return null
-
-        const probabilities: number[] = []
-        for (const profile of profiles) {
-          for (const studentId of studentIds) {
-            const readiness = await readinessForProfile(env, studentId, profile)
-            if (readiness.passProbability != null) {
-              probabilities.push(readiness.passProbability)
-            }
-          }
+        const readinessByStudent = await examReadinessForStudents(env, classId, studentIds)
+        const values: number[] = []
+        for (const readiness of readinessByStudent.values()) {
+          if (readiness != null) values.push(readiness)
         }
-        if (probabilities.length === 0) return null
-        return Math.round((probabilities.reduce((a, b) => a + b, 0) / probabilities.length) * 10) / 10
+        if (values.length === 0) return null
+        return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10
       }
 
       // —— Insights ——
@@ -1471,7 +1583,9 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
              FROM attempts a JOIN tasks t ON t.id = a.task_id
              JOIN students s ON s.id = a.student_id
              WHERE s.class_id = ? AND a.status = 'submitted' AND t.type = 'homework'
-             ORDER BY a.submitted_at ASC`,
+               AND a.submitted_at >= date('now', '-12 months')
+             ORDER BY a.submitted_at ASC
+             LIMIT 5000`,
           )
             .bind(id)
             .all<{
@@ -1600,7 +1714,9 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           `SELECT a.score_pct, a.submitted_at, a.feedback_json, t.type
            FROM attempts a JOIN tasks t ON t.id = a.task_id
            WHERE a.student_id = ? AND a.status = 'submitted' AND t.type = 'homework'
-           ORDER BY a.submitted_at ASC`,
+             AND a.submitted_at >= date('now', '-12 months')
+           ORDER BY a.submitted_at ASC
+           LIMIT 1000`,
         )
           .bind(id)
           .all<{ score_pct: number; submitted_at: string; feedback_json: string; type: string }>()
@@ -1615,7 +1731,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           scores.length > 0
             ? Math.round((scores.reduce((sum, x) => sum + x.value, 0) / scores.length) * 10) / 10
             : null
-        const hwRate = await hwCompletionRate(env, id, s.class_id)
+        const hwRate = (await hwCompletionRatesForClass(env, [s.class_id], [id])).get(id) ?? null
         const hwSeries = (attempts.results ?? [])
           .filter((a) => a.type === 'homework')
           .map((a, i, arr) => ({
@@ -2084,13 +2200,72 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         if (!owned) return error('Not found', 404)
 
         const { results } = await env.DB.prepare(
-          `SELECT a.*, s.display_name FROM attempts a
+          `SELECT a.id, a.student_id, a.task_id, a.started_at, a.submitted_at, a.duration_ms,
+                  a.score_pct, a.focus_leave_count, a.flagged, a.status,
+                  s.display_name
+           FROM attempts a
            JOIN students s ON s.id = a.student_id
-           WHERE a.task_id = ? ORDER BY a.submitted_at DESC`,
+           WHERE a.task_id = ?
+           ORDER BY a.submitted_at DESC
+           LIMIT 200`,
         )
           .bind(taskId)
           .all()
         return json({ attempts: results })
+      }
+
+      // —— Text-to-speech (MiniMax via Workers AI, cached in R2) ——
+      if (path === '/api/tts/voices' && request.method === 'GET') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        return json({ voices: TTS_VOICES })
+      }
+
+      if (path === '/api/tts' && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const parsed = await parseJsonBody(request)
+        if (parsed instanceof Response) return parsed
+        const body = parsed as { text?: string; voice?: string; speed?: number; class_id?: string }
+        const text = (body.text ?? '').trim()
+        if (!text) return error('text is required', 400)
+        if (text.length > 10_000) return error('text too long (max 10,000 characters)', 400)
+
+        try {
+          await assertAiBudget(env, user.id)
+        } catch (err) {
+          if (err instanceof AiBudgetExceededError) {
+            return aiBudgetExceededResponse(err.usedCents, err.capCents)
+          }
+          throw err
+        }
+
+        const result = await synthesizeSpeech(env, {
+          text,
+          voice: body.voice,
+          speed: body.speed,
+          meter: { teacherId: user.id, classId: body.class_id ?? null, feature: 'tts' },
+        })
+        if ('error' in result) {
+          return json({ error: 'Audio generation unavailable right now — try again.', detail: result.error }, 502)
+        }
+        return json({ key: result.key, url: `/api/tts/${result.key}`, cached: result.cached })
+      }
+
+      const ttsMatch = path.match(/^\/api\/tts\/(tts\/[a-f0-9]{64}\.mp3)$/)
+      if (ttsMatch && request.method === 'GET') {
+        // Any signed-in user may play cached audio (students need it mid-attempt).
+        const session = await getSession(env, request)
+        if (!session) return error('Unauthorized', 401)
+        if (!env.AUDIO) return error('Not found', 404)
+        const object = await env.AUDIO.get(ttsMatch[1])
+        if (!object) return error('Not found', 404)
+        return new Response(object.body, {
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        })
       }
 
       if (path.startsWith('/api/')) {

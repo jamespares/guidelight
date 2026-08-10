@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileText, KeyRound, RefreshCw, Save } from 'lucide-react'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -9,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { api, isAiBudgetError, type ExamProfile, type ExamReadiness, type StudentRow, type Weakspot } from '@/lib/api'
+import { api, isAiBudgetError, type Weakspot } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { CAP_HIT_TEACHER } from '@/lib/trustCopy'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
@@ -18,15 +20,42 @@ type BusyKind = 'save' | 'summary' | 'report' | null
 export function StudentDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [student, setStudent] = useState<StudentRow | null>(null)
-  const [attempts, setAttempts] = useState<unknown[]>([])
-  const [examReadiness, setExamReadiness] = useState<
-    Array<{
-      profile: ExamProfile
-      readiness: ExamReadiness
-      attempts: { results?: Array<{ id: string; score_pct: number | null; submitted_at: string | null; title: string }> }
-    }>
-  >([])
+  const queryClient = useQueryClient()
+
+  const {
+    data: student,
+    isLoading: studentLoading,
+    error: studentError,
+  } = useQuery({
+    queryKey: queryKeys.students.detail(id ?? ''),
+    queryFn: async () => {
+      if (!id) throw new Error('No student id')
+      const res = await api.student(id)
+      return res.student
+    },
+    enabled: !!id,
+  })
+
+  const { data: attempts = [] } = useQuery({
+    queryKey: [...queryKeys.students.detail(id ?? ''), 'attempts'],
+    queryFn: async () => {
+      if (!id) throw new Error('No student id')
+      const res = await api.student(id)
+      return res.attempts
+    },
+    enabled: !!id,
+  })
+
+  const { data: examReadiness = [] } = useQuery({
+    queryKey: queryKeys.students.examReadiness(id ?? ''),
+    queryFn: async () => {
+      if (!id) throw new Error('No student id')
+      const res = await api.studentExamReadinessDetail(id)
+      return res.profiles
+    },
+    enabled: !!id,
+  })
+
   const [interests, setInterests] = useState('')
   const [career, setCareer] = useState('')
   const [summary, setSummary] = useState('')
@@ -49,26 +78,16 @@ export function StudentDetailPage() {
   const reportProgress = useEstimatedProgress(busyKind === 'report', AI_WAIT_MS.report)
 
   useEffect(() => {
-    if (!id) return
-    void (async () => {
-      try {
-        const res = await api.student(id)
-        const readinessRes = await api.studentExamReadinessDetail(id)
-        setStudent(res.student)
-        setAttempts(res.attempts)
-        setExamReadiness(readinessRes.profiles)
-        setInterests(res.student.interests)
-        setCareer(res.student.career_ambitions)
-        setSummary(res.student.ai_summary)
-        setWeakspots(res.student.weakspots ?? [])
-        setWeakspotsSummary(res.student.weakspots_summary ?? null)
-        setWeakspotsUpdatedAt(res.student.weakspots_updated_at ?? null)
-        setUsername(res.student.username)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed')
-      }
-    })()
-  }, [id])
+    if (student) {
+      setInterests(student.interests)
+      setCareer(student.career_ambitions)
+      setSummary(student.ai_summary)
+      setWeakspots(student.weakspots ?? [])
+      setWeakspotsSummary(student.weakspots_summary ?? null)
+      setWeakspotsUpdatedAt(student.weakspots_updated_at ?? null)
+      setUsername(student.username)
+    }
+  }, [student])
 
   async function save(e: FormEvent) {
     e.preventDefault()
@@ -76,6 +95,7 @@ export function StudentDetailPage() {
     setBusyKind('save')
     try {
       await api.updateStudent(id, { interests, career_ambitions: career })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(id) })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
@@ -89,6 +109,7 @@ export function StudentDetailPage() {
     try {
       const res = await api.refreshSummary(id)
       setSummary(res.summary)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(id) })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
     } finally {
@@ -116,7 +137,7 @@ export function StudentDetailPage() {
     setCredError('')
     try {
       await api.updateStudent(id, { username: username.trim().toLowerCase() })
-      setStudent((prev) => (prev ? { ...prev, username: username.trim().toLowerCase() } : prev))
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(id) })
     } catch (err) {
       setCredError(err instanceof Error ? err.message : 'Failed to save username')
     } finally {
@@ -151,6 +172,7 @@ export function StudentDetailPage() {
       setWeakspots(res.weakspots)
       setWeakspotsSummary(res.summary)
       setWeakspotsUpdatedAt(res.weakspotsUpdatedAt)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(id) })
     } catch (err) {
       if (isAiBudgetError(err)) {
         setPinpointError(CAP_HIT_TEACHER)
@@ -162,8 +184,11 @@ export function StudentDetailPage() {
     }
   }
 
+  if (studentLoading) {
+    return <p className="text-muted-foreground">Loading…</p>
+  }
   if (!student) {
-    return <p className="text-muted-foreground">{error || 'Loading…'}</p>
+    return <p className="text-muted-foreground">{error || studentError?.message || 'Not found'}</p>
   }
 
   return (
