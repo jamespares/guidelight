@@ -1,7 +1,0 @@
-1. combine exam dojo and assessments (teacher inputs exam/curriculum/exam duration/exam format/exam grade boundaries relative to percentage score/rubric, then the system creates timed mock exams and geenrates an exam readiness score based on previous performance - a data-based guide to ensure students are ready) - effectively remove exam dojo and update assessments to fit this model
-2. ensure the english test and hw and assessments are actually completable as nice and easy to do webforms in the student dashboard, remembering that all data needs to be stored so that future evaluation for each student has comprehensive context and detailed visuals
-3. Average score should be average HW score not include exam readiness, exam readiness score should be a separate measure based only on mock exam completion
-4. the logic for front end for opening the lesson plans and opening the HW/assessments should be the same - right now you can click the name of the lesson plan but the hw and assessments have a separate open button, which I prefer as it is clearer - prioritise simplicity and easy to use (idiot proof!)
-5. test thoroughly, ensure UI is accessible and meet compliance requirements, ensure it is production grade and ready for users
-6. Review screenshots and videos of UI for the remotion video, and ask AI to take code and use it for the demo too, and then generate a nice demo video using remotion.
-7. Test all AI api calls and ensure high quality AI content is coming back and ensure it works in China too without/with VPN on for users 

@@ -25,7 +25,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# HyperFrames demo
-demo/guidelight-launch/.venv/
-demo/guidelight-launch/node_modules/
-demo/guidelight-launch/*.mp3
+# Local marketing/demo workspace (large recordings) and scratch screenshots
+/demo/
+public/Screenshot *.png
