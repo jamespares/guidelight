@@ -7,6 +7,12 @@ import { PageHeader } from '@/components/PageHeader'
 import { WeakspotsPanel, weakspotLabel } from '@/components/WeakspotsPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,6 +22,42 @@ import { CAP_HIT_TEACHER } from '@/lib/trustCopy'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
 
 type BusyKind = 'save' | 'summary' | 'report' | null
+
+function WeakspotsValue({ weakspots }: { weakspots: Weakspot[] }) {
+  const [open, setOpen] = useState(false)
+  if (!weakspots.length) return 'None yet'
+  const labels = weakspots.map((w) => weakspotLabel(w))
+  if (labels.length <= 2) return <span className="break-words">{labels.join(', ')}</span>
+  const [first, second, ...rest] = labels
+  return (
+    <>
+      <span className="break-words">
+        {first}, {second}
+      </span>{' '}
+      <Button
+        type="button"
+        variant="link"
+        size="sm"
+        className="h-auto px-0 py-0 text-xs font-medium"
+        onClick={() => setOpen(true)}
+      >
+        +{rest.length + 1} more
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Current weakspots</DialogTitle>
+          </DialogHeader>
+          <ul className="max-h-96 list-disc space-y-1 overflow-y-auto pl-5 text-sm text-muted-foreground">
+            {labels.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
 
 export function StudentDetailPage() {
   const { id } = useParams()
@@ -283,9 +325,7 @@ export function StudentDetailPage() {
           },
           {
             label: 'Weakspots',
-            value: weakspots.length
-              ? weakspots.map((w) => weakspotLabel(w)).join(', ')
-              : 'None yet',
+            value: <WeakspotsValue weakspots={weakspots} />,
           },
           { label: 'Attempts', value: String(attempts.length) },
         ].map((s) => (

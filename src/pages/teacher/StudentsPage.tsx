@@ -27,6 +27,88 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
 
+function ReadMoreCell({
+  text,
+  title,
+  maxLength = 60,
+}: {
+  text?: string | null
+  title: string
+  maxLength?: number
+}) {
+  const [open, setOpen] = useState(false)
+  if (!text) return '—'
+  if (text.length <= maxLength) return <span className="break-words">{text}</span>
+  return (
+    <>
+      <span className="break-words">{text.slice(0, maxLength).trim()}…</span>{' '}
+      <Button
+        type="button"
+        variant="link"
+        size="sm"
+        className="h-auto px-0 py-0 text-xs font-medium"
+        onClick={() => setOpen(true)}
+      >
+        read more
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          <p className="max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-muted-foreground">
+            {text}
+          </p>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+function WeakspotsCell({
+  weakspots,
+  studentName,
+}: {
+  weakspots?: Array<{ skill?: string; topic?: string }>
+  studentName: string
+}) {
+  const [open, setOpen] = useState(false)
+  if (!weakspots?.length) return '—'
+  const labels = weakspots.map((w) => w.skill || w.topic)
+  if (labels.length <= 2) {
+    return <span className="break-words">{labels.join(', ')}</span>
+  }
+  const [first, second, ...rest] = labels
+  return (
+    <>
+      <span className="break-words">
+        {first}, {second}
+      </span>{' '}
+      <Button
+        type="button"
+        variant="link"
+        size="sm"
+        className="h-auto px-0 py-0 text-xs font-medium"
+        onClick={() => setOpen(true)}
+      >
+        +{rest.length + 1} more
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Current weakspots — {studentName}</DialogTitle>
+          </DialogHeader>
+          <ul className="max-h-96 list-disc space-y-1 overflow-y-auto pl-5 text-sm text-muted-foreground">
+            {labels.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
 export function StudentsPage() {
   const queryClient = useQueryClient()
   const {
@@ -240,15 +322,20 @@ export function StudentsPage() {
                 <TableCell>{s.cefr_level || '—'}</TableCell>
                 <TableCell>{s.latest_wpm != null ? `${s.latest_wpm} wpm` : '—'}</TableCell>
                 <TableCell>
-                  {s.weakspots?.length
-                    ? s.weakspots.map((w) => w.skill || w.topic).join(', ')
-                    : '—'}
+                  <WeakspotsCell weakspots={s.weakspots} studentName={s.display_name} />
                 </TableCell>
                 <TableCell>
                   {s.hw_completion_rate == null ? '—' : `${s.hw_completion_rate}%`}
                 </TableCell>
-                <TableCell>{s.interests || '—'}</TableCell>
-                <TableCell>{s.career_ambitions || '—'}</TableCell>
+                <TableCell>
+                  <ReadMoreCell text={s.interests} title={`Interests — ${s.display_name}`} />
+                </TableCell>
+                <TableCell>
+                  <ReadMoreCell
+                    text={s.career_ambitions}
+                    title={`Career ambitions — ${s.display_name}`}
+                  />
+                </TableCell>
               </TableRow>
             ))
           )}
