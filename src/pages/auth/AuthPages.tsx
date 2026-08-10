@@ -18,24 +18,27 @@ import { TRUST_LANDING } from '@/lib/trustCopy'
 import { cn } from '@/lib/utils'
 
 export function AuthLegalFooter() {
-  // Sits directly on the ocean scene — dark text over the day sea, light over the night sea.
+  // Sits on the ocean scene — a translucent blurred pill keeps the text legible
+  // over both the day and the night sea.
   const linkHover = 'underline-offset-4 hover:text-slate-900 hover:underline dark:hover:text-white'
   return (
-    <footer className="mt-6 space-y-1 text-center text-xs text-slate-600 [text-shadow:0_1px_2px_rgba(255,255,255,0.4)] dark:text-white/85 dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
-      <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <Link to="/terms" className={linkHover}>
-          Terms
-        </Link>
-        <span aria-hidden>·</span>
-        <Link to="/privacy" className={linkHover}>
-          Privacy
-        </Link>
-        <span aria-hidden>·</span>
-        <a href={SUPPORT_MAILTO} className={linkHover}>
-          Contact
-        </a>
-      </nav>
-      <p>{COPYRIGHT_LINE}</p>
+    <footer className="mt-6 text-center text-xs">
+      <div className="inline-flex flex-col items-center gap-1 rounded-2xl border border-white/20 bg-white/55 px-5 py-2 text-slate-700 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-slate-950/45 dark:text-white/90">
+        <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <Link to="/terms" className={linkHover}>
+            Terms
+          </Link>
+          <span aria-hidden>·</span>
+          <Link to="/privacy" className={linkHover}>
+            Privacy
+          </Link>
+          <span aria-hidden>·</span>
+          <a href={SUPPORT_MAILTO} className={linkHover}>
+            Contact
+          </a>
+        </nav>
+        <p>{COPYRIGHT_LINE}</p>
+      </div>
     </footer>
   )
 }
