@@ -14,6 +14,8 @@ export interface Env {
   AI: Ai
   ASSETS: Fetcher
   EMAIL: SendEmailBinding
+  /** R2 bucket for cached TTS audio (listen_respond questions). */
+  AUDIO?: R2Bucket
   APP_URL?: string
   AUTH_FROM_EMAIL?: string
   /** Stripe secret key (sk_…). Optional in local/dev — billing setup disabled without it. */

@@ -15,6 +15,7 @@ export type AiFeature =
   | 'summary'
   | 'practice_tools'
   | 'past_paper_vision'
+  | 'tts'
 
 export interface AiMeterContext {
   teacherId: string

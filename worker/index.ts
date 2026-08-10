@@ -45,7 +45,6 @@ import {
   handleExamsApi,
   getMockExamMarkingContext,
   examReadinessForStudents,
-  type ExamProfileRow,
 } from './lib/exams'
 
 const PHASE2_TYPES = ['mcq', 'cloze', 'short_written', 'reading_comprehension']

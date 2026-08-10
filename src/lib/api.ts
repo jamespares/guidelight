@@ -25,6 +25,11 @@ export interface InsightEvent {
   scope: 'class' | 'student'
 }
 
+export interface TtsVoice {
+  id: string
+  label: string
+}
+
 export interface Weakspot {
   topic?: string
   skill?: string
@@ -447,6 +452,12 @@ export const api = {
     request(`/api/tasks/${id}/publish`, { method: 'POST', body: JSON.stringify(body ?? {}) }),
   taskAttempts: (id: string) =>
     request<{ attempts: Array<Record<string, unknown>> }>(`/api/tasks/${id}/attempts`),
+  ttsVoices: () => request<{ voices: TtsVoice[] }>('/api/tts/voices'),
+  ttsGenerate: (body: { text: string; voice?: string; speed?: number; class_id?: string }) =>
+    request<{ key: string; url: string; cached: boolean }>('/api/tts', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   studentTasks: () => request<{ tasks: TaskRow[] }>('/api/student/tasks'),
   startAttempt: (task_id: string) =>
     request<{ attemptId: string; time_limit_seconds?: number | null; resumed?: boolean }>(

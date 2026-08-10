@@ -25,6 +25,12 @@
     "binding": "AI",
     "remote": true
   },
+  "r2_buckets": [
+    {
+      "binding": "AUDIO",
+      "bucket_name": "guidelight-audio"
+    }
+  ],
   "send_email": [
     {
       "name": "EMAIL"

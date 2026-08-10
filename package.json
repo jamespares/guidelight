@@ -18,6 +18,7 @@
     "db:demo:wipe": "node scripts/demo-data.mjs wipe --remote",
     "db:demo:wipe:local": "node scripts/demo-data.mjs wipe --local",
     "deploy": "npm run build && wrangler deploy",
+    "test:ai": "node scripts/ai-selftest.mjs",
     "push": "bash scripts/push.sh",
     "cf-typegen": "wrangler types"
   },

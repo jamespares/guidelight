@@ -13,7 +13,17 @@ import {
 } from './billing'
 import { fallbackGeneratedLessons, type ScheduledSlot } from './lessonSchedule'
 
-const MODEL = '@cf/moonshotai/kimi-k2.6'
+/**
+ * Models used across the app — all served by Cloudflare Workers AI, so no
+ * data leaves the Cloudflare network and everything works in mainland China.
+ * chat: Kimi K2.6 (top-tier open model on Workers AI) for generation/marking.
+ * tts: MiniMax Speech 2.8 Turbo for listening-question audio (worker/lib/tts.ts).
+ */
+const MODELS = {
+  chat: '@cf/moonshotai/kimi-k2.6',
+} as const
+
+const MODEL = MODELS.chat
 
 export type { AiMeterContext }
 
@@ -247,7 +257,8 @@ Return ONLY valid JSON matching this schema:
 Every question MUST have:
 - topic: a short skill tag (e.g. "relative clauses", "fractions")
 - learningObjective: one clear sentence stating what the question assesses
-Mark objective questions with correctAnswer.`
+Mark objective questions with correctAnswer.
+Return ONLY a single JSON object. No markdown fences, no commentary.`
 
   const user = `Create a ${input.subtype ?? 'homework'} task.
 Subject: ${input.subject}
@@ -264,6 +275,9 @@ ${profileContext ? `\nExam profile:\n${profileContext}` : ''}`
 
   try {
     const raw = await runChat(env, system, user, {
+      // Mixed-type generation of 8+ questions regularly exceeds 20s.
+      timeoutMs: 55_000,
+      maxTokens: 8192,
       meter: input.meter ? { ...input.meter, feature: 'task_gen' } : undefined,
     })
     const parsed = extractJson(raw) as TaskContent
@@ -509,6 +523,7 @@ export async function generateStudentSummary(
     'You are Guidelight. Write a concise 2-3 paragraph teacher-facing introduction to this student based on their data. Warm, specific, actionable. Return plain text only.'
   try {
     return await runChat(env, system, JSON.stringify(input), {
+      timeoutMs: 30_000,
       meter: input.meter ? { ...input.meter, feature: 'summary' } : undefined,
     })
   } catch {
@@ -531,6 +546,7 @@ Include: overview, strengths, areas to improve, homework engagement, recommended
 Tone: constructive and encouraging.`
   try {
     return await runChat(env, system, JSON.stringify(input), {
+      timeoutMs: 45_000,
       meter: input.meter ? { ...input.meter, feature: 'report' } : undefined,
     })
   } catch {
@@ -550,10 +566,11 @@ export async function generatePracticeOrFlashcards(
 ): Promise<unknown> {
   const system =
     mode === 'flashcards'
-      ? 'Return ONLY JSON: { "cards": [{ "front": string, "back": string, "topic": string }] } (8-12 cards).'
-      : 'Return ONLY JSON: { "title": string, "questions": [{ "id": string, "type": "mcq", "prompt": string, "options": string[], "correctAnswer": string, "topic": string, "marks": 1 }] } (6 questions).'
+      ? 'Return ONLY JSON (no markdown fences, no commentary): { "cards": [{ "front": string, "back": string, "topic": string }] } (8-12 cards).'
+      : 'Return ONLY JSON (no markdown fences, no commentary): { "title": string, "questions": [{ "id": string, "type": "mcq", "prompt": string, "options": string[], "correctAnswer": string, "topic": string, "marks": 1 }] } (6 questions).'
   try {
     const raw = await runChat(env, system, JSON.stringify(input), {
+      timeoutMs: 30_000,
       meter: input.meter ? { ...input.meter, feature: 'practice_tools' } : undefined,
     })
     return extractJson(raw)

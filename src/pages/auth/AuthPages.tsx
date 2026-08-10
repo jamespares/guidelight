@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Compass, GraduationCap, KeyRound, Layers, LogIn, Mail, Target, TrendingUp, UserPlus, Users } from 'lucide-react'
-import { GuidelightWordmark } from '@/components/BrandMark'
+import { KeyRound, LogIn, Mail, UserPlus } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
 const NightGuideScene = lazy(() =>
@@ -18,7 +17,7 @@ import { COPYRIGHT_LINE, SUPPORT_MAILTO } from '@/lib/legal'
 import { TRUST_LANDING } from '@/lib/trustCopy'
 import { cn } from '@/lib/utils'
 
-function AuthLegalFooter() {
+export function AuthLegalFooter() {
   // Light text always — auth sits on the dark ocean scene in both themes.
   return (
     <footer className="mt-6 space-y-1 text-center text-xs text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
@@ -65,92 +64,6 @@ function AuthShell({
         <AuthLegalFooter />
       </div>
     </div>
-  )
-}
-
-export function Landing() {
-  return (
-    <AuthShell mainClassName="max-w-3xl">
-      <Card className="border-border/30 bg-card/40 shadow-lg backdrop-blur-xl">
-        <CardHeader className="space-y-4 px-6 pb-4 pt-5 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Classroom intelligence, finally in your hands
-          </p>
-          <CardTitle as="h1" className="flex justify-center text-3xl">
-            <GuidelightWordmark />
-          </CardTitle>
-          <CardDescription className="text-base leading-relaxed">
-            Close the gap between where students are and where they need to be.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <h3 className="flex items-center gap-2 font-semibold text-foreground">
-                <Target className="h-4 w-4" />
-                The problem
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                It often feels like there&apos;s a lot of ocean between where your students are and
-                where you need them to be — and that distance feels even further when you
-                don&apos;t have the data to guide your journey.
-              </p>
-            </div>
-            <div className="space-y-1">
-              <h3 className="flex items-center gap-2 font-semibold text-foreground">
-                <Compass className="h-4 w-4" />
-                The solution
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Guidelight is an AI-native system for planning, assessment, and performance
-                analysis. AI drafts; you review and approve — so your expertise stays front and
-                centre.
-              </p>
-            </div>
-            <div className="space-y-1">
-              <h3 className="flex items-center gap-2 font-semibold text-foreground">
-                <Layers className="h-4 w-4" />
-                How it works
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Start with a diagnostic, generate editable semester plans, assign personalised
-                homework and assessments, then watch insights build a clear picture of every
-                learner.
-              </p>
-            </div>
-            <div className="space-y-1">
-              <h3 className="flex items-center gap-2 font-semibold text-foreground">
-                <TrendingUp className="h-4 w-4" />
-                The impact
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Less noise, more clarity: see who is rising, who is stuck, and where to steer next
-                — so every student can reach their potential.
-              </p>
-            </div>
-          </div>
-
-          <p className="text-center text-xs font-medium text-muted-foreground">
-            AI drafts. You decide. Pay only for what you use.
-          </p>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Button asChild className="flex-1">
-              <Link to="/login/teacher">
-                <GraduationCap className="h-4 w-4" />
-                Teacher sign in
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="flex-1">
-              <Link to="/login/student">
-                <Users className="h-4 w-4" />
-                Student sign in
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </AuthShell>
   )
 }
 
