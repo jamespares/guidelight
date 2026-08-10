@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, KeyRound, RefreshCw, Save } from 'lucide-react'
+import { FileText, KeyRound, RefreshCw, Save, Users } from 'lucide-react'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { WeakspotsPanel, weakspotLabel } from '@/components/WeakspotsPanel'
@@ -73,6 +73,12 @@ export function StudentDetailPage() {
   const [credBusy, setCredBusy] = useState(false)
   const [credError, setCredError] = useState('')
 
+  const [parentUsername, setParentUsername] = useState('')
+  const [parentPassword, setParentPassword] = useState('')
+  const [revealedParentCreds, setRevealedParentCreds] = useState<{ username: string; password: string } | null>(null)
+  const [parentBusy, setParentBusy] = useState(false)
+  const [parentError, setParentError] = useState('')
+
   const busy = busyKind !== null
   const summaryProgress = useEstimatedProgress(busyKind === 'summary', AI_WAIT_MS.report)
   const reportProgress = useEstimatedProgress(busyKind === 'report', AI_WAIT_MS.report)
@@ -86,6 +92,10 @@ export function StudentDetailPage() {
       setWeakspotsSummary(student.weakspots_summary ?? null)
       setWeakspotsUpdatedAt(student.weakspots_updated_at ?? null)
       setUsername(student.username)
+      setParentUsername(student.parent_username ?? '')
+      setParentPassword('')
+      setRevealedParentCreds(null)
+      setParentError('')
     }
   }, [student])
 
@@ -181,6 +191,45 @@ export function StudentDetailPage() {
       }
     } finally {
       setPinpointBusy(false)
+    }
+  }
+
+  async function saveParentCredentials(e: FormEvent) {
+    e.preventDefault()
+    if (!id) return
+    setParentBusy(true)
+    setParentError('')
+    try {
+      const body: { username?: string; password?: string } = {}
+      const u = parentUsername.trim().toLowerCase()
+      if (u) body.username = u
+      const p = parentPassword.trim()
+      if (p) body.password = p
+      const res = await api.resetParentCredentials(id, body)
+      setRevealedParentCreds(res)
+      setParentPassword('')
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(id) })
+    } catch (err) {
+      setParentError(err instanceof Error ? err.message : 'Failed to save parent credentials')
+    } finally {
+      setParentBusy(false)
+    }
+  }
+
+  async function disableParentAccess() {
+    if (!id) return
+    setParentBusy(true)
+    setParentError('')
+    try {
+      await api.disableParentCredentials(id)
+      setRevealedParentCreds(null)
+      setParentUsername('')
+      setParentPassword('')
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(id) })
+    } catch (err) {
+      setParentError(err instanceof Error ? err.message : 'Failed to disable parent access')
+    } finally {
+      setParentBusy(false)
     }
   }
 
@@ -286,7 +335,7 @@ export function StudentDetailPage() {
           <div className="space-y-2 border-t border-border pt-4">
             <Label htmlFor="new-password">Set or reset password</Label>
             <p className="text-xs text-muted-foreground">
-              Leave blank to generate a random password, or type one (4–64 characters).
+              Leave blank to generate a random password, or type one (8–64 characters).
             </p>
             <Input
               id="new-password"
@@ -311,6 +360,102 @@ export function StudentDetailPage() {
                 variant="outline"
                 className="mt-3"
                 onClick={() => setRevealedPassword(null)}
+              >
+                Dismiss
+              </Button>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2" className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Parent access
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Give a parent read-only access to this student’s dashboard and tasks. The teacher
+            creates and resets the credentials — they are shown only once after each reset.
+          </p>
+          {parentError ? <p className="text-sm text-destructive">{parentError}</p> : null}
+
+          {student.parent_username ? (
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="text-muted-foreground">Current parent username:</span>{' '}
+                <strong>{student.parent_username}</strong>
+              </p>
+            </div>
+          ) : null}
+
+          <form className="space-y-4" onSubmit={(e) => void saveParentCredentials(e)}>
+            <div className="space-y-2">
+              <Label htmlFor="parent-username">Parent username</Label>
+              <Input
+                id="parent-username"
+                value={parentUsername}
+                onChange={(e) => setParentUsername(e.target.value.toLowerCase())}
+                placeholder={`${student.username}.parent`}
+                pattern="[a-z0-9._-]{3,40}"
+                title="3–40 lowercase letters, numbers, dots, hyphens or underscores"
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave blank to auto-generate as <code>{student.username}.parent</code>.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent-password">Parent password</Label>
+              <Input
+                id="parent-password"
+                type="text"
+                value={parentPassword}
+                onChange={(e) => setParentPassword(e.target.value)}
+                placeholder="Optional custom password"
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave blank to generate a random password.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" variant="outline" disabled={parentBusy}>
+                <Save className="h-4 w-4" />
+                {parentBusy ? 'Saving…' : 'Enable / reset parent access'}
+              </Button>
+              {student.parent_username ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={parentBusy}
+                  onClick={() => void disableParentAccess()}
+                >
+                  Disable parent access
+                </Button>
+              ) : null}
+            </div>
+          </form>
+
+          {revealedParentCreds ? (
+            <div className="rounded-lg border border-border bg-secondary p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Parent credentials — share securely
+              </p>
+              <p className="mt-2 text-sm">
+                Username:{' '}
+                <strong className="font-mono text-base">{revealedParentCreds.username}</strong>
+              </p>
+              <p className="text-sm">
+                Password:{' '}
+                <strong className="font-mono text-base">{revealedParentCreds.password}</strong>
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3"
+                onClick={() => setRevealedParentCreds(null)}
               >
                 Dismiss
               </Button>

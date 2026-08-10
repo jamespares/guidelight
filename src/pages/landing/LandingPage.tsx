@@ -214,6 +214,12 @@ function SignInButtons({ className }: { className?: string }) {
           Student sign in
         </Link>
       </Button>
+      <Button asChild variant="secondary" className="flex-1 sm:flex-none sm:px-8">
+        <Link to="/login/parent">
+          <UserCheck className="h-4 w-4" />
+          Parent sign in
+        </Link>
+      </Button>
     </div>
   )
 }

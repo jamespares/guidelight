@@ -61,6 +61,22 @@ export async function getSession(env: Env, request: Request): Promise<SessionUse
     return { id: t.id, role: 'teacher', name: t.name, email: t.email }
   }
 
+  if (session.role === 'parent') {
+    const p = await env.DB.prepare(
+      `SELECT id, display_name, parent_username FROM students WHERE parent_username = ?`,
+    )
+      .bind(session.user_id)
+      .first<{ id: string; display_name: string; parent_username: string }>()
+    if (!p) return null
+    return {
+      id: p.parent_username,
+      role: 'parent',
+      name: `${p.display_name}'s parent`,
+      username: p.parent_username,
+      student_id: p.id,
+    }
+  }
+
   const s = await env.DB.prepare(`SELECT id, display_name, username FROM students WHERE id = ?`)
     .bind(session.user_id)
     .first<{ id: string; display_name: string; username: string }>()
@@ -441,6 +457,53 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
       username: student.username,
     }
     await logAuth(env, 'student_login_success', user, request)
+    return json(
+      { user },
+      200,
+      { 'Set-Cookie': sessionCookie(session.id, session.expiresAt, secure) },
+    )
+  }
+
+  // —— Parent login ——
+  if (path === '/api/auth/parent/login' && request.method === 'POST') {
+    const parsed = await parseJsonBody(request)
+    if (parsed instanceof Response) return parsed
+    const body = parsed as { username?: string; password?: string }
+    if (!body.username || !body.password) return error('Missing fields')
+
+    const username = body.username.trim().toLowerCase()
+    const ipAllowed = await rateLimitIp(request, env, 60, 5)
+    const userAllowed = await rateLimitUser(`parent-username:${username}`, env, 300, 5)
+    if (!ipAllowed || !userAllowed) {
+      await logAuth(env, 'parent_login_failure', null, request)
+      return error('Too many attempts. Please try again later.', 429)
+    }
+
+    const student = await env.DB.prepare(
+      `SELECT id, display_name, parent_username, parent_password_hash FROM students WHERE parent_username = ?`,
+    )
+      .bind(username)
+      .first<{
+        id: string
+        display_name: string
+        parent_username: string
+        parent_password_hash: string
+      }>()
+
+    if (!student || !(await verifyPassword(body.password, student.parent_password_hash))) {
+      await logAuth(env, 'parent_login_failure', null, request)
+      return error('Invalid username or password', 401)
+    }
+
+    const session = await createSession(env, student.parent_username, 'parent')
+    const user = {
+      id: student.parent_username,
+      role: 'parent' as const,
+      name: `${student.display_name}'s parent`,
+      username: student.parent_username,
+      student_id: student.id,
+    }
+    await logAuth(env, 'parent_login_success', user, request)
     return json(
       { user },
       200,

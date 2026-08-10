@@ -1,4 +1,4 @@
-export type Role = 'teacher' | 'student'
+export type Role = 'teacher' | 'student' | 'parent'
 
 export interface User {
   id: string
@@ -6,6 +6,8 @@ export interface User {
   name: string
   email?: string
   username?: string
+  /** Present when role === 'parent' */
+  student_id?: string
 }
 
 export interface ClassRow {
@@ -51,6 +53,7 @@ export interface StudentRow {
   weakspots_updated_at?: string | null
   weakspots_summary?: string | null
   username: string
+  parent_username?: string | null
   ai_summary: string
   class_name: string
   class_subject: string
@@ -396,6 +399,39 @@ export const api = {
     request<{ user: User }>('/api/auth/student/login', {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+  parentLogin: (body: { username: string; password: string }) =>
+    request<{ user: User }>('/api/auth/parent/login', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  parentTasks: () => request<{ tasks: TaskRow[] }>('/api/parent/tasks'),
+  parentInsights: () =>
+    request<{
+      avgScore: number | null
+      scoreSeries: Array<{ date: string; value: number }>
+      hwRate: number | null
+      hwSeries: Array<{ date: string; value: number }>
+      examReadiness: number | null
+      weakspots: Weakspot[]
+      weakspotsSummary?: string | null
+      weakspotsUpdatedAt?: string | null
+      events: InsightEvent[]
+    }>('/api/parent/insights'),
+  resetParentCredentials: (
+    studentId: string,
+    body?: { username?: string; password?: string },
+  ) =>
+    request<{ username: string; password: string }>(
+      `/api/students/${studentId}/parent-credentials`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body ?? {}),
+      },
+    ),
+  disableParentCredentials: (studentId: string) =>
+    request<{ ok: boolean }>(`/api/students/${studentId}/parent-credentials`, {
+      method: 'DELETE',
     }),
   classes: () => request<{ classes: ClassRow[] }>('/api/classes'),
   createClass: (body: Record<string, unknown>) =>

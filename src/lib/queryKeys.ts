@@ -18,6 +18,12 @@ export const queryKeys = {
   studentTasks: {
     all: ['student-tasks'],
   },
+  parentTasks: {
+    all: ['parent-tasks'],
+  },
+  parentInsights: {
+    all: ['parent-insights'],
+  },
   lessonBatches: {
     all: ['lesson-batches'],
     detail: (id: string) => ['lesson-batches', id],

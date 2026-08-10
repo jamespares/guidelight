@@ -606,3 +606,72 @@ export function StudentAuth() {
     </AuthShell>
   )
 }
+
+export function ParentAuth() {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { setUser } = useAuth()
+  const navigate = useNavigate()
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res = await api.parentLogin({ username, password })
+      setUser(res.user)
+      navigate('/parent/dashboard')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AuthShell>
+      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
+        <CardHeader>
+          <CardTitle as="h1" className="text-2xl">Parent</CardTitle>
+          <CardDescription>Use the parent username and password your teacher gave you.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+            <div className="space-y-2">
+              <Label htmlFor="parent-username">Username</Label>
+              <Input
+                id="parent-username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent-password">Password</Label>
+              <Input
+                id="parent-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {error ? (
+              <div aria-live="polite" role="status">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            ) : null}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Please wait…' : 'Sign in'}
+            </Button>
+            <Button asChild variant="ghost" className="w-full">
+              <Link to="/">Back</Link>
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </AuthShell>
+  )
+}

@@ -37,7 +37,7 @@ export interface Env {
   DEFAULT_STARTER_CREDIT_CENTS?: string
 }
 
-export type Role = 'teacher' | 'student'
+export type Role = 'teacher' | 'student' | 'parent'
 
 export interface SessionUser {
   id: string
@@ -45,6 +45,8 @@ export interface SessionUser {
   name: string
   email?: string
   username?: string
+  /** Set only when role === 'parent'; the student this parent is linked to. */
+  student_id?: string
 }
 
 export type QuestionType =

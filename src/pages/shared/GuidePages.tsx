@@ -366,6 +366,66 @@ export function TeacherGuidePage() {
   )
 }
 
+export function ParentGuidePage() {
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader
+        title="Info"
+        description="A read-only view of your child’s tasks and progress on Guidelight."
+      />
+
+      <Section title="What you can see">
+        <p>
+          Your child’s teacher creates and manages this parent account. Once enabled, you can sign in
+          with the username and password the teacher gives you.
+        </p>
+        <p>
+          The <strong className="text-foreground">Dashboard</strong> shows a summary of your child’s
+          average homework score, homework completion rate, exam readiness, and how many tasks are
+          still outstanding. Below that you will see their assigned tasks and any weakspots
+          Guidelight has identified.
+        </p>
+        <p>
+          The <strong className="text-foreground">Tasks</strong> page lists every assigned task, its
+          type, subject, current status, and the most recent score. You cannot start or submit work
+          here — this portal is view-only.
+        </p>
+      </Section>
+
+      <Section title="Status meanings">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong className="text-foreground">Not started</strong> — the task has been published
+            but your child has not opened it yet.
+          </li>
+          <li>
+            <strong className="text-foreground">In progress</strong> — your child has opened the task
+            but not submitted it.
+          </li>
+          <li>
+            <strong className="text-foreground">Submitted</strong> — the task has been finished and,
+            where applicable, marked.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="Settings">
+        <p>
+          Use <strong className="text-foreground">Settings</strong> to switch between light and dark
+          mode. Your choice is saved on this device.
+        </p>
+      </Section>
+
+      <Section title="Account help">
+        <p>
+          If you forget your password, contact your child’s teacher. They can reset your parent
+          credentials from the student profile page.
+        </p>
+      </Section>
+    </div>
+  )
+}
+
 export function StudentGuidePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">

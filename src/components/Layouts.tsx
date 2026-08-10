@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   Home,
+  LayoutDashboard,
   LineChart,
   LogOut,
   Settings,
@@ -174,6 +175,16 @@ const studentSecondary: NavItem[] = [
   { to: '/student/settings', label: 'Settings', icon: Settings },
 ]
 
+const parentNav: NavItem[] = [
+  { to: '/parent/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/parent/tasks', label: 'Tasks', icon: BookOpenCheck },
+]
+
+const parentSecondary: NavItem[] = [
+  { to: '/parent/guide', label: 'Info', icon: BookOpenText },
+  { to: '/parent/settings', label: 'Settings', icon: Settings },
+]
+
 export function TeacherLayout() {
   return (
     <BillingProvider>
@@ -196,6 +207,20 @@ export function StudentLayout() {
         role="Student"
         items={studentNav}
         secondaryItems={studentSecondary}
+        footerTo="/"
+        footerLabel="Switch portal"
+      />
+    </BillingProvider>
+  )
+}
+
+export function ParentLayout() {
+  return (
+    <BillingProvider>
+      <AppShell
+        role="Parent"
+        items={parentNav}
+        secondaryItems={parentSecondary}
         footerTo="/"
         footerLabel="Switch portal"
       />

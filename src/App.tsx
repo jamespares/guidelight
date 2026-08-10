@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { TeacherLayout, StudentLayout } from './components/Layouts'
+import { TeacherLayout, StudentLayout, ParentLayout } from './components/Layouts'
 import { useAuth } from './lib/auth'
-import { StudentAuth, TeacherAuth, VerifyEmailPage, ResetPasswordPage } from './pages/auth/AuthPages'
+import { ParentAuth, StudentAuth, TeacherAuth, VerifyEmailPage, ResetPasswordPage } from './pages/auth/AuthPages'
 import { Landing } from './pages/landing/LandingPage'
 import { InsightsPage, ReportPage } from './pages/teacher/InsightsPage'
 import { StudentDetailPage } from './pages/teacher/StudentDetailPage'
@@ -16,6 +16,10 @@ import {
 } from './pages/teacher/LessonsPages'
 import { ExamProfileDetailPage } from './pages/teacher/ExamProfilePages'
 import { AttemptPage, StudentTasksPage, StudentToolsPage } from './pages/student/StudentPages'
+import {
+  ParentDashboardPage,
+  ParentTasksPage,
+} from './pages/parent/ParentPages'
 import { ReadingSpeedPage } from './pages/student/ReadingSpeedPage'
 import { EnglishLevelPage } from './pages/student/EnglishLevelPage'
 import {
@@ -28,10 +32,10 @@ import {
   ReadingMachineViewerPage,
 } from './pages/student/ReadingMachinePages'
 import { SettingsPage } from './pages/shared/SettingsPage'
-import { StudentGuidePage, TeacherGuidePage } from './pages/shared/GuidePages'
+import { ParentGuidePage, StudentGuidePage, TeacherGuidePage } from './pages/shared/GuidePages'
 import { AccessibilityStatementPage, PrivacyPolicyPage, TermsOfServicePage } from './pages/shared/LegalPages'
 
-function RequireAuth({ role, children }: { role: 'teacher' | 'student'; children: ReactNode }) {
+function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
   const { user, loading } = useAuth()
   if (loading) {
     return (
@@ -40,9 +44,19 @@ function RequireAuth({ role, children }: { role: 'teacher' | 'student'; children
       </div>
     )
   }
-  if (!user) return <Navigate to={role === 'teacher' ? '/login/teacher' : '/login/student'} replace />
+  if (!user) {
+    const loginPath =
+      role === 'teacher' ? '/login/teacher' : role === 'student' ? '/login/student' : '/login/parent'
+    return <Navigate to={loginPath} replace />
+  }
   if (user.role !== role) {
-    return <Navigate to={user.role === 'teacher' ? '/teacher/students' : '/student/tasks'} replace />
+    const homePath =
+      user.role === 'teacher'
+        ? '/teacher/students'
+        : user.role === 'student'
+          ? '/student/tasks'
+          : '/parent/dashboard'
+    return <Navigate to={homePath} replace />
   }
   return children
 }
@@ -64,7 +78,16 @@ export default function App() {
         path="/"
         element={
           user ? (
-            <Navigate to={user.role === 'teacher' ? '/teacher/students' : '/student/tasks'} replace />
+            <Navigate
+              to={
+                user.role === 'teacher'
+                  ? '/teacher/students'
+                  : user.role === 'student'
+                    ? '/student/tasks'
+                    : '/parent/dashboard'
+              }
+              replace
+            />
           ) : (
             <Landing />
           )
@@ -72,6 +95,7 @@ export default function App() {
       />
       <Route path="/login/teacher" element={<TeacherAuth />} />
       <Route path="/login/student" element={<StudentAuth />} />
+      <Route path="/login/parent" element={<ParentAuth />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
@@ -122,6 +146,20 @@ export default function App() {
         <Route path="reading-machine/:materialId" element={<ReadingMachineViewerPage />} />
         <Route path="settings" element={<SettingsPage role="student" />} />
         <Route path="guide" element={<StudentGuidePage />} />
+      </Route>
+
+      <Route
+        path="/parent"
+        element={
+          <RequireAuth role="parent">
+            <ParentLayout />
+          </RequireAuth>
+        }
+      >
+        <Route path="dashboard" element={<ParentDashboardPage />} />
+        <Route path="tasks" element={<ParentTasksPage />} />
+        <Route path="settings" element={<SettingsPage role="parent" />} />
+        <Route path="guide" element={<ParentGuidePage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

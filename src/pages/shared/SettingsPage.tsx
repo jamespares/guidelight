@@ -15,7 +15,7 @@ import {
   formatUsdFromCents,
 } from '@/lib/trustCopy'
 
-export function SettingsPage({ role }: { role: 'teacher' | 'student' }) {
+export function SettingsPage({ role }: { role: 'teacher' | 'student' | 'parent' }) {
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
@@ -25,16 +25,16 @@ export function SettingsPage({ role }: { role: 'teacher' | 'student' }) {
     }
   }, [role])
 
+  const description =
+    role === 'teacher'
+      ? 'Personal preferences and AI billing for your teacher workspace.'
+      : role === 'student'
+        ? 'Personal preferences for your student workspace.'
+        : 'Personal preferences for your parent view.'
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader
-        title="Settings"
-        description={
-          role === 'teacher'
-            ? 'Personal preferences and AI billing for your teacher workspace.'
-            : 'Personal preferences for your student workspace.'
-        }
-      />
+      <PageHeader title="Settings" description={description} />
 
       <Card>
         <CardHeader>
