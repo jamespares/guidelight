@@ -38,7 +38,7 @@ export function Landing() {
           </div>
 
           <p className="text-lg font-medium leading-relaxed text-slate-700 [text-shadow:0_1px_2px_rgba(255,255,255,0.4)] dark:text-white/85 dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)] sm:text-xl">
-            Close the gap between where students are and where they need to be.
+            Lead your students to excellence
           </p>
 
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
