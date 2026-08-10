@@ -39,11 +39,24 @@ import {
   api,
   type TaskSubtype,
 } from '@/lib/api'
-import { ExamProfileCreateDialog } from '@/pages/teacher/ExamProfilePages'
+import {
+  defaultExamProfileFormState,
+  ExamProfileFields,
+  type ExamProfileFormState,
+} from '@/pages/teacher/ExamProfilePages'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 import { readPastPaperFile } from '@/lib/pastPaper'
 import { queryKeys } from '@/lib/queryKeys'
 import { AI_WAIT_MS, useEstimatedProgress } from '@/lib/useEstimatedProgress'
+
+const ASSESSMENT_SUBTYPES: { value: Exclude<TaskSubtype, null>; label: string }[] = [
+  { value: 'diagnostic', label: 'Diagnostic' },
+  { value: 'formative', label: 'Formative' },
+  { value: 'summative', label: 'Summative' },
+  { value: 'mock_exam', label: 'Mock exam' },
+  { value: 'english_level', label: 'English level' },
+  { value: 'reading_speed', label: 'Reading speed' },
+]
 
 function TaskCreateForm({
   type,
@@ -54,6 +67,7 @@ function TaskCreateForm({
   defaultSubtype?: TaskSubtype
   onCreated: (id: string) => void
 }) {
+  const queryClient = useQueryClient()
   const { data: classes = [] } = useQuery({
     queryKey: queryKeys.classes.all,
     queryFn: async () => {
@@ -84,10 +98,25 @@ function TaskCreateForm({
   const [hasDiag, setHasDiag] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [examProfileId, setExamProfileId] = useState<string | 'new' | ''>('')
+  const [newProfile, setNewProfile] = useState<ExamProfileFormState>(() =>
+    defaultExamProfileFormState(classes, classId),
+  )
 
   const isSpecial = subtype === 'english_level' || subtype === 'reading_speed'
+  const isMock = subtype === 'mock_exam'
   // Only estimate progress for AI drafts (not special non-AI create)
   const draftProgress = useEstimatedProgress(busy && !isSpecial, AI_WAIT_MS.draft)
+
+  const { data: examProfiles = [] } = useQuery({
+    queryKey: queryKeys.examProfiles.all(classId),
+    queryFn: async () => {
+      if (!classId) return []
+      const res = await api.examProfiles(classId)
+      return res.profiles
+    },
+    enabled: isMock && !!classId,
+  })
 
   useEffect(() => {
     if (classes.length > 0 && !classId) {
@@ -97,11 +126,26 @@ function TaskCreateForm({
 
   useEffect(() => {
     const cls = classes.find((c) => c.id === classId)
-    if (cls && useClassSubject) setSubject(cls.subject)
+    if (cls && useClassSubject && !isMock) setSubject(cls.subject)
     if (classId) {
       void api.diagnosticStatus(classId).then((r) => setHasDiag(r.hasDiagnostic))
     }
-  }, [classId, classes, useClassSubject])
+  }, [classId, classes, useClassSubject, isMock])
+
+  useEffect(() => {
+    if (isMock && classId) {
+      setNewProfile(defaultExamProfileFormState(classes, classId))
+    }
+  }, [isMock, classId, classes])
+
+  useEffect(() => {
+    if (!isMock) return
+    if (examProfiles.length > 0 && !examProfileId) {
+      setExamProfileId(examProfiles[0].id)
+    } else if (examProfiles.length === 0) {
+      setExamProfileId('new')
+    }
+  }, [examProfiles, isMock, examProfileId])
 
   async function onUpload(file: File | null) {
     if (!file) return
@@ -130,34 +174,65 @@ function TaskCreateForm({
     setBusy(true)
     setError('')
     try {
-      const res = await api.createTask({
-        type,
-        subtype: type === 'assessment' ? subtype : subtype === 'diagnostic' ? 'diagnostic' : null,
-        class_id: classId,
-        subject,
-        description:
-          description ||
-          (subtype === 'english_level'
-            ? 'English level (CEFR) diagnostic'
-            : subtype === 'reading_speed'
-              ? 'Reading speed assessment'
-              : ''),
-        difficulty,
-        question_count: isSpecial ? 0 : questionCount,
-        reading_text: readingText || undefined,
-        past_paper_text: isSpecial ? undefined : pastPaper || undefined,
-        past_paper_image: isSpecial ? undefined : pastPaperImage || undefined,
-        time_limit_seconds: isSpecial
-          ? subtype === 'english_level'
-            ? timeLimit * 60 || 3600
-            : null
-          : type === 'assessment'
-            ? timeLimit * 60
-            : timeLimit > 0
+      let res
+      if (isMock) {
+        let profileId = examProfileId
+        if (profileId === 'new') {
+          const created = await api.createExamProfile({
+            class_id: classId,
+            title: newProfile.title.trim(),
+            subject: newProfile.subject,
+            curriculum: newProfile.curriculum,
+            syllabus_code: newProfile.syllabusCode,
+            duration_seconds: newProfile.durationMins * 60,
+            grade_boundaries: newProfile.boundaries,
+            pass_grade: newProfile.passGrade,
+            target_grade: newProfile.targetGrade,
+            rubric: { general: newProfile.rubricGeneral },
+            exam_format: newProfile.examFormat,
+            reference_past_paper_text: newProfile.extractedText || undefined,
+            source_file_name: newProfile.uploadName || undefined,
+            past_paper_image: newProfile.imageUrl,
+          })
+          profileId = created.profile.id
+          void queryClient.invalidateQueries({ queryKey: queryKeys.examProfiles.all(classId) })
+        }
+        res = await api.createTask({
+          type,
+          subtype,
+          class_id: classId,
+          exam_profile_id: profileId,
+        })
+      } else {
+        res = await api.createTask({
+          type,
+          subtype: type === 'assessment' ? subtype : subtype === 'diagnostic' ? 'diagnostic' : null,
+          class_id: classId,
+          subject,
+          description:
+            description ||
+            (subtype === 'english_level'
+              ? 'English level (CEFR) diagnostic'
+              : subtype === 'reading_speed'
+                ? 'Reading speed assessment'
+                : ''),
+          difficulty,
+          question_count: isSpecial ? 0 : questionCount,
+          reading_text: readingText || undefined,
+          past_paper_text: isSpecial ? undefined : pastPaper || undefined,
+          past_paper_image: isSpecial ? undefined : pastPaperImage || undefined,
+          time_limit_seconds: isSpecial
+            ? subtype === 'english_level'
+              ? timeLimit * 60 || 3600
+              : null
+            : type === 'assessment'
               ? timeLimit * 60
-              : null,
-        use_all_question_types: type === 'assessment' && !isSpecial,
-      })
+              : timeLimit > 0
+                ? timeLimit * 60
+                : null,
+          use_all_question_types: type === 'assessment' && !isSpecial,
+        })
+      }
       onCreated(res.task.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed')
@@ -166,7 +241,8 @@ function TaskCreateForm({
     }
   }
 
-  const needsDiag = !isSpecial && subtype !== 'diagnostic' && !hasDiag
+  const needsDiag = !isSpecial && subtype !== 'diagnostic' && !isMock && !hasDiag
+  const selectedProfile = examProfiles.find((p) => p.id === examProfileId)
 
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
@@ -187,6 +263,7 @@ function TaskCreateForm({
             onValueChange={(v) => {
               const next = v as TaskSubtype
               setSubtype(next)
+              setExamProfileId('')
               if (next === 'english_level') setTimeLimit(60)
               if (next === 'reading_speed') setTimeLimit(0)
             }}
@@ -196,20 +273,21 @@ function TaskCreateForm({
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="diagnostic">Diagnostic (class subject)</SelectItem>
-              <SelectItem value="formative">Formative (class subject)</SelectItem>
-              <SelectItem value="english_level">English level (literacy — not class subject)</SelectItem>
-              <SelectItem value="reading_speed">Reading speed (literacy — not class subject)</SelectItem>
+              {ASSESSMENT_SUBTYPES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                  {s.value === 'english_level' || s.value === 'reading_speed'
+                    ? ' (literacy — not class subject)'
+                    : s.value === 'mock_exam'
+                      ? ' (timed, class subject)'
+                      : ' (class subject)'}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Diagnostic and formative tests cover your class subject. For timed mock exams with
-            readiness tracking, use{' '}
-            <Link to="/teacher/assessments" className="underline">
-              Assessments → Exam profiles
-            </Link>
-            . English level and reading speed measure general English proficiency — not your class
-            topic.
+            Diagnostic, formative, summative, and mock exams cover your class subject. English level
+            and reading speed measure general English proficiency — not your class topic.
           </p>
         </div>
       ) : (
@@ -224,6 +302,66 @@ function TaskCreateForm({
           </Label>
         </div>
       )}
+
+      {isMock ? (
+        <div className="space-y-4 rounded-lg border p-4">
+          <div className="space-y-2">
+            <Label htmlFor="mock-template">Mock exam template</Label>
+            <Select
+              value={examProfileId}
+              onValueChange={(v) => setExamProfileId(v)}
+            >
+              <SelectTrigger id="mock-template">
+                <SelectValue placeholder="Select a saved mock or create a new one…" />
+              </SelectTrigger>
+              <SelectContent>
+                {examProfiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.title} — {p.curriculum} {p.syllabus_code} (
+                    {p.duration_seconds ? `${Math.round(p.duration_seconds / 60)} min` : 'no time limit'})
+                  </SelectItem>
+                ))}
+                <SelectItem value="new">+ Create new mock exam template</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedProfile ? (
+            <div className="space-y-1 text-sm">
+              <p>
+                <span className="text-muted-foreground">Duration:</span>{' '}
+                {selectedProfile.duration_seconds
+                  ? `${Math.round(selectedProfile.duration_seconds / 60)} minutes`
+                  : '—'}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Target grade:</span>{' '}
+                {selectedProfile.target_grade || '—'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Selecting this template generates a fresh mock paper.{' '}
+                <Link
+                  to={`/teacher/exam-profiles/${selectedProfile.id}`}
+                  className="underline"
+                  target="_blank"
+                >
+                  Edit template
+                </Link>
+              </p>
+            </div>
+          ) : null}
+
+          {examProfileId === 'new' ? (
+            <ExamProfileFields
+              classes={classes}
+              value={newProfile}
+              onChange={setNewProfile}
+              showClassSelect={false}
+              disabled={busy}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -241,36 +379,40 @@ function TaskCreateForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="task-difficulty">Difficulty</Label>
-          <Select
-            value={difficulty}
-            onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}
-          >
-            <SelectTrigger id="task-difficulty">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="easy">Easy</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="hard">Hard</SelectItem>
-            </SelectContent>
-          </Select>
+        {!isMock ? (
+          <div className="space-y-2">
+            <Label htmlFor="task-difficulty">Difficulty</Label>
+            <Select
+              value={difficulty}
+              onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}
+            >
+              <SelectTrigger id="task-difficulty">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="easy">Easy</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="hard">Hard</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+      </div>
+
+      {!isMock ? (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="use-subject"
+            checked={useClassSubject}
+            onCheckedChange={(v) => setUseClassSubject(v === true)}
+          />
+          <Label htmlFor="use-subject" className="font-normal">
+            Use registered class subject
+          </Label>
         </div>
-      </div>
+      ) : null}
 
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="use-subject"
-          checked={useClassSubject}
-          onCheckedChange={(v) => setUseClassSubject(v === true)}
-        />
-        <Label htmlFor="use-subject" className="font-normal">
-          Use registered class subject
-        </Label>
-      </div>
-
-      {!useClassSubject ? (
+      {!useClassSubject && !isMock ? (
         <div className="space-y-2">
           <Label htmlFor="subject">Subject</Label>
           <Input
@@ -288,46 +430,48 @@ function TaskCreateForm({
           id="desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          required={!isSpecial}
+          required={!isSpecial && !isMock}
           placeholder={
             subtype === 'english_level'
               ? 'Optional label — e.g. Term 1 English level check'
               : subtype === 'reading_speed'
                 ? 'Optional label — e.g. September reading speed'
-                : 'What should students practise or be assessed on?'
+                : isMock
+                  ? 'Optional label for this mock paper'
+                  : 'What should students practise or be assessed on?'
           }
         />
       </div>
 
-      {!isSpecial ? (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="qcount">Number of questions</Label>
-          <Input
-            id="qcount"
-            type="number"
-            min={3}
-            max={30}
-            value={questionCount}
-            onChange={(e) => setQuestionCount(Number(e.target.value))}
-          />
-        </div>
-        {type === 'assessment' ? (
+      {!isSpecial && !isMock ? (
+        <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="task-time-limit">Hard time limit (minutes)</Label>
+            <Label htmlFor="qcount">Number of questions</Label>
             <Input
-              id="task-time-limit"
+              id="qcount"
               type="number"
-              min={5}
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(Number(e.target.value))}
-              required
+              min={3}
+              max={30}
+              value={questionCount}
+              onChange={(e) => setQuestionCount(Number(e.target.value))}
             />
           </div>
-        ) : (
-          <div />
-        )}
-      </div>
+          {type === 'assessment' ? (
+            <div className="space-y-2">
+              <Label htmlFor="task-time-limit">Hard time limit (minutes)</Label>
+              <Input
+                id="task-time-limit"
+                type="number"
+                min={5}
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(Number(e.target.value))}
+                required
+              />
+            </div>
+          ) : (
+            <div />
+          )}
+        </div>
       ) : subtype === 'english_level' ? (
         <div className="space-y-2">
           <Label htmlFor="cefr-time-limit">Time limit (minutes)</Label>
@@ -345,27 +489,27 @@ function TaskCreateForm({
         </div>
       ) : null}
 
-      {subtype !== 'english_level' ? (
-      <div className="space-y-2">
-        <Label htmlFor="reading">
-          {subtype === 'reading_speed' ? 'Reading passage (required)' : 'Optional reading text'}
-        </Label>
-        <p className="text-xs text-muted-foreground">
-          {subtype === 'reading_speed'
-            ? 'Students read this at their natural pace; spot-checks verify they read it.'
-            : 'Paste plain text / markdown for comprehension-style questions.'}
-        </p>
-        <Textarea
-          id="reading"
-          value={readingText}
-          onChange={(e) => setReadingText(e.target.value)}
-          required={subtype === 'reading_speed'}
-          className={subtype === 'reading_speed' ? 'min-h-[180px]' : undefined}
-        />
-      </div>
+      {subtype !== 'english_level' && !isMock ? (
+        <div className="space-y-2">
+          <Label htmlFor="reading">
+            {subtype === 'reading_speed' ? 'Reading passage (required)' : 'Optional reading text'}
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            {subtype === 'reading_speed'
+              ? 'Students read this at their natural pace; spot-checks verify they read it.'
+              : 'Paste plain text / markdown for comprehension-style questions.'}
+          </p>
+          <Textarea
+            id="reading"
+            value={readingText}
+            onChange={(e) => setReadingText(e.target.value)}
+            required={subtype === 'reading_speed'}
+            className={subtype === 'reading_speed' ? 'min-h-[180px]' : undefined}
+          />
+        </div>
       ) : null}
 
-      {!isSpecial && type === 'assessment' ? (
+      {!isSpecial && type === 'assessment' && !isMock ? (
         <div className="space-y-3">
           <div className="space-y-2">
             <Label htmlFor="past-paper-upload">Past paper inspiration</Label>
@@ -446,139 +590,12 @@ function TaskCreateForm({
           )
         ) : (
           <>
-            {!isSpecial ? <Sparkles className="h-4 w-4" /> : null}
-            {isSpecial ? 'Create assessment' : 'Generate draft'}
+            {!isSpecial && !isMock ? <Sparkles className="h-4 w-4" /> : null}
+            {isSpecial || isMock ? 'Create assessment' : 'Generate draft'}
           </>
         )}
       </Button>
     </form>
-  )
-}
-
-function ExamProfilesSection() {
-  const navigate = useNavigate()
-  const [classId, setClassId] = useState('')
-  const [open, setOpen] = useState(false)
-  const [error] = useState('')
-
-  const { data: classes = [] } = useQuery({
-    queryKey: queryKeys.classes.all,
-    queryFn: async () => {
-      const res = await api.classes()
-      return res.classes
-    },
-  })
-
-  useEffect(() => {
-    if (classes.length > 0 && !classId) {
-      setClassId(classes[0].id)
-    }
-  }, [classes, classId])
-
-  const { data: profiles = [], isLoading } = useQuery({
-    queryKey: queryKeys.examProfiles.all(classId),
-    queryFn: async () => {
-      if (!classId) return []
-      const res = await api.examProfiles(classId)
-      return res.profiles
-    },
-    enabled: !!classId,
-  })
-
-  return (
-    <Card>
-      <CardContent className="space-y-4 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Exam profiles</h2>
-            <p className="text-sm text-muted-foreground">
-              Configure an exam once, then generate timed mock papers and track readiness.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Label htmlFor="exam-profile-class" className="sr-only">Class</Label>
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger id="exam-profile-class" className="w-[200px]">
-                <SelectValue placeholder="Class" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" />
-              New exam profile
-            </Button>
-          </div>
-        </div>
-
-        {error ? (
-          <div aria-live="polite" role="status">
-            <p className="text-sm text-destructive">{error}</p>
-          </div>
-        ) : null}
-
-        <Table>
-          <TableCaption>Exam profiles configured for the selected class.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">Exam</TableHead>
-              <TableHead scope="col">Curriculum</TableHead>
-              <TableHead scope="col">Duration</TableHead>
-              <TableHead scope="col">Mocks</TableHead>
-              <TableHead scope="col">
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground">
-                  Loading…
-                </TableCell>
-              </TableRow>
-            ) : profiles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground">
-                  No exam profiles for this class. Create one to start generating timed mock exams.
-                </TableCell>
-              </TableRow>
-            ) : (
-              profiles.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.title}</TableCell>
-                  <TableCell>
-                    {p.curriculum} {p.syllabus_code}
-                  </TableCell>
-                  <TableCell>
-                    {p.duration_seconds ? `${Math.round(p.duration_seconds / 60)} min` : '—'}
-                  </TableCell>
-                  <TableCell>{p.mock_count ?? 0}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/teacher/exam-profiles/${p.id}`}>Open</Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-
-        <ExamProfileCreateDialog
-          classes={classes}
-          defaultClassId={classId}
-          open={open}
-          onOpenChange={setOpen}
-          onCreated={(profile) => navigate(`/teacher/exam-profiles/${profile.id}`)}
-        />
-      </CardContent>
-    </Card>
   )
 }
 
@@ -709,13 +726,10 @@ export function HomeworkPage() {
 
 export function AssessmentsPage() {
   return (
-    <div className="space-y-6">
-      <ExamProfilesSection />
-      <TaskList
-        type="assessment"
-        title="Assessments"
-        blurb="Diagnostic, formative, summative, and timed mock exams"
-      />
-    </div>
+    <TaskList
+      type="assessment"
+      title="Assessments"
+      blurb="Diagnostic, formative, summative, and timed mock exams"
+    />
   )
 }

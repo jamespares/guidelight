@@ -13,6 +13,10 @@ describe('resolveTaskKind', () => {
     expect(resolveTaskKind('assessment', 'mock_exam')).toBe('mock_exam')
   })
 
+  it('returns summative for summative subtype', () => {
+    expect(resolveTaskKind('assessment', 'summative')).toBe('summative')
+  })
+
   it('falls back to formative for unknown assessment subtype', () => {
     expect(resolveTaskKind('assessment', null)).toBe('formative')
   })

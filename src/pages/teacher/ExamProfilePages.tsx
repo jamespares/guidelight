@@ -85,6 +85,442 @@ const DEFAULT_EXAM_FORMAT: ExamFormat = {
   ],
 }
 
+export type ExamProfileFormState = {
+  classId: string
+  title: string
+  subject: string
+  curriculum: string
+  syllabusCode: string
+  durationMins: number
+  passGrade: string
+  targetGrade: string
+  boundaries: GradeBoundary[]
+  rubricGeneral: string
+  examFormat: ExamFormat
+  extractedText: string
+  uploadName: string | null
+  imageUrl: string | undefined
+}
+
+export function defaultExamProfileFormState(
+  classes: ClassRow[],
+  defaultClassId?: string,
+): ExamProfileFormState {
+  const classId = defaultClassId ?? classes[0]?.id ?? ''
+  const cls = classes.find((c) => c.id === classId)
+  return {
+    classId,
+    title: '',
+    subject: cls?.subject ?? '',
+    curriculum: cls?.curriculum ?? 'IGCSE',
+    syllabusCode: '',
+    durationMins: 45,
+    passGrade: '4',
+    targetGrade: '8',
+    boundaries: DEFAULT_BOUNDARIES,
+    rubricGeneral: '',
+    examFormat: DEFAULT_EXAM_FORMAT,
+    extractedText: '',
+    uploadName: null,
+    imageUrl: undefined,
+  }
+}
+
+export function ExamProfileFields({
+  classes,
+  value,
+  onChange,
+  disabled,
+  showClassSelect = true,
+}: {
+  classes: ClassRow[]
+  value: ExamProfileFormState
+  onChange: (value: ExamProfileFormState) => void
+  disabled?: boolean
+  showClassSelect?: boolean
+}) {
+  const [uploadBusy, setUploadBusy] = useState(false)
+
+  function setClassId(classId: string) {
+    const cls = classes.find((c) => c.id === classId)
+    onChange({
+      ...value,
+      classId,
+      subject: cls?.subject ?? value.subject,
+      curriculum: cls?.curriculum ?? value.curriculum,
+    })
+  }
+
+  async function onFile(file: File | null) {
+    if (!file) return
+    setUploadBusy(true)
+    try {
+      const parsed = await readPastPaperFile(file)
+      onChange({
+        ...value,
+        uploadName: parsed.fileName,
+        extractedText: parsed.text || '',
+        imageUrl: parsed.imageDataUrl,
+      })
+    } catch (err) {
+      onChange({
+        ...value,
+        uploadName: null,
+        extractedText: '',
+        imageUrl: undefined,
+      })
+      throw err
+    } finally {
+      setUploadBusy(false)
+    }
+  }
+
+  function updateBoundary(index: number, field: keyof GradeBoundary, valueUpdate: string | number | boolean) {
+    onChange({
+      ...value,
+      boundaries: value.boundaries.map((b, i) =>
+        i === index ? { ...b, [field]: valueUpdate } : b,
+      ),
+    })
+  }
+
+  function updateSection(index: number, field: keyof ExamFormatSection, valueUpdate: unknown) {
+    onChange({
+      ...value,
+      examFormat: {
+        ...value.examFormat,
+        sections: value.examFormat.sections.map((s, i) =>
+          i === index ? { ...s, [field]: valueUpdate } : s,
+        ),
+      },
+    })
+  }
+
+  function toggleSectionType(index: number, type: QuestionType) {
+    onChange({
+      ...value,
+      examFormat: {
+        ...value.examFormat,
+        sections: value.examFormat.sections.map((s, i) => {
+          if (i !== index) return s
+          const has = s.questionTypes.includes(type)
+          return {
+            ...s,
+            questionTypes: has
+              ? s.questionTypes.filter((t) => t !== type)
+              : [...s.questionTypes, type],
+          }
+        }),
+      },
+    })
+  }
+
+  function addSection() {
+    onChange({
+      ...value,
+      examFormat: {
+        ...value.examFormat,
+        sections: [
+          ...value.examFormat.sections,
+          {
+            name: `Section ${String.fromCharCode(65 + value.examFormat.sections.length)}`,
+            questionTypes: ['mcq'],
+            questionCount: 5,
+            marks: 20,
+          },
+        ],
+      },
+    })
+  }
+
+  function removeSection(index: number) {
+    onChange({
+      ...value,
+      examFormat: {
+        ...value.examFormat,
+        sections: value.examFormat.sections.filter((_, i) => i !== index),
+      },
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      {showClassSelect ? (
+        <div className="space-y-2">
+          <Label htmlFor="exam-class">Class</Label>
+          <Select
+            value={value.classId}
+            onValueChange={setClassId}
+            disabled={disabled}
+          >
+            <SelectTrigger id="exam-class">
+              <SelectValue placeholder="Select class…" />
+            </SelectTrigger>
+            <SelectContent>
+              {classes.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
+      <div className="space-y-2">
+        <Label htmlFor="exam-title">Exam title</Label>
+        <Input
+          id="exam-title"
+          value={value.title}
+          onChange={(e) => onChange({ ...value, title: e.target.value })}
+          placeholder="e.g. IGCSE Biology Paper 2"
+          required
+          disabled={disabled}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="exam-curriculum">Curriculum</Label>
+          <Select
+            value={value.curriculum}
+            onValueChange={(curriculum) => onChange({ ...value, curriculum })}
+            disabled={disabled}
+          >
+            <SelectTrigger id="exam-curriculum">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CURRICULA.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="exam-syllabus">Syllabus code</Label>
+          <Input
+            id="exam-syllabus"
+            value={value.syllabusCode}
+            onChange={(e) => onChange({ ...value, syllabusCode: e.target.value })}
+            placeholder="e.g. 0610"
+            disabled={disabled}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="exam-duration">Duration (minutes)</Label>
+        <Input
+          id="exam-duration"
+          type="number"
+          min={10}
+          max={180}
+          value={value.durationMins}
+          onChange={(e) => onChange({ ...value, durationMins: Number(e.target.value) })}
+          disabled={disabled}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="exam-pass-grade">Pass grade</Label>
+          <Select
+            value={value.passGrade}
+            onValueChange={(passGrade) => onChange({ ...value, passGrade })}
+            disabled={disabled}
+          >
+            <SelectTrigger id="exam-pass-grade">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {value.boundaries.map((b) => (
+                <SelectItem key={b.grade} value={b.grade}>
+                  {b.grade} (≥{b.minPct}%)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="exam-target-grade">Target grade</Label>
+          <Select
+            value={value.targetGrade}
+            onValueChange={(targetGrade) => onChange({ ...value, targetGrade })}
+            disabled={disabled}
+          >
+            <SelectTrigger id="exam-target-grade">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {value.boundaries.map((b) => (
+                <SelectItem key={b.grade} value={b.grade}>
+                  {b.grade} (≥{b.minPct}%)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold">Grade boundaries (% minimum)</legend>
+        <div className="space-y-2 rounded-lg border p-3">
+          {value.boundaries.map((b, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                className="w-16"
+                value={b.grade}
+                onChange={(e) => updateBoundary(i, 'grade', e.target.value)}
+                aria-label={`Grade ${i + 1} label`}
+                disabled={disabled}
+              />
+              <Input
+                type="number"
+                className="w-20"
+                value={b.minPct}
+                onChange={(e) => updateBoundary(i, 'minPct', Number(e.target.value))}
+                aria-label={`Grade ${b.grade} minimum percentage`}
+                disabled={disabled}
+              />
+              <span className="text-xs text-muted-foreground">%</span>
+              <label className="flex items-center gap-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={!!b.pass}
+                  onChange={(e) => updateBoundary(i, 'pass', e.target.checked)}
+                  disabled={disabled}
+                />
+                Pass
+              </label>
+            </div>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="space-y-2">
+        <Label htmlFor="rubric-general">Marking rubric</Label>
+        <Textarea
+          id="rubric-general"
+          value={value.rubricGeneral}
+          onChange={(e) => onChange({ ...value, rubricGeneral: e.target.value })}
+          placeholder="General marking criteria for AI marking…"
+          className="min-h-[80px]"
+          disabled={disabled}
+        />
+      </div>
+
+      <fieldset className="space-y-3">
+        <legend className="flex w-full items-center justify-between text-sm font-semibold">
+          <span>Exam format</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addSection}
+            disabled={disabled}
+          >
+            Add section
+          </Button>
+        </legend>
+        <p className="text-xs text-muted-foreground">
+          Define sections, question types, and marks. AI uses this to structure mock papers.
+        </p>
+        <div className="space-y-3">
+          {value.examFormat.sections.map((section, i) => (
+            <div key={i} className="space-y-2 rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={section.name}
+                  onChange={(e) => updateSection(i, 'name', e.target.value)}
+                  placeholder="Section name"
+                  className="flex-1"
+                  aria-label={`Section ${i + 1} name`}
+                  disabled={disabled}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeSection(i)}
+                  disabled={disabled || value.examFormat.sections.length <= 1}
+                  aria-label={`Remove section ${section.name}`}
+                >
+                  ×
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  value={section.questionCount}
+                  onChange={(e) => updateSection(i, 'questionCount', Number(e.target.value))}
+                  placeholder="Questions"
+                  aria-label={`Section ${section.name} question count`}
+                  disabled={disabled}
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  value={section.marks}
+                  onChange={(e) => updateSection(i, 'marks', Number(e.target.value))}
+                  placeholder="Marks"
+                  aria-label={`Section ${section.name} marks`}
+                  disabled={disabled}
+                />
+              </div>
+              <fieldset className="space-y-1">
+                <legend className="text-xs font-medium text-muted-foreground">Question types</legend>
+                <div className="flex flex-wrap gap-2">
+                  {MOCK_QUESTION_TYPES.map((t) => {
+                    const checked = section.questionTypes.includes(t.value)
+                    return (
+                      <label
+                        key={t.value}
+                        className={cn(
+                          'flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors',
+                          checked
+                            ? 'border-primary bg-primary/10 text-foreground'
+                            : 'border-input text-muted-foreground hover:bg-secondary',
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5"
+                          checked={checked}
+                          onChange={() => toggleSectionType(i, t.value)}
+                          disabled={disabled}
+                        />
+                        {t.label}
+                      </label>
+                    )
+                  })}
+                </div>
+              </fieldset>
+            </div>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="space-y-2">
+        <Label htmlFor="exam-past-paper">Reference past paper (optional)</Label>
+        <Input
+          id="exam-past-paper"
+          type="file"
+          accept=".pdf,image/*"
+          onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
+          disabled={disabled || uploadBusy}
+        />
+        {value.uploadName ? (
+          <span className="text-xs text-muted-foreground">{value.uploadName}</span>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 export function ExamProfileCreateDialog({
   classes,
   defaultClassId,
@@ -98,87 +534,41 @@ export function ExamProfileCreateDialog({
   onOpenChange: (open: boolean) => void
   onCreated: (profile: ExamProfile) => void
 }) {
-  const [classId, setClassId] = useState(defaultClassId ?? classes[0]?.id ?? '')
-  const [title, setTitle] = useState('')
-  const [subject, setSubject] = useState('')
-  const [curriculum, setCurriculum] = useState('IGCSE')
-  const [syllabusCode, setSyllabusCode] = useState('')
-  const [durationMins, setDurationMins] = useState(45)
-  const [passGrade, setPassGrade] = useState('4')
-  const [targetGrade, setTargetGrade] = useState('8')
-  const [boundaries, setBoundaries] = useState<GradeBoundary[]>(DEFAULT_BOUNDARIES)
-  const [rubricGeneral, setRubricGeneral] = useState('')
-  const [examFormat, setExamFormat] = useState<ExamFormat>(DEFAULT_EXAM_FORMAT)
-  const [extractedText, setExtractedText] = useState('')
-  const [uploadName, setUploadName] = useState<string | null>(null)
-  const [imageUrl, setImageUrl] = useState<string | undefined>()
-  const [uploadBusy, setUploadBusy] = useState(false)
+  const [value, setValue] = useState<ExamProfileFormState>(() =>
+    defaultExamProfileFormState(classes, defaultClassId),
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const draftProgress = useEstimatedProgress(busy, AI_WAIT_MS.draft)
 
   useEffect(() => {
     if (open) {
-      setClassId(defaultClassId ?? classes[0]?.id ?? '')
-      setTitle('')
-      setSyllabusCode('')
-      setDurationMins(45)
-      setPassGrade('4')
-      setTargetGrade('8')
-      setBoundaries(DEFAULT_BOUNDARIES)
-      setRubricGeneral('')
-      setExamFormat(DEFAULT_EXAM_FORMAT)
-      setExtractedText('')
-      setUploadName(null)
-      setImageUrl(undefined)
+      setValue(defaultExamProfileFormState(classes, defaultClassId))
       setError('')
     }
   }, [open, classes, defaultClassId])
 
-  useEffect(() => {
-    const cls = classes.find((c) => c.id === classId)
-    if (cls) {
-      setSubject(cls.subject)
-      if (cls.curriculum) setCurriculum(cls.curriculum)
-    }
-  }, [classId, classes])
-
-  async function onFile(file: File | null) {
-    if (!file) return
-    setUploadBusy(true)
-    try {
-      const parsed = await readPastPaperFile(file)
-      setUploadName(parsed.fileName)
-      setExtractedText(parsed.text || '')
-      setImageUrl(parsed.imageDataUrl)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
-    } finally {
-      setUploadBusy(false)
-    }
-  }
-
   async function createProfile(e: FormEvent) {
     e.preventDefault()
-    if (!classId || !title.trim()) return
+    if (!value.classId || !value.title.trim()) return
     setBusy(true)
     setError('')
     try {
       const res = await api.createExamProfile({
-        class_id: classId,
-        title: title.trim(),
-        subject,
-        curriculum,
-        syllabus_code: syllabusCode,
-        duration_seconds: durationMins * 60,
-        grade_boundaries: boundaries,
-        pass_grade: passGrade,
-        target_grade: targetGrade,
-        rubric: { general: rubricGeneral },
-        exam_format: examFormat,
-        reference_past_paper_text: extractedText || undefined,
-        source_file_name: uploadName || undefined,
-        past_paper_image: imageUrl,
+        class_id: value.classId,
+        title: value.title.trim(),
+        subject: value.subject,
+        curriculum: value.curriculum,
+        syllabus_code: value.syllabusCode,
+        duration_seconds: value.durationMins * 60,
+        grade_boundaries: value.boundaries,
+        pass_grade: value.passGrade,
+        target_grade: value.targetGrade,
+        rubric: { general: value.rubricGeneral },
+        exam_format: value.examFormat,
+        reference_past_paper_text: value.extractedText || undefined,
+        source_file_name: value.uploadName || undefined,
+        past_paper_image: value.imageUrl,
       })
       onOpenChange(false)
       onCreated(res.profile)
@@ -187,52 +577,6 @@ export function ExamProfileCreateDialog({
     } finally {
       setBusy(false)
     }
-  }
-
-  function updateBoundary(index: number, field: keyof GradeBoundary, value: string | number | boolean) {
-    setBoundaries((prev) =>
-      prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)),
-    )
-  }
-
-  function updateSection(index: number, field: keyof ExamFormatSection, value: unknown) {
-    setExamFormat((prev) => ({
-      ...prev,
-      sections: prev.sections.map((s, i) => (i === index ? { ...s, [field]: value } : s)),
-    }))
-  }
-
-  function toggleSectionType(index: number, type: QuestionType) {
-    setExamFormat((prev) => ({
-      ...prev,
-      sections: prev.sections.map((s, i) => {
-        if (i !== index) return s
-        const has = s.questionTypes.includes(type)
-        return {
-          ...s,
-          questionTypes: has
-            ? s.questionTypes.filter((t) => t !== type)
-            : [...s.questionTypes, type],
-        }
-      }),
-    }))
-  }
-
-  function addSection() {
-    setExamFormat((prev) => ({
-      ...prev,
-      sections: [
-        ...prev.sections,
-        { name: `Section ${String.fromCharCode(65 + prev.sections.length)}`, questionTypes: ['mcq'], questionCount: 5, marks: 20 },
-      ],
-    }))
-  }
-
-  function removeSection(index: number) {
-    setExamFormat((prev) => ({
-      ...prev,
-      sections: prev.sections.filter((_, i) => i !== index),
-    }))
   }
 
   return (
@@ -245,235 +589,7 @@ export function ExamProfileCreateDialog({
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={(e) => void createProfile(e)}>
-          <div className="space-y-2">
-            <Label htmlFor="exam-class">Class</Label>
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger id="exam-class">
-                <SelectValue placeholder="Select class…" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="exam-title">Exam title</Label>
-            <Input
-              id="exam-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. IGCSE Biology Paper 2"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="exam-curriculum">Curriculum</Label>
-              <Select value={curriculum} onValueChange={setCurriculum}>
-                <SelectTrigger id="exam-curriculum">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CURRICULA.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="exam-syllabus">Syllabus code</Label>
-              <Input
-                id="exam-syllabus"
-                value={syllabusCode}
-                onChange={(e) => setSyllabusCode(e.target.value)}
-                placeholder="e.g. 0610"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="exam-duration">Duration (minutes)</Label>
-            <Input
-              id="exam-duration"
-              type="number"
-              min={10}
-              max={180}
-              value={durationMins}
-              onChange={(e) => setDurationMins(Number(e.target.value))}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="exam-pass-grade">Pass grade</Label>
-              <Select value={passGrade} onValueChange={setPassGrade}>
-                <SelectTrigger id="exam-pass-grade">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {boundaries.map((b) => (
-                    <SelectItem key={b.grade} value={b.grade}>
-                      {b.grade} (≥{b.minPct}%)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="exam-target-grade">Target grade</Label>
-              <Select value={targetGrade} onValueChange={setTargetGrade}>
-                <SelectTrigger id="exam-target-grade">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {boundaries.map((b) => (
-                    <SelectItem key={b.grade} value={b.grade}>
-                      {b.grade} (≥{b.minPct}%)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold">Grade boundaries (% minimum)</legend>
-            <div className="space-y-2 rounded-lg border p-3">
-              {boundaries.map((b, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    className="w-16"
-                    value={b.grade}
-                    onChange={(e) => updateBoundary(i, 'grade', e.target.value)}
-                    aria-label={`Grade ${i + 1} label`}
-                  />
-                  <Input
-                    type="number"
-                    className="w-20"
-                    value={b.minPct}
-                    onChange={(e) => updateBoundary(i, 'minPct', Number(e.target.value))}
-                    aria-label={`Grade ${b.grade} minimum percentage`}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                  <label className="flex items-center gap-1 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={!!b.pass}
-                      onChange={(e) => updateBoundary(i, 'pass', e.target.checked)}
-                    />
-                    Pass
-                  </label>
-                </div>
-              ))}
-            </div>
-          </fieldset>
-          <div className="space-y-2">
-            <Label htmlFor="rubric-general">Marking rubric</Label>
-            <Textarea
-              id="rubric-general"
-              value={rubricGeneral}
-              onChange={(e) => setRubricGeneral(e.target.value)}
-              placeholder="General marking criteria for AI marking…"
-              className="min-h-[80px]"
-            />
-          </div>
-          <fieldset className="space-y-3">
-            <legend className="flex w-full items-center justify-between text-sm font-semibold">
-              <span>Exam format</span>
-              <Button type="button" variant="outline" size="sm" onClick={addSection}>
-                Add section
-              </Button>
-            </legend>
-            <p className="text-xs text-muted-foreground">
-              Define sections, question types, and marks. AI uses this to structure mock papers.
-            </p>
-            <div className="space-y-3">
-              {examFormat.sections.map((section, i) => (
-                <div key={i} className="space-y-2 rounded-lg border p-3">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={section.name}
-                      onChange={(e) => updateSection(i, 'name', e.target.value)}
-                      placeholder="Section name"
-                      className="flex-1"
-                      aria-label={`Section ${i + 1} name`}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeSection(i)}
-                      disabled={examFormat.sections.length <= 1}
-                      aria-label={`Remove section ${section.name}`}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="number"
-                      min={1}
-                      value={section.questionCount}
-                      onChange={(e) => updateSection(i, 'questionCount', Number(e.target.value))}
-                      placeholder="Questions"
-                      aria-label={`Section ${section.name} question count`}
-                    />
-                    <Input
-                      type="number"
-                      min={1}
-                      value={section.marks}
-                      onChange={(e) => updateSection(i, 'marks', Number(e.target.value))}
-                      placeholder="Marks"
-                      aria-label={`Section ${section.name} marks`}
-                    />
-                  </div>
-                  <fieldset className="space-y-1">
-                    <legend className="text-xs font-medium text-muted-foreground">Question types</legend>
-                    <div className="flex flex-wrap gap-2">
-                      {MOCK_QUESTION_TYPES.map((t) => {
-                        const checked = section.questionTypes.includes(t.value)
-                        return (
-                          <label
-                            key={t.value}
-                            className={cn(
-                              'flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors',
-                              checked
-                                ? 'border-primary bg-primary/10 text-foreground'
-                                : 'border-input text-muted-foreground hover:bg-secondary',
-                            )}
-                          >
-                            <input
-                              type="checkbox"
-                              className="h-3.5 w-3.5"
-                              checked={checked}
-                              onChange={() => toggleSectionType(i, t.value)}
-                            />
-                            {t.label}
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </fieldset>
-                </div>
-              ))}
-            </div>
-          </fieldset>
-          <div className="space-y-2">
-            <Label htmlFor="exam-past-paper">Reference past paper (optional)</Label>
-            <Input
-              id="exam-past-paper"
-              type="file"
-              accept=".pdf,image/*"
-              onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
-              disabled={uploadBusy}
-            />
-            {uploadName ? (
-              <span className="text-xs text-muted-foreground">{uploadName}</span>
-            ) : null}
-          </div>
+          <ExamProfileFields classes={classes} value={value} onChange={setValue} disabled={busy} />
           {error ? (
             <div aria-live="polite" role="status">
               <p className="text-sm text-destructive">{error}</p>

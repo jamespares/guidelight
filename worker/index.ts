@@ -43,6 +43,8 @@ import {
 } from './lib/cefr'
 import {
   handleExamsApi,
+  getExamProfileRow,
+  generateMockFromProfile,
   getMockExamMarkingContext,
   examReadinessForStudents,
 } from './lib/exams'
@@ -61,6 +63,28 @@ async function classOwned(env: Env, classId: string, teacherId: string) {
   return env.DB.prepare(`SELECT * FROM classes WHERE id = ? AND teacher_id = ?`)
     .bind(classId, teacherId)
     .first()
+}
+
+async function fetchStudentTasks(env: Env, studentId: string) {
+  const student = await env.DB.prepare(`SELECT class_id FROM students WHERE id = ?`)
+    .bind(studentId)
+    .first<{ class_id: string }>()
+  if (!student) return []
+
+  const { results } = await env.DB.prepare(
+    `SELECT t.id, t.type, t.subtype, t.title, t.subject, t.difficulty,
+            t.time_limit_seconds, t.published_at,
+            (SELECT score_pct FROM attempts WHERE task_id = t.id AND student_id = ? AND status = 'submitted' ORDER BY submitted_at DESC LIMIT 1) as last_score,
+            (SELECT status FROM attempts WHERE task_id = t.id AND student_id = ? ORDER BY started_at DESC LIMIT 1) as attempt_status
+     FROM tasks t
+     JOIN task_assignments a ON a.task_id = t.id
+     WHERE t.class_id = ? AND t.status = 'published'
+       AND (a.student_id IS NULL OR a.student_id = ?)
+     ORDER BY t.published_at DESC`,
+  )
+    .bind(studentId, studentId, student.class_id, studentId)
+    .all()
+  return results ?? []
 }
 
 type InsightEventRow = {
@@ -562,7 +586,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         const studentId = studentMatch[1]
         const s = await env.DB.prepare(
           `SELECT s.id, s.class_id, s.display_name, s.interests, s.career_ambitions,
-                  s.weakspots, s.weakspots_summary, s.weakspots_updated_at, s.username, s.ai_summary, s.created_at,
+                  s.weakspots, s.weakspots_summary, s.weakspots_updated_at, s.username, s.parent_username, s.ai_summary, s.created_at,
                   s.cefr_level, s.latest_wpm,
                   c.name as class_name, c.subject as class_subject, c.teacher_id
            FROM students s JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
@@ -578,6 +602,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             weakspots_summary: string
             weakspots_updated_at: string | null
             username: string
+            parent_username: string | null
             ai_summary: string
             cefr_level: string | null
             latest_wpm: number | null
@@ -694,6 +719,98 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           .bind(password_hash, studentId)
           .run()
         return json({ password })
+      }
+
+      // —— Parent credentials management (teacher only) ——
+      if (path.match(/^\/api\/students\/[^/]+\/parent-credentials$/) && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const studentId = path.split('/')[3]
+        const s = await env.DB.prepare(
+          `SELECT s.id, s.username, s.display_name FROM students s
+           JOIN classes c ON c.id = s.class_id
+           WHERE s.id = ? AND c.teacher_id = ?`,
+        )
+          .bind(studentId, user.id)
+          .first<{ id: string; username: string; display_name: string }>()
+        if (!s) return error('Not found', 404)
+
+        const parsed = await parseJsonBody(request)
+        if (parsed instanceof Response) return parsed
+        const body = parsed as { username?: string; password?: string }
+
+        let parentUsername = body.username?.trim().toLowerCase() ?? ''
+        if (parentUsername) {
+          if (!/^[a-z0-9._-]{3,40}$/.test(parentUsername)) {
+            return error('Username must be 3–40 letters, numbers, dots, hyphens or underscores', 400)
+          }
+        } else {
+          const base = `${s.username}.parent`
+          parentUsername = base
+          for (let i = 0; i < 5; i++) {
+            const clash = await env.DB.prepare(`SELECT id FROM students WHERE parent_username = ?`)
+              .bind(parentUsername)
+              .first()
+            if (!clash) break
+            parentUsername = `${base}${Math.floor(Math.random() * 900 + 100)}`
+          }
+        }
+
+        const existing = await env.DB.prepare(`SELECT id FROM students WHERE parent_username = ? AND id != ?`)
+          .bind(parentUsername, studentId)
+          .first()
+        if (existing) return error('Parent username already taken', 409)
+
+        let password = body.password?.trim() ?? ''
+        if (password) {
+          if (password.length < 8 || password.length > 64) {
+            return error('Password must be 8–64 characters', 400)
+          }
+        } else {
+          password = randomPassword(8)
+        }
+        const password_hash = await hashPassword(password)
+
+        await env.DB.prepare(
+          `UPDATE students SET parent_username = ?, parent_password_hash = ? WHERE id = ?`,
+        )
+          .bind(parentUsername, password_hash, studentId)
+          .run()
+
+        // Invalidate any existing parent sessions so the old password stops working immediately.
+        await env.DB.prepare(`DELETE FROM sessions WHERE user_id = ? AND role = 'parent'`)
+          .bind(parentUsername)
+          .run()
+
+        return json({ username: parentUsername, password }, 201)
+      }
+
+      if (path.match(/^\/api\/students\/[^/]+\/parent-credentials$/) && request.method === 'DELETE') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const studentId = path.split('/')[3]
+        const owned = await env.DB.prepare(
+          `SELECT s.id FROM students s JOIN classes c ON c.id = s.class_id
+           WHERE s.id = ? AND c.teacher_id = ?`,
+        )
+          .bind(studentId, user.id)
+          .first()
+        if (!owned) return error('Not found', 404)
+
+        const s = await env.DB.prepare(`SELECT parent_username FROM students WHERE id = ?`)
+          .bind(studentId)
+          .first<{ parent_username: string | null }>()
+        await env.DB.prepare(
+          `UPDATE students SET parent_username = NULL, parent_password_hash = NULL WHERE id = ?`,
+        )
+          .bind(studentId)
+          .run()
+        if (s?.parent_username) {
+          await env.DB.prepare(`DELETE FROM sessions WHERE user_id = ? AND role = 'parent'`)
+            .bind(s.parent_username)
+            .run()
+        }
+        return json({ ok: true })
       }
 
       if (path.match(/^\/api\/students\/[^/]+\/summary$/) && request.method === 'POST') {
@@ -1057,17 +1174,18 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         if (parsed instanceof Response) return parsed
         const body = parsed as {
           type: 'homework' | 'assessment'
-          subtype?: 'diagnostic' | 'formative' | 'summative' | 'english_level' | 'reading_speed' | null
+          subtype?: 'diagnostic' | 'formative' | 'summative' | 'english_level' | 'reading_speed' | 'mock_exam' | null
           class_id: string
           subject?: string
-          description: string
-          difficulty: 'easy' | 'medium' | 'hard'
-          question_count: number
+          description?: string
+          difficulty?: 'easy' | 'medium' | 'hard'
+          question_count?: number
           reading_text?: string
           past_paper_text?: string
           past_paper_image?: string
           time_limit_seconds?: number | null
           use_all_question_types?: boolean
+          exam_profile_id?: string
         }
 
         if (body.subtype === 'english_level' || body.subtype === 'reading_speed') {
@@ -1076,11 +1194,40 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             subtype: body.subtype,
             class_id: body.class_id,
             subject: body.subject,
-            description: body.description,
-            difficulty: body.difficulty,
+            description: body.description ?? '',
+            difficulty: body.difficulty ?? 'medium',
             reading_text: body.reading_text,
             time_limit_seconds: body.time_limit_seconds,
           })
+        }
+
+        if (body.subtype === 'mock_exam') {
+          if (!body.exam_profile_id) {
+            return error('exam_profile_id is required for mock exams', 400)
+          }
+          const profile = await getExamProfileRow(env, body.exam_profile_id)
+          if (!profile || profile.class_id !== body.class_id) {
+            return error('Exam profile not found', 404)
+          }
+          const owned = await classOwned(env, profile.class_id, user.id)
+          if (!owned) return error('Class not found', 404)
+
+          try {
+            await assertAiBudget(env, user.id)
+          } catch (err) {
+            if (err instanceof AiBudgetExceededError) {
+              return aiBudgetExceededResponse(err.usedCents, err.capCents)
+            }
+            throw err
+          }
+
+          const { taskId, content } = await generateMockFromProfile(
+            env,
+            profile,
+            user.id,
+            body.past_paper_image,
+          )
+          return json({ task: { id: taskId, content, status: 'draft' } }, 201)
         }
 
         const cls = await classOwned(env, body.class_id, user.id)
@@ -1125,11 +1272,13 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           pastPaperText = [pastPaperText, visionNotes].filter(Boolean).join('\n\n')
         }
 
+        const description = body.description ?? ''
+        const difficulty = body.difficulty ?? 'medium'
         const content = await generateTaskContent(env, {
           subject,
           curriculum: (cls as { curriculum: string }).curriculum,
-          description: body.description,
-          difficulty: body.difficulty,
+          description,
+          difficulty,
           questionCount: body.question_count || 8,
           ageRange: (cls as { age_range: string }).age_range,
           readingText: body.reading_text,
@@ -1169,9 +1318,9 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             body.subtype ?? null,
             body.class_id,
             subject,
-            content.title || body.description.slice(0, 80),
-            body.description,
-            body.difficulty,
+            content.title || description.slice(0, 80),
+            description,
+            difficulty,
             body.time_limit_seconds ?? null,
             JSON.stringify(content),
             body.reading_text ?? '',
@@ -1329,25 +1478,17 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
       if (path === '/api/student/tasks' && request.method === 'GET') {
         const user = await requireRole(env, request, 'student')
         if (user instanceof Response) return user
-        const student = await env.DB.prepare(`SELECT class_id FROM students WHERE id = ?`)
-          .bind(user.id)
-          .first<{ class_id: string }>()
-        if (!student) return error('Not found', 404)
+        const tasks = await fetchStudentTasks(env, user.id)
+        return json({ tasks })
+      }
 
-        const { results } = await env.DB.prepare(
-          `SELECT t.id, t.type, t.subtype, t.title, t.subject, t.difficulty,
-                  t.time_limit_seconds, t.published_at,
-                  (SELECT score_pct FROM attempts WHERE task_id = t.id AND student_id = ? AND status = 'submitted' ORDER BY submitted_at DESC LIMIT 1) as last_score,
-                  (SELECT status FROM attempts WHERE task_id = t.id AND student_id = ? ORDER BY started_at DESC LIMIT 1) as attempt_status
-           FROM tasks t
-           JOIN task_assignments a ON a.task_id = t.id
-           WHERE t.class_id = ? AND t.status = 'published'
-             AND (a.student_id IS NULL OR a.student_id = ?)
-           ORDER BY t.published_at DESC`,
-        )
-          .bind(user.id, user.id, student.class_id, user.id)
-          .all()
-        return json({ tasks: results })
+      // —— Parent tasks (read-only view of linked child's tasks) ——
+      if (path === '/api/parent/tasks' && request.method === 'GET') {
+        const user = await requireRole(env, request, 'parent')
+        if (user instanceof Response) return user
+        if (!user.student_id) return error('Not found', 404)
+        const tasks = await fetchStudentTasks(env, user.student_id)
+        return json({ tasks })
       }
 
       // —— Attempts ——
@@ -1743,6 +1884,75 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           classId: s.class_id,
         })
         const examReadiness = await aggregateExamReadiness(env, s.class_id, [id])
+
+        return json({
+          avgScore,
+          scoreSeries: scores,
+          hwRate,
+          hwSeries,
+          examReadiness,
+          weakspots: JSON.parse(s.weakspots || '[]'),
+          weakspotsSummary: s.weakspots_summary || null,
+          weakspotsUpdatedAt: s.weakspots_updated_at ?? null,
+          events,
+        })
+      }
+
+      // —— Parent insights (read-only view of linked child) ——
+      if (path === '/api/parent/insights' && request.method === 'GET') {
+        const user = await requireRole(env, request, 'parent')
+        if (user instanceof Response) return user
+        const studentId = user.student_id
+        if (!studentId) return error('Not found', 404)
+
+        const s = await env.DB.prepare(
+          `SELECT s.*, c.teacher_id FROM students s JOIN classes c ON c.id = s.class_id WHERE s.id = ?`,
+        )
+          .bind(studentId)
+          .first<{
+            id: string
+            teacher_id: string
+            weakspots: string
+            class_id: string
+            weakspots_summary?: string
+            weakspots_updated_at?: string | null
+          }>()
+        if (!s) return error('Not found', 404)
+
+        const attempts = await env.DB.prepare(
+          `SELECT a.score_pct, a.submitted_at, a.feedback_json, t.type
+           FROM attempts a JOIN tasks t ON t.id = a.task_id
+           WHERE a.student_id = ? AND a.status = 'submitted' AND t.type = 'homework'
+             AND a.submitted_at >= date('now', '-12 months')
+           ORDER BY a.submitted_at ASC
+           LIMIT 1000`,
+        )
+          .bind(studentId)
+          .all<{ score_pct: number; submitted_at: string; feedback_json: string; type: string }>()
+
+        const scores = (attempts.results ?? [])
+          .filter((a) => a.score_pct != null)
+          .map((a) => ({
+            date: a.submitted_at,
+            value: a.score_pct,
+          }))
+        const avgScore =
+          scores.length > 0
+            ? Math.round((scores.reduce((sum, x) => sum + x.value, 0) / scores.length) * 10) / 10
+            : null
+        const hwRate = (await hwCompletionRatesForClass(env, [s.class_id], [studentId])).get(studentId) ?? null
+        const hwSeries = (attempts.results ?? [])
+          .filter((a) => a.type === 'homework')
+          .map((a, i, arr) => ({
+            date: a.submitted_at,
+            value: Math.round(((i + 1) / Math.max(arr.length, 1)) * hwRate!) || 0,
+          }))
+
+        const events = await loadInsightEvents(env, {
+          studentId,
+          classId: s.class_id,
+        })
+        const examReadiness = await aggregateExamReadiness(env, s.class_id, [studentId])
 
         return json({
           avgScore,
