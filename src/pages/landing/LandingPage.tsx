@@ -115,10 +115,13 @@ export function Landing() {
               We’re putting institutional-grade analytics into the hands of everyday teachers
             </h2>
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Teaching is a journey across an ocean of uncertainty; Guidelight is the beacon that
-              helps you steer. Our AI-native platform turns every homework, assessment, and class
-              activity into clear, actionable data on who is learning, who needs help, and where
-              support is needed. With the right tools in hand, every teacher can make an impact.
+              Teaching is a journey across an ocean of uncertainty. Getting a student from where
+              they are to where they need to be demands a detailed understanding of every
+              student’s background, ability and learner profile — and the calls you make along
+              the way matter. Guidelight is the beacon that helps you steer: our AI-native
+              platform turns every homework, assessment, and class activity into clear, actionable
+              data on who is learning, who needs help, and where support is needed — so that with
+              the right tools in hand, every teacher can make an impact.
             </p>
           </div>
 
