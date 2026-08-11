@@ -1,8 +1,9 @@
 /**
  * Text-to-speech for listening questions, via Cloudflare Workers AI.
- * Primary: MiniMax Speech 2.8 Turbo (expressive, 40+ languages) — third-party
- * model, requires AI Gateway Unified Billing credits on the account.
- * Fallback: Deepgram Aura-2 (Workers AI neuron-billed, works out of the box).
+ * Model: Deepgram Aura-2 (@cf/deepgram/aura-2-en) — neuron-billed, works out
+ * of the box with no AI Gateway billing setup, keeping the runtime path on a
+ * single first-party provider. (Fixed-content audio, e.g. the CEFR diagnostic,
+ * is pre-generated offline with Edge TTS instead — see scripts/generate-audio.py.)
  * Audio is cached in R2 by content hash so identical scripts are free to reuse.
  * Everything runs through the Cloudflare binding — no external calls, so this
  * works wherever the Worker is reachable (including mainland China).
@@ -10,12 +11,11 @@
 import type { Env } from '../types'
 import { recordAiUsage, type AiMeterContext } from './billing'
 
-export const TTS_MODEL = 'minimax/speech-2.8-turbo'
-const TTS_FALLBACK_MODEL = '@cf/deepgram/aura-2-en'
+export const TTS_MODEL = '@cf/deepgram/aura-2-en'
 
 /**
- * Curated voices offered in the teacher UI. `id` is the MiniMax voice;
- * `auraSpeaker` is the closest Aura-2 speaker used when falling back.
+ * Curated voices offered in the teacher UI. `id` is the stable identifier the
+ * client sends; `auraSpeaker` is the Aura-2 speaker it maps to.
  */
 export const TTS_VOICES = [
   { id: 'English_expressive_narrator', label: 'Expressive narrator', auraSpeaker: 'orpheus' },
@@ -26,7 +26,7 @@ export const TTS_VOICES = [
 
 export const DEFAULT_TTS_VOICE = TTS_VOICES[0].id
 
-const MAX_TEXT_CHARS = 10_000 // MiniMax limit on Workers AI
+const MAX_TEXT_CHARS = 10_000 // app-level cap, matches the /api/tts route limit
 const TIMEOUT_MS = 15_000
 
 export function isValidVoice(voice: string): boolean {
@@ -38,8 +38,8 @@ async function sha256Hex(input: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-export async function ttsCacheKey(model: string, text: string, voice: string, speed: number): Promise<string> {
-  return `tts/${await sha256Hex(`${model}|${voice}|${speed}|${text}`)}.mp3`
+export async function ttsCacheKey(model: string, text: string, voice: string): Promise<string> {
+  return `tts/${await sha256Hex(`${model}|${voice}|${text}`)}.mp3`
 }
 
 /** Normalise the various Workers AI TTS response shapes to raw mp3 bytes. */
@@ -62,19 +62,9 @@ async function toMp3Bytes(result: unknown): Promise<Uint8Array> {
   throw new Error('Unexpected TTS response shape')
 }
 
-async function runTtsModel(
-  env: Env,
-  model: string,
-  text: string,
-  voiceId: string,
-  auraSpeaker: string,
-  speed: number,
-): Promise<Uint8Array> {
-  const params =
-    model === TTS_MODEL
-      ? { format: 'mp3', text, voice_id: voiceId, speed, volume: 1, pitch: 0 }
-      : { text, speaker: auraSpeaker, encoding: 'mp3' }
-  const call = env.AI.run(model, params)
+async function runTtsModel(env: Env, text: string, auraSpeaker: string): Promise<Uint8Array> {
+  // Aura-2 accepts text/speaker/encoding only — there is no speed parameter.
+  const call = env.AI.run(TTS_MODEL, { text, speaker: auraSpeaker, encoding: 'mp3' })
   const timeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error('TTS request timed out')), TIMEOUT_MS)
   })
@@ -87,6 +77,8 @@ async function runTtsModel(
  * Synthesise speech and store it in R2. Returns the object key on success, or
  * `{ error }` on failure — callers should leave audioUrl unset so the
  * student's browser speechSynthesis fallback still works.
+ * `speed` is accepted for API compatibility but unused: Aura-2 has no speed
+ * parameter.
  */
 export async function synthesizeSpeech(
   env: Env,
@@ -102,33 +94,23 @@ export async function synthesizeSpeech(
   if (!text) return { error: 'empty text' }
   const voiceEntry =
     TTS_VOICES.find((v) => v.id === input.voice) ?? TTS_VOICES[0]
-  const speed =
-    typeof input.speed === 'number' && input.speed >= 0.5 && input.speed <= 2 ? input.speed : 1
 
-  // Try MiniMax first (best quality), then Aura-2 (always available).
-  let bytes: Uint8Array | null = null
-  let modelUsed = TTS_MODEL
-  let lastError = 'unknown'
-  for (const model of [TTS_MODEL, TTS_FALLBACK_MODEL]) {
-    const key = await ttsCacheKey(model, text, voiceEntry.id, speed)
-    try {
-      const existing = await env.AUDIO.head(key)
-      if (existing) return { key, cached: true }
-    } catch (err) {
-      console.error('TTS cache head failed', err)
-    }
-    try {
-      bytes = await runTtsModel(env, model, text, voiceEntry.id, voiceEntry.auraSpeaker, speed)
-      modelUsed = model
-      break
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err)
-      console.error(`TTS model ${model} failed`, err)
-    }
+  const key = await ttsCacheKey(TTS_MODEL, text, voiceEntry.id)
+  try {
+    const existing = await env.AUDIO.head(key)
+    if (existing) return { key, cached: true }
+  } catch (err) {
+    console.error('TTS cache head failed', err)
   }
-  if (!bytes) return { error: lastError }
 
-  const key = await ttsCacheKey(modelUsed, text, voiceEntry.id, speed)
+  let bytes: Uint8Array
+  try {
+    bytes = await runTtsModel(env, text, voiceEntry.auraSpeaker)
+  } catch (err) {
+    console.error(`TTS model ${TTS_MODEL} failed`, err)
+    return { error: err instanceof Error ? err.message : String(err) }
+  }
+
   try {
     await env.AUDIO.put(key, bytes, {
       httpMetadata: { contentType: 'audio/mpeg' },
@@ -137,9 +119,9 @@ export async function synthesizeSpeech(
     if (input.meter) {
       try {
         // Token approximation: ~4 chars per input token, no output tokens.
-        // Both models are actually priced per character — close enough for caps.
+        // Aura-2 is actually priced per character — close enough for caps.
         await recordAiUsage(env, { ...input.meter, feature: 'tts' }, {
-          model: modelUsed,
+          model: TTS_MODEL,
           inputTokens: Math.max(1, Math.ceil(text.length / 4)),
           outputTokens: 0,
         })

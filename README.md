@@ -1,6 +1,6 @@
 # Guidelight
 
-AI-infused homework and assessment on Cloudflare Workers, D1, and Workers AI.
+AI-native homework and assessment on Cloudflare Workers, D1, and Workers AI.
 
 ## Develop
 
@@ -24,8 +24,8 @@ Deployed via Cloudflare Workers CI (builds on push to `main`).
 ## AI stack, China & offline behaviour
 
 - All AI runs server-side through the Workers AI binding — the browser never calls an external AI provider, so the app works anywhere the Cloudflare custom domain is reachable (including mainland China, with or without a VPN).
-- Chat/generation/marking: `@cf/moonshotai/kimi-k2.6` (see `worker/lib/ai.ts`). Listening-question audio: MiniMax Speech 2.8 Turbo with automatic fallback to Deepgram Aura-2 (`worker/lib/tts.ts`), cached in the `guidelight-audio` R2 bucket by content hash so repeat scripts are free.
-- MiniMax is a third-party model on Workers AI: it needs **AI Gateway → Unified Billing** enabled with credits on the account, otherwise it fails with `2021: Invalid User Credentials` and Aura-2 serves the audio instead.
+- Chat/generation/marking: `@cf/moonshotai/kimi-k2.6` (see `worker/lib/ai.ts`). Listening-question audio: Deepgram Aura-2 (`@cf/deepgram/aura-2-en`, `worker/lib/tts.ts`), cached in the `guidelight-audio` R2 bucket by content hash so repeat scripts are free.
+- Fixed-content audio (CEFR diagnostic listening/dictation) is pre-generated offline with Edge TTS — see `scripts/generate-audio.py` + `scripts/audio-manifest.json` — and shipped as static files in `public/cefr-audio/`, so it never touches a runtime TTS provider.
 - Student playback falls back to on-device speech synthesis if generated audio is missing or unreachable.
 - One-time setup for TTS audio: `npx wrangler r2 bucket create guidelight-audio`.
 - End-to-end AI quality check (against local `wrangler dev`, demo seed required):

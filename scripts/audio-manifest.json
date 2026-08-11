@@ -1,0 +1,74 @@
+[
+  {
+    "key": "audio/dictation-A1.mp3",
+    "text": "My mother drinks milk every morning.",
+    "voice": "en-US-AriaNeural",
+    "rate": "-20%"
+  },
+  {
+    "key": "audio/listening-A1.mp3",
+    "text": "Hello! My name is Anna. I am ten years old. I have a dog. It is black and white. Every day after school, I play with my dog in the garden.",
+    "voice": "en-US-AriaNeural",
+    "rate": "-20%"
+  },
+  {
+    "key": "audio/dictation-A2.mp3",
+    "text": "We went to the beach last weekend and swam in the sea.",
+    "voice": "en-US-JennyNeural",
+    "rate": "-10%"
+  },
+  {
+    "key": "audio/listening-A2.mp3",
+    "text": "Hi Tom, it's Lisa. Thanks for your message. The party is on Saturday at seven o'clock at my house. Can you bring some juice? See you there!",
+    "voice": "en-US-JennyNeural",
+    "rate": "-10%"
+  },
+  {
+    "key": "audio/dictation-B1.mp3",
+    "text": "I've lived in this city for ten years and I've made many friends.",
+    "voice": "en-GB-SoniaNeural",
+    "rate": "+0%"
+  },
+  {
+    "key": "audio/listening-B1.mp3",
+    "text": "When I first moved to Manchester, I didn't know anyone. I joined a football club near my house, and that's how I made my first friends. We play every Sunday morning, and afterwards we usually have breakfast together in a café near the park.",
+    "voice": "en-GB-SoniaNeural",
+    "rate": "+0%"
+  },
+  {
+    "key": "audio/dictation-B2.mp3",
+    "text": "Many young people cannot afford to buy their own home in big cities.",
+    "voice": "en-GB-RyanNeural",
+    "rate": "+0%"
+  },
+  {
+    "key": "audio/listening-B2.mp3",
+    "text": "Our company introduced a four-day week six months ago, and the results have been surprising. Productivity has actually increased, and staff report much lower stress levels. The main challenge has been scheduling meetings, since everyone has a different day off.",
+    "voice": "en-GB-RyanNeural",
+    "rate": "+0%"
+  },
+  {
+    "key": "audio/dictation-C1.mp3",
+    "text": "A recent study concluded that workers were most effective when they split their time between home and office.",
+    "voice": "en-US-GuyNeural",
+    "rate": "+0%"
+  },
+  {
+    "key": "audio/listening-C1.mp3",
+    "text": "Critics of remote learning often argue that students miss out on the social aspects of education. While this concern is valid, it overlooks the fact that many learners thrive without the distractions of a busy classroom. The real issue is not location but engagement: a disengaged student will struggle whether they are sitting in a lecture hall or watching from their bedroom.",
+    "voice": "en-US-GuyNeural",
+    "rate": "+0%"
+  },
+  {
+    "key": "audio/dictation-C2.mp3",
+    "text": "The sheer volume of messages we send may have eroded their individual significance.",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%"
+  },
+  {
+    "key": "audio/listening-C2.mp3",
+    "text": "The notion that convenience inevitably improves our lives deserves rigorous challenge. Each technological shortcut we adopt quietly erodes a skill we once possessed: navigation apps have atrophied our sense of direction, and autocorrect has blunted our spelling. Whether this trade is worth making depends less on the technology than on our willingness to remain deliberate users of it.",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%"
+  }
+]
