@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { GuidelightWordmark } from '@/components/BrandMark'
+import { LegalFooter } from '@/components/LegalFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   APP_URL,
-  COPYRIGHT_LINE,
   LEGAL_EFFECTIVE_DATE,
   OPERATOR_ADDRESS,
   OPERATOR_NAME,
@@ -40,25 +40,8 @@ function LegalShell({ title, children }: { title: string; children: ReactNode })
         </div>
       </main>
 
-      <footer className="mx-auto max-w-3xl border-t border-border/60 px-6 py-8 text-center text-xs text-muted-foreground">
-        <nav className="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-          <Link to="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
-            Terms
-          </Link>
-          <span aria-hidden>·</span>
-          <Link to="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
-            Privacy
-          </Link>
-          <span aria-hidden>·</span>
-          <Link to="/accessibility" className="underline-offset-4 hover:text-foreground hover:underline">
-            Accessibility
-          </Link>
-          <span aria-hidden>·</span>
-          <a href={SUPPORT_MAILTO} className="underline-offset-4 hover:text-foreground hover:underline">
-            Contact
-          </a>
-        </nav>
-        <p>{COPYRIGHT_LINE}</p>
+      <footer className="mx-auto max-w-3xl border-t border-border/60 px-6 py-8">
+        <LegalFooter />
       </footer>
     </div>
   )

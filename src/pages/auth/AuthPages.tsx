@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 const NightGuideScene = lazy(() =>
   import('@/components/NightGuideScene').then((m) => ({ default: m.NightGuideScene })),
 )
+import { LegalFooter } from '@/components/LegalFooter'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,48 +14,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { COPYRIGHT_LINE, SUPPORT_MAILTO } from '@/lib/legal'
 import { TRUST_LANDING } from '@/lib/trustCopy'
 import { cn } from '@/lib/utils'
-
-export function AuthLegalFooter({ variant = 'pill' }: { variant?: 'pill' | 'plain' }) {
-  // Sits on the ocean scene — a translucent blurred pill keeps the text legible
-  // over both the day and the night sea. The landing page uses a plain inline
-  // version so the links do not look like a floating container.
-  const isPill = variant === 'pill'
-  const linkHover = 'underline-offset-4 hover:text-slate-900 hover:underline dark:hover:text-white'
-  const content = (
-    <>
-      <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <Link to="/terms" className={linkHover}>
-          Terms
-        </Link>
-        <span aria-hidden>·</span>
-        <Link to="/privacy" className={linkHover}>
-          Privacy
-        </Link>
-        <span aria-hidden>·</span>
-        <a href={SUPPORT_MAILTO} className={linkHover}>
-          Contact
-        </a>
-      </nav>
-      <p>{COPYRIGHT_LINE}</p>
-    </>
-  )
-  return (
-    <footer className="mt-6 text-center text-xs">
-      {isPill ? (
-        <div className="inline-flex flex-col items-center gap-1 rounded-2xl border border-white/20 bg-white/55 px-5 py-2 text-slate-700 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-slate-950/45 dark:text-white/90">
-          {content}
-        </div>
-      ) : (
-        <div className="inline-flex flex-col items-center gap-1 text-slate-700 dark:text-white/80">
-          {content}
-        </div>
-      )}
-    </footer>
-  )
-}
 
 export function AuthShell({
   children,
@@ -78,7 +39,7 @@ export function AuthShell({
         {children}
       </main>
       <div className="relative z-10 w-full max-w-md">
-        <AuthLegalFooter />
+        <LegalFooter variant="overlay" />
       </div>
     </div>
   )

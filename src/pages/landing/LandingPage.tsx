@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import { BrandStar, GuidelightWordmark } from '@/components/BrandMark'
 import { DemoVideoDialog } from '@/components/DemoVideoDialog'
+import { LegalFooter } from '@/components/LegalFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { AuthLegalFooter } from '@/pages/auth/AuthPages'
 import { Button } from '@/components/ui/button'
 
 const NightGuideScene = lazy(() =>
@@ -59,7 +59,7 @@ export function Landing() {
 
       {/* Legal footer */}
       <div className="relative z-10 px-6 pb-6">
-        <AuthLegalFooter variant="plain" />
+        <LegalFooter variant="overlay" />
       </div>
     </div>
   )
