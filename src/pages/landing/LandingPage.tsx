@@ -15,23 +15,29 @@ const NightGuideScene = lazy(() =>
 const HOW_IT_WORKS = [
   {
     title: 'Homework',
-    description:
-      'AI drafts curriculum-aligned tasks; you approve before anything reaches a student. Every attempt is marked, stored, and turned into a data point on your students’ understanding.',
+    features:
+      'AI-generated, curriculum-aligned tasks; teacher review before release; automatic marking with written feedback; every attempt stored against the student profile.',
+    impact:
+      'Save hours of preparation and marking, while every student attempt becomes data on their understanding.',
   },
   {
     title: 'Assessments',
-    description:
-      'Formative and summative papers that mirror exam formats, with integrity controls and readiness scoring built in.',
+    features:
+      'Formative and summative papers in exam format; timed delivery; integrity controls; teacher-reviewed feedback before release.',
+    impact:
+      'Know exactly who is on track, who needs intervention, and how ready your class is for the real exam.',
   },
   {
     title: 'Insights',
-    description:
-      'Class and student trends, weakspot analysis, and exam-readiness probabilities — so you can steer with confidence, not guesswork.',
+    features:
+      'Class and student trends; weakspot analysis; exam-readiness probabilities; event tracking; report generation; CSV export.',
+    impact: 'Reason about your teaching impact with confidence — not assumptions.',
   },
   {
     title: 'Lesson planning',
-    description:
-      'AI-generated, personalised semester plans that you can edit and export — saving you hours of preparation time.',
+    features:
+      'AI-generated, personalised semester plans; scaffolded lesson detail; fully editable; exportable.',
+    impact: 'Cut planning time and share polished plans with leaders or parents.',
   },
 ] as const
 
@@ -117,16 +123,25 @@ export function Landing() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {HOW_IT_WORKS.map(({ title, description }) => (
+            {HOW_IT_WORKS.map(({ title, features, impact }) => (
               <Card
                 key={title}
                 className="border-0 bg-card/25 text-left shadow-sm backdrop-blur-xl"
               >
                 <CardContent className="p-6">
-                  <h3 className="mb-2 font-display text-lg font-semibold text-foreground">
+                  <h3 className="mb-3 font-display text-lg font-semibold text-foreground">
                     {title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
+                  <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+                    <p>
+                      <span className="font-semibold text-foreground">Features: </span>
+                      {features}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">Impact: </span>
+                      {impact}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             ))}
