@@ -26,6 +26,21 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+/**
+ * Distractor pool for spot-checks: common concrete English words. Distractors
+ * must NOT come from the passage itself — otherwise every option "appeared in
+ * the passage" and honest readers can only guess (they failed ~86% of the
+ * time before this fix). Any pool words that do occur in the passage are
+ * filtered out per task.
+ */
+const DISTRACTOR_POOL = [
+  'apple', 'bicycle', 'blanket', 'bottle', 'bridge', 'camera', 'candle', 'carpet',
+  'castle', 'church', 'cloud', 'coffee', 'doctor', 'dollar', 'engine', 'farmer',
+  'forest', 'garden', 'hammer', 'island', 'jacket', 'kitchen', 'ladder', 'letter',
+  'market', 'mirror', 'monkey', 'mountain', 'pencil', 'pocket', 'rabbit', 'river',
+  'rocket', 'school', 'shadow', 'silver', 'spider', 'station', 'teacher', 'window',
+];
+
 function normalizeWord(w: string): string {
   return w.replace(/^[^A-Za-z0-9\u00C0-\u024F]+|[^A-Za-z0-9\u00C0-\u024F]+$/g, '');
 }
@@ -73,6 +88,7 @@ function buildFromPool(words: string[], seed: number): SpotCheck[] {
 
   const checks: SpotCheck[] = [];
   const usedAnswers = new Set<string>();
+  const passageKeys = new Set(words.map((w) => w.toLowerCase()));
 
   for (let i = 0; i < SPOT_CHECK_COUNT; i++) {
     const pool = thirds[i] ?? words;
@@ -84,7 +100,9 @@ function buildFromPool(words: string[], seed: number): SpotCheck[] {
     usedAnswers.add(answer.toLowerCase());
 
     const distractors: string[] = [];
-    const distractPool = words.filter((w) => w.toLowerCase() !== answer.toLowerCase());
+    const distractPool = DISTRACTOR_POOL.filter(
+      (w) => !passageKeys.has(w) && !usedAnswers.has(w),
+    );
     while (distractors.length < 3 && distractPool.length > 0) {
       const d = distractPool[Math.floor(rand() * distractPool.length)]!;
       if (!distractors.some((x) => x.toLowerCase() === d.toLowerCase())) {

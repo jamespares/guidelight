@@ -310,11 +310,24 @@ export async function handleCefrApi(
     if (existingDone) return error('Already completed', 400)
 
     // Clear rejected / abandoned in-progress
+    const abandoned = await env.DB.prepare(
+      `SELECT attempt_id FROM reading_speed_attempts WHERE student_id = ? AND task_id = ? AND status = 'in_progress'`,
+    )
+      .bind(user.id, taskId)
+      .all<{ attempt_id: string | null }>()
     await env.DB.prepare(
       `UPDATE reading_speed_attempts SET status = 'rejected' WHERE student_id = ? AND task_id = ? AND status = 'in_progress'`,
     )
       .bind(user.id, taskId)
       .run()
+    // Drop their mirror rows so the teacher review list isn't left with
+    // permanently "in_progress" attempts (the rejected rows remain in
+    // reading_speed_attempts, flagged, as the audit trail).
+    for (const row of abandoned.results ?? []) {
+      if (row.attempt_id) {
+        await env.DB.prepare(`DELETE FROM attempts WHERE id = ?`).bind(row.attempt_id).run()
+      }
+    }
 
     const id = generateId()
     const wordCount = countWords(task.reading_text)
@@ -357,6 +370,7 @@ export async function handleCefrApi(
         started_at: string
         word_count: number
         duration_seconds: number | null
+        attempt_id: string | null
       }>()
     if (!attempt) return error('No active attempt', 400)
     if (attempt.duration_seconds != null) {
@@ -374,6 +388,9 @@ export async function handleCefrApi(
       )
         .bind(durationSeconds, wpm, attempt.id)
         .run()
+      if (attempt.attempt_id) {
+        await env.DB.prepare(`DELETE FROM attempts WHERE id = ?`).bind(attempt.attempt_id).run()
+      }
       return error(boundErr, 400)
     }
 
@@ -420,6 +437,9 @@ export async function handleCefrApi(
       )
         .bind(scored.correct, scored.total, attempt.id)
         .run()
+      if (attempt.attempt_id) {
+        await env.DB.prepare(`DELETE FROM attempts WHERE id = ?`).bind(attempt.attempt_id).run()
+      }
       return error(
         `You got ${scored.correct}/${scored.total} spot-checks right (need ${SPOT_CHECK_PASS}). Start again and read carefully.`,
         400,
