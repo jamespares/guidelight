@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarPlus, FileText, Printer, Save, Trash2 } from 'lucide-react'
+import { CalendarPlus, FileText, Printer, Save, Trash2, Users } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { eventColor, InsightLineChartCard } from '@/components/InsightLineChart'
 import { PageHeader } from '@/components/PageHeader'
@@ -192,6 +193,27 @@ export function InsightsPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete event')
     }
+  }
+
+  if (classes.length === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Insights"
+          description="Scores, submission rates, and weakspots for a class or individual student."
+        />
+        <EmptyState
+          icon={Users}
+          title="Add a class to get started"
+          description="Before you can view insights, you need a class with students. Add one on the Students page and then come back here. No card is needed to start — your account has starter credit and a monthly AI spending cap."
+          action={
+            <Button asChild>
+              <Link to="/teacher/students">Add class</Link>
+            </Button>
+          }
+        />
+      </div>
+    )
   }
 
   return (
