@@ -1,41 +1,110 @@
+import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import type { ReactNode } from 'react'
-import { TeacherLayout, StudentLayout, ParentLayout } from './components/Layouts'
+import { PageLoadingFallback, TeacherLayout, StudentLayout, ParentLayout } from './components/Layouts'
 import { useAuth } from './lib/auth'
 import { ParentAuth, StudentAuth, TeacherAuth, VerifyEmailPage, ResetPasswordPage } from './pages/auth/AuthPages'
 import { Landing } from './pages/landing/LandingPage'
 import { RoleSelectPage } from './pages/landing/RoleSelectPage'
-import { InsightsPage, ReportPage } from './pages/teacher/InsightsPage'
-import { StudentDetailPage } from './pages/teacher/StudentDetailPage'
-import { StudentsPage } from './pages/teacher/StudentsPage'
-import { AssessmentsPage, HomeworkPage } from './pages/teacher/TasksPages'
-import { TaskReviewPage } from './pages/teacher/TaskReviewPage'
-import { TaskPreviewPage } from './pages/teacher/TaskPreviewPage'
-import {
-  LessonBatchPage,
-  LessonDetailPage,
-  LessonsPage,
-} from './pages/teacher/LessonsPages'
-import { ExamProfileDetailPage } from './pages/teacher/ExamProfilePages'
-import { AttemptPage, StudentTasksPage, StudentToolsPage } from './pages/student/StudentPages'
-import {
-  ParentDashboardPage,
-  ParentTasksPage,
-} from './pages/parent/ParentPages'
-import { ReadingSpeedPage } from './pages/student/ReadingSpeedPage'
-import { EnglishLevelPage } from './pages/student/EnglishLevelPage'
-import {
-  StoriesHubPage,
-  StoriesLevelPage,
-  StoryReaderPage,
-} from './pages/student/StoriesPages'
-import {
-  ReadingMachineLibraryPage,
-  ReadingMachineViewerPage,
-} from './pages/student/ReadingMachinePages'
-import { SettingsPage } from './pages/shared/SettingsPage'
-import { ParentGuidePage, StudentGuidePage, TeacherGuidePage } from './pages/shared/GuidePages'
-import { AccessibilityStatementPage, PrivacyPolicyPage, TermsOfServicePage } from './pages/shared/LegalPages'
+
+// Route-level code splitting: portal pages load on demand instead of in the
+// initial bundle. Entry pages (landing, auth) stay static for fast first paint.
+const StudentsPage = lazy(() =>
+  import('./pages/teacher/StudentsPage').then((m) => ({ default: m.StudentsPage })),
+)
+const StudentDetailPage = lazy(() =>
+  import('./pages/teacher/StudentDetailPage').then((m) => ({ default: m.StudentDetailPage })),
+)
+const HomeworkPage = lazy(() =>
+  import('./pages/teacher/TasksPages').then((m) => ({ default: m.HomeworkPage })),
+)
+const AssessmentsPage = lazy(() =>
+  import('./pages/teacher/TasksPages').then((m) => ({ default: m.AssessmentsPage })),
+)
+const TaskReviewPage = lazy(() =>
+  import('./pages/teacher/TaskReviewPage').then((m) => ({ default: m.TaskReviewPage })),
+)
+const TaskPreviewPage = lazy(() =>
+  import('./pages/teacher/TaskPreviewPage').then((m) => ({ default: m.TaskPreviewPage })),
+)
+const LessonsPage = lazy(() =>
+  import('./pages/teacher/LessonsPages').then((m) => ({ default: m.LessonsPage })),
+)
+const LessonBatchPage = lazy(() =>
+  import('./pages/teacher/LessonsPages').then((m) => ({ default: m.LessonBatchPage })),
+)
+const LessonDetailPage = lazy(() =>
+  import('./pages/teacher/LessonsPages').then((m) => ({ default: m.LessonDetailPage })),
+)
+const ExamProfileDetailPage = lazy(() =>
+  import('./pages/teacher/ExamProfilePages').then((m) => ({ default: m.ExamProfileDetailPage })),
+)
+const InsightsPage = lazy(() =>
+  import('./pages/teacher/InsightsPage').then((m) => ({ default: m.InsightsPage })),
+)
+const ReportPage = lazy(() =>
+  import('./pages/teacher/InsightsPage').then((m) => ({ default: m.ReportPage })),
+)
+const StudentTasksPage = lazy(() =>
+  import('./pages/student/StudentPages').then((m) => ({ default: m.StudentTasksPage })),
+)
+const StudentToolsPage = lazy(() =>
+  import('./pages/student/StudentPages').then((m) => ({ default: m.StudentToolsPage })),
+)
+const AttemptPage = lazy(() =>
+  import('./pages/student/StudentPages').then((m) => ({ default: m.AttemptPage })),
+)
+const ReadingSpeedPage = lazy(() =>
+  import('./pages/student/ReadingSpeedPage').then((m) => ({ default: m.ReadingSpeedPage })),
+)
+const EnglishLevelPage = lazy(() =>
+  import('./pages/student/EnglishLevelPage').then((m) => ({ default: m.EnglishLevelPage })),
+)
+const StoriesHubPage = lazy(() =>
+  import('./pages/student/StoriesPages').then((m) => ({ default: m.StoriesHubPage })),
+)
+const StoriesLevelPage = lazy(() =>
+  import('./pages/student/StoriesPages').then((m) => ({ default: m.StoriesLevelPage })),
+)
+const StoryReaderPage = lazy(() =>
+  import('./pages/student/StoriesPages').then((m) => ({ default: m.StoryReaderPage })),
+)
+const ReadingMachineLibraryPage = lazy(() =>
+  import('./pages/student/ReadingMachinePages').then((m) => ({
+    default: m.ReadingMachineLibraryPage,
+  })),
+)
+const ReadingMachineViewerPage = lazy(() =>
+  import('./pages/student/ReadingMachinePages').then((m) => ({
+    default: m.ReadingMachineViewerPage,
+  })),
+)
+const ParentDashboardPage = lazy(() =>
+  import('./pages/parent/ParentPages').then((m) => ({ default: m.ParentDashboardPage })),
+)
+const ParentTasksPage = lazy(() =>
+  import('./pages/parent/ParentPages').then((m) => ({ default: m.ParentTasksPage })),
+)
+const SettingsPage = lazy(() =>
+  import('./pages/shared/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+)
+const TeacherGuidePage = lazy(() =>
+  import('./pages/shared/GuidePages').then((m) => ({ default: m.TeacherGuidePage })),
+)
+const StudentGuidePage = lazy(() =>
+  import('./pages/shared/GuidePages').then((m) => ({ default: m.StudentGuidePage })),
+)
+const ParentGuidePage = lazy(() =>
+  import('./pages/shared/GuidePages').then((m) => ({ default: m.ParentGuidePage })),
+)
+const TermsOfServicePage = lazy(() =>
+  import('./pages/shared/LegalPages').then((m) => ({ default: m.TermsOfServicePage })),
+)
+const PrivacyPolicyPage = lazy(() =>
+  import('./pages/shared/LegalPages').then((m) => ({ default: m.PrivacyPolicyPage })),
+)
+const AccessibilityStatementPage = lazy(() =>
+  import('./pages/shared/LegalPages').then((m) => ({ default: m.AccessibilityStatementPage })),
+)
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -75,7 +144,8 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <Suspense fallback={<PageLoadingFallback />}>
+      <Routes>
       <Route
         path="/"
         element={
@@ -167,6 +237,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 }

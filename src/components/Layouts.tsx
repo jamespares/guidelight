@@ -12,17 +12,54 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import { Suspense, useEffect } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { BrandMark } from '@/components/BrandMark'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { CapHitBanner } from '@/components/UsageDial'
 import { Button } from '@/components/ui/button'
+import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { BillingProvider, SidebarUsageDial, useBilling } from '@/lib/billing'
 import { SUPPORT_MAILTO } from '@/lib/legal'
+import { queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
 
 type NavItem = { to: string; label: string; icon: LucideIcon }
+
+/** Shown while a lazily-loaded route chunk is being fetched. */
+export function PageLoadingFallback() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">
+      Loading…
+    </div>
+  )
+}
+
+// Sidebar nav → page chunk. Hovering or focusing a link starts fetching the
+// lazily-loaded page module so navigation feels instant.
+const routeChunks: Record<string, () => Promise<unknown>> = {
+  '/teacher/students': () => import('@/pages/teacher/StudentsPage'),
+  '/teacher/lessons': () => import('@/pages/teacher/LessonsPages'),
+  '/teacher/homework': () => import('@/pages/teacher/TasksPages'),
+  '/teacher/assessments': () => import('@/pages/teacher/TasksPages'),
+  '/teacher/insights': () => import('@/pages/teacher/InsightsPage'),
+  '/teacher/guide': () => import('@/pages/shared/GuidePages'),
+  '/teacher/settings': () => import('@/pages/shared/SettingsPage'),
+  '/student/tasks': () => import('@/pages/student/StudentPages'),
+  '/student/tools': () => import('@/pages/student/StudentPages'),
+  '/student/guide': () => import('@/pages/shared/GuidePages'),
+  '/student/settings': () => import('@/pages/shared/SettingsPage'),
+  '/parent/dashboard': () => import('@/pages/parent/ParentPages'),
+  '/parent/tasks': () => import('@/pages/parent/ParentPages'),
+  '/parent/guide': () => import('@/pages/shared/GuidePages'),
+  '/parent/settings': () => import('@/pages/shared/SettingsPage'),
+}
+
+function prefetchRouteChunk(to: string) {
+  void routeChunks[to]?.()
+}
 
 function TeacherCapBanner() {
   const billing = useBilling()
@@ -66,6 +103,8 @@ function AppShell({
             <NavLink
               key={to}
               to={to}
+              onMouseEnter={() => prefetchRouteChunk(to)}
+              onFocus={() => prefetchRouteChunk(to)}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
@@ -86,6 +125,8 @@ function AppShell({
             <NavLink
               key={to}
               to={to}
+              onMouseEnter={() => prefetchRouteChunk(to)}
+              onFocus={() => prefetchRouteChunk(to)}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
@@ -147,7 +188,9 @@ function AppShell({
       <main id="main-content" className="ml-60 flex-1 p-8 lg:p-10">
         <div className="mx-auto w-full max-w-7xl motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
           {showBillingDial ? <TeacherCapBanner /> : null}
-          <Outlet />
+          <Suspense fallback={<PageLoadingFallback />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>
@@ -187,9 +230,63 @@ const parentSecondary: NavItem[] = [
   { to: '/parent/settings', label: 'Settings', icon: Settings },
 ]
 
+// Warm the React Query cache for the pages a role is most likely to visit,
+// so first navigation renders from cache instead of waiting on the network.
+function TeacherPrefetch() {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.classes.all,
+      queryFn: async () => (await api.classes()).classes,
+      staleTime: 5 * 60_000,
+    })
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.students.all,
+      queryFn: async () => (await api.students()).students,
+      staleTime: 5 * 60_000,
+    })
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.tasks.all('homework'),
+      queryFn: async () => (await api.tasks('homework')).tasks,
+    })
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.tasks.all('assessment'),
+      queryFn: async () => (await api.tasks('assessment')).tasks,
+    })
+  }, [queryClient])
+  return null
+}
+
+function StudentPrefetch() {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.studentTasks.all,
+      queryFn: async () => (await api.studentTasks()).tasks,
+    })
+  }, [queryClient])
+  return null
+}
+
+function ParentPrefetch() {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.parentTasks.all,
+      queryFn: async () => (await api.parentTasks()).tasks,
+    })
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.parentInsights.all,
+      queryFn: () => api.parentInsights(),
+    })
+  }, [queryClient])
+  return null
+}
+
 export function TeacherLayout() {
   return (
     <BillingProvider>
+      <TeacherPrefetch />
       <AppShell
         role="Teacher"
         items={teacherNav}
@@ -205,6 +302,7 @@ export function TeacherLayout() {
 export function StudentLayout() {
   return (
     <BillingProvider>
+      <StudentPrefetch />
       <AppShell
         role="Student"
         items={studentNav}
@@ -219,6 +317,7 @@ export function StudentLayout() {
 export function ParentLayout() {
   return (
     <BillingProvider>
+      <ParentPrefetch />
       <AppShell
         role="Parent"
         items={parentNav}
