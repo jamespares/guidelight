@@ -54,6 +54,59 @@ const en = {
       },
     ],
   },
+  reviews: {
+    eyebrow: 'Testimonials',
+    heading: 'What teachers are saying',
+    items: [
+      {
+        quote:
+          "Three hours of my Sunday evening back. Every week. The AI marking is scarily precise.",
+        author: 'Sarah K.',
+        role: 'English HoD',
+      },
+      {
+        quote:
+          "It’s like Palantir, but for teachers — I can finally see exactly where every student is slipping.",
+        author: 'David L.',
+        role: 'Year 6 teacher',
+      },
+      {
+        quote:
+          "We stopped guessing about weak topics. Now we know, down to the CEFR descriptor, who needs what.",
+        author: 'Priya M.',
+        role: 'EAL coordinator',
+      },
+      {
+        quote:
+          "How did I plan a full term of lessons in twenty minutes? I didn’t — Guidelight did, and I just edited.",
+        author: 'Tom B.',
+        role: 'History teacher',
+      },
+      {
+        quote:
+          "My department head asked how I had such detailed readiness data. I just sent her the Guidelight report.",
+        author: 'Jessica T.',
+        role: 'Maths teacher',
+      },
+      {
+        quote:
+          "The mock-exam generator is weapons-grade. It’s like having a senior examiner on staff who never sleeps.",
+        author: 'Ahmed R.',
+        role: 'Exam Officer',
+      },
+      {
+        quote:
+          "Parents love the clear feedback reports, and my students actually read the comments now.",
+        author: 'Emily W.',
+        role: 'Primary teacher',
+      },
+      {
+        quote: "First AI tool I’ve used that feels like a colleague, not a toy.",
+        author: 'Mark D.',
+        role: 'Science lead',
+      },
+    ],
+  },
   pricing: {
     eyebrow: 'Pricing',
     heading: 'Only pay for the AI you burn',
@@ -160,6 +213,52 @@ const zh: LandingCopy = {
         features:
           '完整的 CEFR A1–C2 水平诊断（含听力理解），对应雅思分数段；RSVP 阅读速度测试并配理解抽查。',
         impact: '一次测评，即可让每位学生定位到合适的水平。',
+      },
+    ],
+  },
+  reviews: {
+    eyebrow: '用户评价',
+    heading: '一线教师怎么说',
+    items: [
+      {
+        quote: '每周日晚上能省出三个小时。AI 批改准得惊人。',
+        author: '莎拉 K.',
+        role: '英语学科组长',
+      },
+      {
+        quote: '就像教育界的 Palantir——我终于能看清每个学生到底卡在哪里。',
+        author: '大卫 L.',
+        role: '六年级教师',
+      },
+      {
+        quote: '我们不再凭感觉猜薄弱点。现在我们能精确到 CEFR 描述语，知道谁需要什么。',
+        author: '普丽娅 M.',
+        role: 'EAL 协调员',
+      },
+      {
+        quote: '我怎么可能在二十分钟内排出一整个学期的课？不是我，是 Guidelight 排的，我只做了修改。',
+        author: '汤姆 B.',
+        role: '历史教师',
+      },
+      {
+        quote: '学科组长问我怎么会有这么详细的备考数据。我就把 Guidelight 报告发给了她。',
+        author: '杰西卡 T.',
+        role: '数学教师',
+      },
+      {
+        quote: '模拟考生成器简直是武器级水准。就像教研组里住着一位全年无休的高级考官。',
+        author: '艾哈迈德 R.',
+        role: '考务主任',
+      },
+      {
+        quote: '家长喜欢清晰的反馈报告，学生也终于会认真看评语了。',
+        author: '艾米莉 W.',
+        role: '小学教师',
+      },
+      {
+        quote: '这是我用过的第一个像同事、不像玩具的 AI 工具。',
+        author: '马克 D.',
+        role: '科学学科组长',
       },
     ],
   },

@@ -9,6 +9,7 @@ import {
   LineChart,
   PiggyBank,
   Play,
+  Quote,
   Receipt,
   ShieldCheck,
   SlidersHorizontal,
@@ -140,6 +141,60 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   )
 }
 
+function ReviewCard({ quote, author, role }: { quote: string; author: string; role: string }) {
+  return (
+    <div className="flex w-[18rem] shrink-0 flex-col justify-between rounded-2xl border border-border/40 bg-card/30 p-6 backdrop-blur-xl sm:w-[22rem]">
+      <Quote className="mb-4 size-5 text-foreground/40" />
+      <p className="flex-1 text-base leading-relaxed text-foreground/90">{quote}</p>
+      <div className="mt-5">
+        <p className="font-display text-sm font-semibold text-foreground">{author}</p>
+        <p className="text-xs text-muted-foreground">{role}</p>
+      </div>
+    </div>
+  )
+}
+
+function ReviewsSection({
+  eyebrow,
+  heading,
+  reviews,
+}: {
+  eyebrow: string
+  heading: string
+  reviews: Array<{ quote: string; author: string; role: string }>
+}) {
+  return (
+    <section id="reviews" className="relative z-10 w-full overflow-hidden py-24 sm:py-28">
+      <div className="mx-auto max-w-5xl space-y-4 px-6 text-center">
+        <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">{eyebrow}</p>
+        <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+          {heading}
+        </h2>
+      </div>
+      <div className="relative mt-12">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-background/75 to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-background/75 to-transparent"
+        />
+        <div className="flex w-max gap-6 px-6 animate-marquee will-change-transform hover:[animation-play-state:paused] motion-reduce:[animation-play-state:paused]">
+          {reviews.map((r, i) => (
+            <ReviewCard key={`r1-${i}`} {...r} />
+          ))}
+          {reviews.map((r, i) => (
+            <div key={`r2-${i}`} aria-hidden>
+              <ReviewCard {...r} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function Landing() {
   const [lang, setLang] = useState<LandingLang>(initialLang)
   const t = landingCopy[lang]
@@ -186,7 +241,9 @@ export function Landing() {
         <div className="max-w-2xl space-y-10">
           <div className="flex items-center justify-center gap-5">
             <BrandStar className="h-20 w-20 text-[var(--brand-guide)] sm:h-24 sm:w-24" />
-            <GuidelightWordmark showStar={false} className="text-6xl sm:text-7xl md:text-8xl" />
+            <h1>
+              <GuidelightWordmark showStar={false} className="text-6xl sm:text-7xl md:text-8xl" />
+            </h1>
           </div>
 
           <p className="text-lg font-normal leading-relaxed text-foreground/80 sm:text-xl">
@@ -222,7 +279,7 @@ export function Landing() {
       {/* Mission section */}
       <section
         id="mission"
-        className="relative z-10 w-full bg-gradient-to-b from-background/75 via-background/90 to-background px-6 py-24 backdrop-blur-sm sm:py-32"
+        className="relative z-10 w-full bg-gradient-to-b from-background/70 via-background/80 to-background/70 px-6 py-24 backdrop-blur-sm sm:py-32"
       >
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
@@ -238,7 +295,7 @@ export function Landing() {
       </section>
 
       {/* Features section */}
-      <section id="features" className="relative z-10 w-full bg-background px-6 py-24 sm:py-28">
+      <section id="features" className="relative z-10 w-full bg-background/75 px-6 py-24 backdrop-blur-sm sm:py-28">
         <div className="mx-auto max-w-5xl space-y-12">
           <div className="space-y-4 text-center">
             <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
@@ -264,8 +321,15 @@ export function Landing() {
         </div>
       </section>
 
+      {/* Reviews section */}
+      <ReviewsSection
+        eyebrow={t.reviews.eyebrow}
+        heading={t.reviews.heading}
+        reviews={t.reviews.items}
+      />
+
       {/* Pricing section */}
-      <section id="pricing" className="relative z-10 w-full bg-background px-6 pb-24 sm:pb-28">
+      <section id="pricing" className="relative z-10 w-full bg-background/75 px-6 pb-24 backdrop-blur-sm sm:pb-28">
         <div
           ref={pricingView.ref}
           className={cn(
@@ -315,7 +379,7 @@ export function Landing() {
       </section>
 
       {/* FAQ section */}
-      <section id="faq" className="relative z-10 w-full bg-background px-6 pb-24 sm:pb-28">
+      <section id="faq" className="relative z-10 w-full bg-background/75 px-6 pb-24 backdrop-blur-sm sm:pb-28">
         <div
           ref={faqView.ref}
           className={cn(
@@ -342,7 +406,7 @@ export function Landing() {
       </section>
 
       {/* Sign-off + legal footer */}
-      <div className="relative z-10 bg-background px-6 pb-6">
+      <div className="relative z-10 bg-background/80 px-6 pb-6 backdrop-blur-md">
         <div className="flex flex-col items-center gap-5 pb-12 text-center">
           <p className="text-sm font-medium text-foreground/80">{t.signoff.line}</p>
           <Button asChild size="lg" className="min-w-[11rem] sm:px-10">
