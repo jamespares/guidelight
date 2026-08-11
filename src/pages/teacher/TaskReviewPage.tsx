@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Save, Send, Volume2, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { MarkingGapsBanner } from '@/components/MarkingGapsBanner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { api, type Question, type TaskContent, type TtsVoice } from '@/lib/api'
+import { findTaskGaps } from '@/lib/taskGaps'
 import { queryKeys } from '@/lib/queryKeys'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 
@@ -121,6 +123,19 @@ export function TaskReviewPage() {
 
   async function publish() {
     if (!id || !content) return
+    const gaps = findTaskGaps(content, { rubricText: task?.rubric_text })
+    if (gaps.length > 0) {
+      const list = gaps
+        .slice(0, 6)
+        .map((g) => `• ${g.message}`)
+        .join('\n')
+      const more = gaps.length > 6 ? `\n• …and ${gaps.length - 6} more` : ''
+      const ok = window.confirm(
+        `This task has ${gaps.length} marking gap(s):\n${list}${more}\n\n` +
+          'The AI marker anchors on these answers/rubrics — without them marking is approximate. Publish anyway?',
+      )
+      if (!ok) return
+    }
     setBusy(true)
     setError('')
     try {
@@ -153,6 +168,8 @@ export function TaskReviewPage() {
     task.subtype === 'reading_speed' ||
     content.kind === 'english_level' ||
     content.kind === 'reading_speed'
+
+  const markingGaps = isSpecial ? [] : findTaskGaps(content, { rubricText: task.rubric_text })
 
   return (
     <div className="space-y-6">
@@ -201,6 +218,8 @@ export function TaskReviewPage() {
         </div>
       ) : null}
 
+      {markingGaps.length > 0 ? <MarkingGapsBanner gaps={markingGaps} /> : null}
+
       <Card>
         <CardContent className="space-y-4 p-6">
           <div className="space-y-2">
@@ -235,6 +254,32 @@ export function TaskReviewPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      {task.rubric_text || task.model_essay ? (
+        <Card>
+          <CardHeader>
+            <CardTitle as="h2">Marking reference</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {task.rubric_text ? (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Marking rubric</p>
+                <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-4 text-sm">
+                  {task.rubric_text}
+                </pre>
+              </div>
+            ) : null}
+            {task.model_essay ? (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Model essay (shown to students after they submit)</p>
+                <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-4 text-sm">
+                  {task.model_essay}
+                </pre>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {!isSpecial
         ? content.questions.map((q, i) => (
