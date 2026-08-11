@@ -406,15 +406,19 @@ export function Landing() {
       </section>
 
       {/* Sign-off + legal footer */}
-      <div className="relative z-10 px-6 pb-6">
+      <footer className="relative z-10 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent px-6 pt-32 pb-6">
         <div className="flex flex-col items-center gap-5 pb-12 text-center">
-          <p className="text-sm font-medium text-foreground/80">{t.signoff.line}</p>
+          <p className="text-sm font-medium text-white/90">{t.signoff.line}</p>
           <Button asChild size="lg" className="min-w-[11rem] sm:px-10">
             <Link to="/get-started">{t.signoff.cta}</Link>
           </Button>
         </div>
-        <LegalFooter variant="inline" />
-      </div>
+        <LegalFooter
+          variant="inline"
+          className="text-white/70"
+          linkClassName="text-white/80 hover:text-white"
+        />
+      </footer>
     </div>
   )
 }
