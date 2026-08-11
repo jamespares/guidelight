@@ -1289,7 +1289,12 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           curriculum: (cls as { curriculum: string }).curriculum,
           description,
           difficulty,
-          questionCount: body.question_count || 8,
+          // Single-question essay tasks: the model essay + rubric cover exactly one
+          // extended_written question, so never let a caller ask for more.
+          questionCount:
+            questionTypes.length === 1 && questionTypes[0] === 'extended_written'
+              ? 1
+              : body.question_count || 8,
           ageRange: (cls as { age_range: string }).age_range,
           readingText: body.reading_text,
           pastPaperText,

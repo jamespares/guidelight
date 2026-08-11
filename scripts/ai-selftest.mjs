@@ -391,11 +391,13 @@ async function main() {
         description: 'Opinion essay: should schools ban smartphones in classrooms?',
         difficulty: 'medium',
         question_types: ['extended_written'],
+        question_count: 1,
         rubric_text: rubric,
       },
     })
     assert(created.status === 201, `create status ${created.status}: ${created.data.error}`)
     const essayTask = created.data.task
+    assert(essayTask.content?.questions?.length === 1, 'essay task should have exactly 1 question')
     const essayQid = essayTask.content?.questions?.[0]?.id
     assert(essayQid, 'no essay question generated')
 
@@ -441,8 +443,12 @@ async function main() {
     assert(sub.status === 200, `submit status ${sub.status}: ${sub.data.error}`)
     assert((sub.data.model_essay ?? '').length > 200, 'model essay not revealed after submit')
     const fb = sub.data.feedback?.[essayQid]
-    assert(fb && String(fb.feedback ?? '').length > 20, 'no essay feedback returned')
-    assert(!FALLBACK_MARKERS.mark.some((m) => String(fb.feedback).includes(m)), 'essay local fallback used')
+    assert(fb, 'no feedback for essay question')
+    assert(
+      !FALLBACK_MARKERS.mark.some((m) => String(fb.feedback ?? '').includes(m)),
+      'essay local fallback used (AI marking timed out or failed)',
+    )
+    assert(String(fb.feedback ?? '').length > 20, 'essay feedback too thin')
 
     // Rewrite loop: a fresh attempt on the same task
     const re = await call('POST', '/api/attempts/start', {
