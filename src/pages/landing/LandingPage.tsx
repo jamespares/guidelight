@@ -106,13 +106,13 @@ export function Landing() {
               Evidence-based teaching
             </p>
             <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl md:text-5xl">
-              Know your students are learning it — not just that you taught it
+              We’re putting institutional-grade analytics into the hands of everyday teachers
             </h2>
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Teaching is a journey across an ocean of uncertainty. Guidelight is the data layer
-              that helps you steer — turning every homework, assessment, and class activity into
-              clear signals about who is learning, who needs help, and what to teach next. We’re
-              putting institutional-grade analytics into the hands of everyday teachers.
+              Know your students are learning it — not just that you taught it. Teaching is a
+              journey across an ocean of uncertainty, and Guidelight is the data layer that helps
+              you steer — turning every homework, assessment, and class activity into clear signals
+              about who is learning, who needs help, and what to teach next.
             </p>
           </div>
 
