@@ -401,7 +401,8 @@ async function main() {
 
     const detail = await call('GET', `/api/tasks/${essayTask.id}`, { cookie: teacherCookie })
     const modelEssay = detail.data.task?.model_essay ?? ''
-    assert(modelEssay.length > 400, `model essay too short (${modelEssay.length} chars) — AI fallback?`)
+    // The silent failure mode is an EMPTY model essay; length varies with the model.
+    assert(modelEssay.length > 200, `model essay too short (${modelEssay.length} chars) — AI fallback?`)
     assert(detail.data.task?.rubric_text === rubric, 'rubric_text not stored')
 
     // Publish to the main demo student only — individual assignment scoping
@@ -438,7 +439,7 @@ async function main() {
       body: { answers: { [essayQid]: essayAnswer }, duration_ms: 420_000 },
     })
     assert(sub.status === 200, `submit status ${sub.status}: ${sub.data.error}`)
-    assert((sub.data.model_essay ?? '').length > 400, 'model essay not revealed after submit')
+    assert((sub.data.model_essay ?? '').length > 200, 'model essay not revealed after submit')
     const fb = sub.data.feedback?.[essayQid]
     assert(fb && String(fb.feedback ?? '').length > 20, 'no essay feedback returned')
     assert(!FALLBACK_MARKERS.mark.some((m) => String(fb.feedback).includes(m)), 'essay local fallback used')

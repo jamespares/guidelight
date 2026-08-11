@@ -394,7 +394,7 @@ async function main() {
       assert(ids.length === 6, `expected 6 written marks, got ${ids.length}`)
       for (const m of Object.values(marks)) {
         assert(m.feedback && m.feedback.length > 3, 'written mark missing AI feedback')
-        assert(typeof m.ai_score === 'number', 'written mark missing ai_score')
+        assert(typeof m.score === 'number' && typeof m.max === 'number', 'written mark missing score')
       }
       return '6/6 AI-marked'
     }
