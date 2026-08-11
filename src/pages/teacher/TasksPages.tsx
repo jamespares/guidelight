@@ -1,12 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileUp, Plus, Sparkles, X } from 'lucide-react'
+import { FileUp, Plus, Sparkles, Users, X } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -26,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -713,27 +715,16 @@ function TaskList({
       />
 
       {classes.length === 0 ? (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Add a class to get started</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Before you can create {type}, you need a class with students. Add one on the{' '}
-              <Link to="/teacher/students" className="font-semibold underline underline-offset-4">
-                Students
-              </Link>{' '}
-              page and then come back here.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              No card is needed to start — your account has starter credit and a monthly AI
-              spending cap.
-            </p>
+        <EmptyState
+          icon={Users}
+          title="Add a class to get started"
+          description={`Before you can create ${type}, you need a class with students. Add one on the Students page and then come back here. No card is needed to start — your account has starter credit and a monthly AI spending cap.`}
+          action={
             <Button asChild>
               <Link to="/teacher/students">Add class</Link>
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <Table>
         <TableCaption>{`List of ${type} tasks.`}</TableCaption>
@@ -751,11 +742,13 @@ function TaskList({
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground">
-                Loading…
-              </TableCell>
-            </TableRow>
+            Array.from({ length: 3 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell colSpan={6}>
+                  <Skeleton className="h-4 w-full" />
+                </TableCell>
+              </TableRow>
+            ))
           ) : tasks.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6} className="text-muted-foreground">

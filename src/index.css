@@ -8,7 +8,7 @@
   Light: silver field, navy brand + buttons.
 */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
   /* Deep navy night sky */
   --background: 222 47% 9%;
@@ -68,6 +68,11 @@
   --glow-1: rgba(244, 247, 251, 0.08);
   --glow-2: rgba(197, 203, 214, 0.06);
   --glow-3: rgba(154, 163, 178, 0.05);
+
+  /* Glass surfaces */
+  --glass-bg: 222 40% 12%;
+  --glass-border: 222 24% 22%;
+  --glass-shadow: 0 16px 40px rgb(2 6 23 / 0.28);
 
   /* Assessment type colours (importance → saturation) */
   --task-english-level-bg: 173 45% 18%;
@@ -151,6 +156,11 @@
   --glow-2: rgba(52, 64, 84, 0.05);
   --glow-3: rgba(102, 112, 133, 0.04);
 
+  /* Glass surfaces */
+  --glass-bg: 0 0% 100%;
+  --glass-border: 214 20% 86%;
+  --glass-shadow: 0 16px 40px rgb(15 23 42 / 0.08);
+
   /* Assessment type colours — richer on light backgrounds */
   --task-english-level-bg: 173 55% 90%;
   --task-english-level-fg: 173 72% 22%;
@@ -212,6 +222,10 @@
   --color-sidebar-accent: hsl(var(--sidebar-accent));
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
+
+  --color-glass: hsl(var(--glass-bg));
+  --color-glass-border: hsl(var(--glass-border));
+  --shadow-glass: var(--glass-shadow);
 
   --font-sans: 'Sora', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Fraunces', Georgia, serif;

@@ -55,7 +55,7 @@ function AppShell({
       >
         Skip to main content
       </a>
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-sidebar-border/60 bg-sidebar/80 text-sidebar-foreground backdrop-blur-xl">
         <header className="flex items-start justify-between gap-2 border-b border-sidebar-border px-4 py-5">
           <BrandMark role={role} />
           <ThemeToggle className="mt-0.5" />
@@ -70,7 +70,7 @@ function AppShell({
                 cn(
                   'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm'
                     : 'text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
                 )
               }
@@ -90,7 +90,7 @@ function AppShell({
                 cn(
                   'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm'
                     : 'text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
                 )
               }
@@ -144,9 +144,11 @@ function AppShell({
         </footer>
       </aside>
 
-      <main id="main-content" className="ml-60 flex-1 p-8">
-        {showBillingDial ? <TeacherCapBanner /> : null}
-        <Outlet />
+      <main id="main-content" className="ml-60 flex-1 p-8 lg:p-10">
+        <div className="mx-auto w-full max-w-7xl motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
+          {showBillingDial ? <TeacherCapBanner /> : null}
+          <Outlet />
+        </div>
       </main>
     </div>
   )

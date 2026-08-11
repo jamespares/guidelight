@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { api, isAiBudgetError, type InsightEvent, type Weakspot } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
@@ -275,7 +276,10 @@ export function InsightsPage() {
         </div>
       ) : null}
       {insightsLoading ? (
-        <p className="text-sm text-muted-foreground">Loading insights…</p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
       ) : null}
 
       <Card>

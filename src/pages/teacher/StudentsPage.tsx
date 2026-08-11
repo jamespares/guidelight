@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -278,24 +279,26 @@ export function StudentsPage() {
             <TableHead>Name</TableHead>
             <TableHead>Username</TableHead>
             <TableHead>Class</TableHead>
-            <TableHead>Subject(s)</TableHead>
+            <TableHead className="hidden xl:table-cell">Subject(s)</TableHead>
             <TableHead>Avg HW score</TableHead>
-            <TableHead>Exam readiness</TableHead>
-            <TableHead>English level</TableHead>
-            <TableHead>Reading speed</TableHead>
+            <TableHead className="hidden xl:table-cell">Exam readiness</TableHead>
+            <TableHead className="hidden xl:table-cell">English level</TableHead>
+            <TableHead className="hidden xl:table-cell">Reading speed</TableHead>
             <TableHead>Current Weakspots</TableHead>
-            <TableHead>HW completion</TableHead>
-            <TableHead>Interests</TableHead>
-            <TableHead>Career Ambitions</TableHead>
+            <TableHead className="hidden xl:table-cell">HW completion</TableHead>
+            <TableHead className="hidden xl:table-cell">Interests</TableHead>
+            <TableHead className="hidden xl:table-cell">Career Ambitions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={12} className="text-muted-foreground">
-                Loading…
-              </TableCell>
-            </TableRow>
+            Array.from({ length: 3 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell colSpan={12}>
+                  <Skeleton className="h-4 w-full" />
+                </TableCell>
+              </TableRow>
+            ))
           ) : students.length === 0 ? (
             <TableRow>
               <TableCell colSpan={12} className="text-muted-foreground">
@@ -318,25 +321,25 @@ export function StudentsPage() {
                 </TableCell>
                 <TableCell className="font-mono text-xs">{s.username}</TableCell>
                 <TableCell>{s.class_name}</TableCell>
-                <TableCell>{s.class_subject}</TableCell>
+                <TableCell className="hidden xl:table-cell">{s.class_subject}</TableCell>
                 <TableCell className="font-semibold text-[hsl(var(--insight-score-fg))]">
                   {s.avg_score == null ? '—' : `${s.avg_score}%`}
                 </TableCell>
-                <TableCell className="font-semibold text-[hsl(var(--insight-readiness-fg))]">
+                <TableCell className="hidden font-semibold text-[hsl(var(--insight-readiness-fg))] xl:table-cell">
                   {s.exam_readiness == null ? '—' : `${s.exam_readiness}%`}
                 </TableCell>
-                <TableCell>{s.cefr_level || '—'}</TableCell>
-                <TableCell>{s.latest_wpm != null ? `${s.latest_wpm} wpm` : '—'}</TableCell>
+                <TableCell className="hidden xl:table-cell">{s.cefr_level || '—'}</TableCell>
+                <TableCell className="hidden xl:table-cell">{s.latest_wpm != null ? `${s.latest_wpm} wpm` : '—'}</TableCell>
                 <TableCell>
                   <WeakspotsCell weakspots={s.weakspots} studentName={s.display_name} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden xl:table-cell">
                   {s.hw_completion_rate == null ? '—' : `${s.hw_completion_rate}%`}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden xl:table-cell">
                   <ReadMoreCell text={s.interests} title={`Interests — ${s.display_name}`} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden xl:table-cell">
                   <ReadMoreCell
                     text={s.career_ambitions}
                     title={`Career ambitions — ${s.display_name}`}

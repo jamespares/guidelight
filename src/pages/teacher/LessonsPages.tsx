@@ -11,6 +11,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
@@ -449,36 +450,25 @@ export function LessonsPage() {
       ) : null}
 
       {!classes.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add a class to get started</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Before you can plan lessons, add a class with students on the{' '}
-              <Link to="/teacher/students" className="font-semibold underline underline-offset-4">
-                Students
-              </Link>{' '}
-              page.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              No card is needed to start — your account has starter credit and a monthly AI
-              spending cap.
-            </p>
+        <EmptyState
+          icon={Users}
+          title="Add a class to get started"
+          description="Before you can plan lessons, add a class with students on the Students page. No card is needed to start — your account has starter credit and a monthly AI spending cap."
+          action={
             <Button asChild>
               <Link to="/teacher/students" className="gap-2">
                 <Users className="size-4" />
                 Add class
               </Link>
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : !batches.length ? (
-        <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            No lesson plans yet. Press <strong>Plan lessons</strong> to generate a batch.
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={CalendarDays}
+          title="No lesson plans yet"
+          description="Press Plan lessons to generate a batch of PPP lessons for one of your classes."
+        />
       ) : (
         <Table>
           <TableCaption>Planned lesson batches.</TableCaption>

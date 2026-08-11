@@ -5,7 +5,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement> & { caption?: React.ReactNode }
 >(({ className, caption, children, ...props }, ref) => (
-  <div className="relative w-full overflow-auto rounded-lg border border-border bg-card">
+  <div className="relative w-full overflow-auto rounded-xl border border-glass-border/60 bg-glass/60 shadow-glass backdrop-blur-md">
     <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props}>
       {caption ? <TableCaption>{caption}</TableCaption> : null}
       {children}
@@ -23,7 +23,7 @@ TableCaption.displayName = 'TableCaption'
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn('[&_tr]:border-b bg-muted/60', className)} {...props} />
+    <thead ref={ref} className={cn('[&_tr]:border-b border-glass-border/60', className)} {...props} />
   ),
 )
 TableHeader.displayName = 'TableHeader'
@@ -39,7 +39,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn('border-b transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted', className)}
+      className={cn('border-b border-glass-border/40 transition-colors hover:bg-foreground/[0.03] data-[state=selected]:bg-muted', className)}
       {...props}
     />
   ),
@@ -51,7 +51,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        'h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+        'h-12 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground',
         className,
       )}
       {...props}
@@ -62,7 +62,7 @@ TableHead.displayName = 'TableHead'
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn('p-4 align-middle', className)} {...props} />
+    <td ref={ref} className={cn('px-4 py-5 align-middle', className)} {...props} />
   ),
 )
 TableCell.displayName = 'TableCell'
