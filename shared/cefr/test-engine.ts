@@ -66,7 +66,7 @@ function itemsForLevel(
   return block;
 }
 
-/** Build a balanced 66-item diagnostic form from the item bank (~1 hour). */
+/** Build a balanced 72-item diagnostic form from the item bank (~1 hour). */
 export function selectItems(opts: SelectItemsOptions = {}): Item[] {
   const formIndex = ((opts.formIndex ?? 0) % PARALLEL_FORM_COUNT + PARALLEL_FORM_COUNT) % PARALLEL_FORM_COUNT;
   const byLevelAndSkill = (level: CEFRLevel, skill: Item['skill']) =>

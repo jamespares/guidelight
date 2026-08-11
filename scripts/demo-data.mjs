@@ -64,8 +64,10 @@ function wipeSql() {
 -- Guidelight demo wipe (safe: only demo-* rows)
 DELETE FROM sessions WHERE user_id LIKE 'demo-%';
 DELETE FROM cefr_written_marks WHERE id LIKE 'demo-%'
-  OR response_id IN (SELECT id FROM cefr_test_responses WHERE test_id LIKE 'demo-%' OR id LIKE 'demo-%');
-DELETE FROM cefr_test_responses WHERE id LIKE 'demo-%' OR test_id LIKE 'demo-%';
+  OR response_id IN (SELECT id FROM cefr_test_responses WHERE test_id LIKE 'demo-%' OR id LIKE 'demo-%')
+  OR response_id IN (SELECT id FROM cefr_test_responses WHERE test_id IN (SELECT id FROM cefr_tests WHERE student_id LIKE 'demo-%'));
+DELETE FROM cefr_test_responses WHERE id LIKE 'demo-%' OR test_id LIKE 'demo-%'
+  OR test_id IN (SELECT id FROM cefr_tests WHERE student_id LIKE 'demo-%');
 DELETE FROM cefr_tests WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%' OR task_id LIKE 'demo-%';
 DELETE FROM reading_machine_sessions WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%' OR material_id LIKE 'demo-%';
 DELETE FROM reading_speed_attempts WHERE id LIKE 'demo-%' OR student_id LIKE 'demo-%' OR task_id LIKE 'demo-%';
@@ -729,7 +731,7 @@ INSERT INTO students (
   const englishLevelContent = {
     kind: 'english_level',
     title: 'English level assessment',
-    instructions: 'Full CEFR diagnostic (~66 questions, about one hour).',
+    instructions: 'Full CEFR diagnostic (~72 questions, about one hour).',
     questions: [],
   }
   const readingSpeedContent = {
