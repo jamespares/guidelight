@@ -1,19 +1,47 @@
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import { Play } from 'lucide-react'
+import { ChevronDown, Play } from 'lucide-react'
 import { BrandStar, GuidelightWordmark } from '@/components/BrandMark'
 import { DemoVideoDialog } from '@/components/DemoVideoDialog'
 import { LegalFooter } from '@/components/LegalFooter'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 const NightGuideScene = lazy(() =>
   import('@/components/NightGuideScene').then((m) => ({ default: m.NightGuideScene })),
 )
 
+const HOW_IT_WORKS = [
+  {
+    title: 'Homework',
+    description:
+      'Generate personalised tasks, review AI-drafted work before it reaches students, and capture every attempt as data on their understanding.',
+  },
+  {
+    title: 'Assessments',
+    description:
+      'Run formative and summative papers that mirror exam formats, with integrity measures and teacher-reviewed feedback before release.',
+  },
+  {
+    title: 'Insights',
+    description:
+      'Rich, ongoing feedback on your students’ understanding, from formative checks to summative readiness signals, so you know who is rising, who is stuck, and where to steer next.',
+  },
+  {
+    title: 'Lesson planning',
+    description:
+      'A helpful bonus: generate tailored, editable semester plans with scaffolded lessons you can refine and export.',
+  },
+] as const
+
+function scrollToMission() {
+  document.getElementById('mission')?.scrollIntoView({ behavior: 'smooth' })
+}
+
 export function Landing() {
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden">
+    <div className="relative overflow-hidden">
       {/* Fixed ocean backdrop */}
       <div className="fixed inset-0 z-0">
         <Suspense fallback={null}>
@@ -26,10 +54,10 @@ export function Landing() {
         <ThemeToggle className="border-border/40 bg-card/30 shadow-sm backdrop-blur-xl hover:bg-card/45" />
       </div>
 
-      {/* Centered content */}
-      <main
-        id="main-content"
-        className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center"
+      {/* Hero section */}
+      <section
+        id="hero"
+        className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 pb-20 text-center"
       >
         <div className="max-w-2xl space-y-10">
           <div className="flex items-center justify-center gap-5">
@@ -55,11 +83,65 @@ export function Landing() {
             />
           </div>
         </div>
-      </main>
+
+        {/* Scroll indicator */}
+        <button
+          type="button"
+          onClick={scrollToMission}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full p-2 text-foreground/60 transition-colors hover:text-foreground"
+          aria-label="Scroll to learn more"
+        >
+          <ChevronDown className="h-6 w-6 animate-bounce" />
+        </button>
+      </section>
+
+      {/* Mission / how it works section */}
+      <section
+        id="mission"
+        className="relative z-10 w-full bg-gradient-to-b from-background/75 via-background/90 to-background px-6 py-24 backdrop-blur-sm sm:py-32"
+      >
+        <div className="mx-auto max-w-3xl space-y-12 text-center">
+          <div className="space-y-6">
+            <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+              Classroom intelligence, finally in your hands
+            </p>
+            <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl md:text-5xl">
+              For teachers who want to know their students are learning it, not just that they
+              taught it
+            </h2>
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              It often feels like there is a lot of ocean between where your students are and where
+              you need them to be. Guidelight turns homework, assessments, and daily classwork into
+              rich evidence — so you can see who is learning, who needs support, and what to teach
+              next.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {HOW_IT_WORKS.map(({ title, description }) => (
+              <Card
+                key={title}
+                className="border-0 bg-card/25 text-left shadow-sm backdrop-blur-xl"
+              >
+                <CardContent className="p-6">
+                  <h3 className="mb-2 font-display text-lg font-semibold text-foreground">
+                    {title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <p className="text-sm font-medium text-foreground/80">
+            Evidence-based teaching: rich data from homework and assessments, in your hands.
+          </p>
+        </div>
+      </section>
 
       {/* Legal footer */}
-      <div className="relative z-10 px-6 pb-6">
-        <LegalFooter variant="overlay" />
+      <div className="relative z-10 bg-background px-6 pb-6">
+        <LegalFooter variant="inline" />
       </div>
     </div>
   )
