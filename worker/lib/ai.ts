@@ -371,6 +371,7 @@ Return ONLY valid JSON:
   ]
 }
 Be fair on open responses. Award partial credit where appropriate.
+Where a question provides a correctAnswer, treat it as the answer key: an answer that matches it exactly or is clearly equivalent (case, spacing or minor wording differences) is correct with full marks — never second-guess the key.
 Echo each question's topic and learningObjective in the feedback item so archives stay scannable.`
 
   const rubricContext = formatProfileContext({

@@ -58,6 +58,7 @@ export function EnglishLevelPage() {
   const [secondsLeft, setSecondsLeft] = useState(3600)
   const [timeAnnouncement, setTimeAnnouncement] = useState('')
   const announcedBoundary = useRef<number | null>(null)
+  const autoSubmitted = useRef(false)
   const [result, setResult] = useState<{
     cefr_level: string
     total_score: number
@@ -122,6 +123,14 @@ export function EnglishLevelPage() {
       setTimeAnnouncement(`${minutes} minute${minutes === 1 ? '' : 's'} remaining`)
     }
   }, [secondsLeft])
+
+  // Auto-submit when the time limit runs out — the limit is real, not advisory.
+  useEffect(() => {
+    if (phase !== 'test' || secondsLeft > 0 || submitting || autoSubmitted.current) return
+    autoSubmitted.current = true
+    setTimeAnnouncement("Time's up — submitting your answers")
+    void submit()
+  }, [phase, secondsLeft, submitting])
 
   const grouped = useMemo(() => items, [items])
 
@@ -197,7 +206,7 @@ export function EnglishLevelPage() {
             <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
               <li>~72 questions grouped by level from A1 to C2</li>
               <li>Each level mixes vocabulary, listening, reading, grammar and writing</li>
-              <li>About one hour — overtime is flagged</li>
+              <li>About one hour — the test submits automatically when time runs out</li>
             </ul>
             <Button type="button" disabled={busy} onClick={() => void start()}>
               Start test
