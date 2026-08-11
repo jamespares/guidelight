@@ -295,7 +295,7 @@ export function Landing() {
       </section>
 
       {/* Features section */}
-      <section id="features" className="relative z-10 w-full bg-background/75 px-6 py-24 backdrop-blur-sm sm:py-28">
+      <section id="features" className="relative z-10 w-full px-6 py-24 sm:py-28">
         <div className="mx-auto max-w-5xl space-y-12">
           <div className="space-y-4 text-center">
             <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
@@ -329,7 +329,7 @@ export function Landing() {
       />
 
       {/* Pricing section */}
-      <section id="pricing" className="relative z-10 w-full bg-background/75 px-6 pb-24 backdrop-blur-sm sm:pb-28">
+      <section id="pricing" className="relative z-10 w-full px-6 pb-24 sm:pb-28">
         <div
           ref={pricingView.ref}
           className={cn(
@@ -379,7 +379,7 @@ export function Landing() {
       </section>
 
       {/* FAQ section */}
-      <section id="faq" className="relative z-10 w-full bg-background/75 px-6 pb-24 backdrop-blur-sm sm:pb-28">
+      <section id="faq" className="relative z-10 w-full px-6 pb-24 sm:pb-28">
         <div
           ref={faqView.ref}
           className={cn(
@@ -406,7 +406,7 @@ export function Landing() {
       </section>
 
       {/* Sign-off + legal footer */}
-      <div className="relative z-10 bg-background/80 px-6 pb-6 backdrop-blur-md">
+      <div className="relative z-10 px-6 pb-6">
         <div className="flex flex-col items-center gap-5 pb-12 text-center">
           <p className="text-sm font-medium text-foreground/80">{t.signoff.line}</p>
           <Button asChild size="lg" className="min-w-[11rem] sm:px-10">
