@@ -115,10 +115,9 @@ export function Landing() {
               We’re putting institutional-grade analytics into the hands of everyday teachers
             </h2>
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Know your students are learning it — not just that you taught it. Teaching is a
-              journey across an ocean of uncertainty, and Guidelight is the data layer that helps
-              you steer — turning every homework, assessment, and class activity into clear signals
-              about who is learning, who needs help, and what to teach next.
+              Teaching is a journey across an ocean of uncertainty, and Guidelight is the data layer
+              that helps you steer — turning every homework, assessment, and class activity into
+              clear signals about who is learning, who needs help, and what to teach next.
             </p>
           </div>
 
