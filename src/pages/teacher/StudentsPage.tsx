@@ -299,7 +299,13 @@ export function StudentsPage() {
           ) : students.length === 0 ? (
             <TableRow>
               <TableCell colSpan={12} className="text-muted-foreground">
-                No students yet. Add a class to get started.
+                <div className="space-y-2 py-4">
+                  <p>Welcome! Add your first class to get started.</p>
+                  <p>
+                    No card is needed to start — your account has starter credit and a monthly AI
+                    spending cap.
+                  </p>
+                </div>
               </TableCell>
             </TableRow>
           ) : (

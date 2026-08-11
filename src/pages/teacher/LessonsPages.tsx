@@ -9,6 +9,7 @@ import {
   Save,
   Sparkles,
   Trash2,
+  Users,
 } from 'lucide-react'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -416,7 +417,25 @@ export function LessonsPage() {
                   }}
                 />
               ) : (
-                <p className="text-sm text-muted-foreground">Add a class first.</p>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Before you can plan lessons, add a class with students on the{' '}
+                    <Link to="/teacher/students" className="font-semibold underline underline-offset-4">
+                      Students
+                    </Link>{' '}
+                    page.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    No card is needed to start — your account has starter credit and a monthly AI
+                    spending cap.
+                  </p>
+                  <Button asChild>
+                    <Link to="/teacher/students" className="gap-2">
+                      <Users className="size-4" />
+                      Add class
+                    </Link>
+                  </Button>
+                </div>
               )}
             </DialogContent>
           </Dialog>
@@ -429,7 +448,32 @@ export function LessonsPage() {
         </div>
       ) : null}
 
-      {!batches.length ? (
+      {!classes.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add a class to get started</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Before you can plan lessons, add a class with students on the{' '}
+              <Link to="/teacher/students" className="font-semibold underline underline-offset-4">
+                Students
+              </Link>{' '}
+              page.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              No card is needed to start — your account has starter credit and a monthly AI
+              spending cap.
+            </p>
+            <Button asChild>
+              <Link to="/teacher/students" className="gap-2">
+                <Users className="size-4" />
+                Add class
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : !batches.length ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
             No lesson plans yet. Press <strong>Plan lessons</strong> to generate a batch.

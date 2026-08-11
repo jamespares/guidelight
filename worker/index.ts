@@ -40,7 +40,6 @@ import { parseJsonBody } from './lib/validation'
 import {
   createSpecialTask,
   handleCefrApi,
-  isSpecialAssessment,
 } from './lib/cefr'
 import {
   handleExamsApi,
@@ -1249,14 +1248,6 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         const cls = await classOwned(env, body.class_id, user.id)
         if (!cls) return error('Class not found', 404)
 
-        const isDiagnostic = body.subtype === 'diagnostic'
-        if (!isDiagnostic && !(await hasDiagnostic(env, body.class_id))) {
-          return error(
-            'Set a diagnostic assessment before creating homework or other assessments.',
-            400,
-          )
-        }
-
         const subject = (body.subject || (cls as { subject: string }).subject).trim()
         const students = await env.DB.prepare(
           `SELECT display_name, interests, weakspots FROM students WHERE class_id = ? LIMIT 12`,
@@ -1493,16 +1484,6 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             status: string
           }>()
         if (!task || task.teacher_id !== user.id) return error('Not found', 404)
-
-        // Mock exams are driven by exam profiles and skip the diagnostic gate
-        if (
-          task.subtype !== 'diagnostic' &&
-          task.subtype !== 'mock_exam' &&
-          !isSpecialAssessment(task.subtype) &&
-          !(await hasDiagnostic(env, task.class_id))
-        ) {
-          return error('Publish a diagnostic assessment first.', 400)
-        }
 
         const body = (await request.json().catch(() => ({}))) as {
           assign_all?: boolean

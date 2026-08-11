@@ -6,7 +6,7 @@ import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/table'
 import {
   api,
+  type ClassRow,
   type TaskSubtype,
 } from '@/lib/api'
 import {
@@ -61,20 +62,15 @@ const ASSESSMENT_SUBTYPES: { value: Exclude<TaskSubtype, null>; label: string }[
 function TaskCreateForm({
   type,
   defaultSubtype,
+  classes,
   onCreated,
 }: {
   type: 'homework' | 'assessment'
   defaultSubtype?: TaskSubtype
+  classes: ClassRow[]
   onCreated: (id: string) => void
 }) {
   const queryClient = useQueryClient()
-  const { data: classes = [] } = useQuery({
-    queryKey: queryKeys.classes.all,
-    queryFn: async () => {
-      const res = await api.classes()
-      return res.classes
-    },
-  })
   const { data: students = [] } = useQuery({
     queryKey: queryKeys.students.all,
     queryFn: async () => {
@@ -254,8 +250,9 @@ function TaskCreateForm({
       {needsDiag ? (
         <Card className="border border-warning-foreground/30 bg-warning text-warning-foreground">
           <CardContent className="p-3 text-sm">
-            Set a diagnostic first to gather personalisation data before homework or other
-            assessments.
+            A diagnostic is highly recommended first — it gives Guidelight the personalisation data
+            to tailor homework and assessments. You can still create this task, but it will be less
+            personalised until students complete a diagnostic.
           </CardContent>
         </Card>
       ) : null}
@@ -628,7 +625,7 @@ function TaskCreateForm({
       <p className="text-xs text-muted-foreground">
         Students in class: {students.filter((s) => s.class_id === classId).length}
       </p>
-      <Button type="submit" className="w-full" disabled={busy || needsDiag || !classId || uploadBusy}>
+      <Button type="submit" className="w-full" disabled={busy || !classId || uploadBusy}>
         {busy ? (
           isSpecial ? (
             'Creating…'
@@ -672,6 +669,13 @@ function TaskList({
       return res.tasks.filter((t) => !excludeSubtypes.includes(t.subtype as TaskSubtype))
     },
   })
+  const { data: classes = [] } = useQuery({
+    queryKey: queryKeys.classes.all,
+    queryFn: async () => {
+      const res = await api.classes()
+      return res.classes
+    },
+  })
 
   return (
     <div>
@@ -681,7 +685,7 @@ function TaskList({
         action={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button type="button">
+              <Button type="button" disabled={classes.length === 0}>
                 <Plus className="h-4 w-4" />
                 Create {type}
               </Button>
@@ -696,6 +700,7 @@ function TaskList({
               <TaskCreateForm
                 type={type}
                 defaultSubtype={type === 'assessment' ? 'diagnostic' : null}
+                classes={classes}
                 onCreated={(taskId) => {
                   setOpen(false)
                   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all(type) })
@@ -707,7 +712,30 @@ function TaskList({
         }
       />
 
-      <Table>
+      {classes.length === 0 ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Add a class to get started</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Before you can create {type}, you need a class with students. Add one on the{' '}
+              <Link to="/teacher/students" className="font-semibold underline underline-offset-4">
+                Students
+              </Link>{' '}
+              page and then come back here.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              No card is needed to start — your account has starter credit and a monthly AI
+              spending cap.
+            </p>
+            <Button asChild>
+              <Link to="/teacher/students">Add class</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Table>
         <TableCaption>{`List of ${type} tasks.`}</TableCaption>
         <TableHeader>
           <TableRow>
@@ -761,6 +789,7 @@ function TaskList({
           )}
         </TableBody>
       </Table>
+      )}
     </div>
   )
 }
