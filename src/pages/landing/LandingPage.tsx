@@ -29,9 +29,9 @@ const HOW_IT_WORKS = [
       'Class and student trends, weakspot analysis, and exam-readiness probabilities — so you can steer with confidence, not guesswork.',
   },
   {
-    title: 'Lesson planning (bonus)',
+    title: 'Lesson planning',
     description:
-      'A helpful extra: AI-generated semester plans you can edit and export when you need them.',
+      'AI-generated, personalised semester plans that you can edit and export — saving you hours of preparation time.',
   },
 ] as const
 
