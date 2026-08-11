@@ -72,7 +72,7 @@ export function Landing() {
           </div>
 
           <p className="text-lg font-normal leading-relaxed text-foreground/80 sm:text-xl">
-            Lead your students to excellence
+            From evidence comes excellence
           </p>
 
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -148,8 +148,7 @@ export function Landing() {
           </div>
 
           <p className="text-sm font-medium text-foreground/80">
-            Guidelight is the guiding light for evidence-based teaching: rich classroom data, clear
-            reasoning, and the confidence that your teaching is working.
+            Guide your students to excellence with AI-native homework, assessment and data insights.
           </p>
         </div>
       </section>
