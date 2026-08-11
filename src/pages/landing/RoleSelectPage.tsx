@@ -3,6 +3,7 @@ import { GraduationCap, Users, UserCheck, ArrowLeft } from 'lucide-react'
 import { AuthShell } from '@/pages/auth/AuthPages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 const ROLES = [
   {
@@ -29,6 +30,7 @@ const ROLES = [
 ] as const
 
 export function RoleSelectPage() {
+  useDocumentTitle('Get started — Guidelight')
   return (
     <AuthShell mainClassName="max-w-lg">
       <Card className="border-0 bg-card/25 shadow-sm backdrop-blur-xl">

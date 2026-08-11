@@ -1,0 +1,13 @@
+# Guidelight — crawl rules.
+# All search and AI crawlers are welcome on the public pages.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /teacher/
+Disallow: /student/
+Disallow: /parent/
+Disallow: /login/
+Disallow: /verify-email
+Disallow: /reset-password
+
+Sitemap: https://getguidelight.com/sitemap.xml

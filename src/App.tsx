@@ -105,6 +105,12 @@ const PrivacyPolicyPage = lazy(() =>
 const AccessibilityStatementPage = lazy(() =>
   import('./pages/shared/LegalPages').then((m) => ({ default: m.AccessibilityStatementPage })),
 )
+const CefrLevelsPage = lazy(() =>
+  import('./pages/resources/ResourcePages').then((m) => ({ default: m.CefrLevelsPage })),
+)
+const AiMarkingRubricsPage = lazy(() =>
+  import('./pages/resources/ResourcePages').then((m) => ({ default: m.AiMarkingRubricsPage })),
+)
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -135,21 +141,13 @@ function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent
 export default function App() {
   const { user, loading } = useAuth()
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
-
   return (
     <Suspense fallback={<PageLoadingFallback />}>
       <Routes>
       <Route
         path="/"
         element={
-          user ? (
+          !loading && user ? (
             <Navigate
               to={
                 user.role === 'teacher'
@@ -174,6 +172,8 @@ export default function App() {
       <Route path="/terms" element={<TermsOfServicePage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/accessibility" element={<AccessibilityStatementPage />} />
+      <Route path="/resources/cefr-levels" element={<CefrLevelsPage />} />
+      <Route path="/resources/ai-marking-rubrics" element={<AiMarkingRubricsPage />} />
 
       <Route
         path="/teacher"

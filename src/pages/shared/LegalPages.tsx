@@ -12,8 +12,10 @@ import {
   SUPPORT_EMAIL,
   SUPPORT_MAILTO,
 } from '@/lib/legal'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 function LegalShell({ title, children }: { title: string; children: ReactNode }) {
+  useDocumentTitle(`${title} — Guidelight`)
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur-md">

@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './lib/auth'
@@ -22,7 +22,7 @@ const queryClient = new QueryClient({
   },
 })
 
-createRoot(document.getElementById('root')!).render(
+const app = (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
@@ -33,5 +33,14 @@ createRoot(document.getElementById('root')!).render(
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 )
+
+const rootEl = document.getElementById('root')!
+// Public routes are prerendered to static HTML (scripts/prerender.mjs) —
+// hydrate them; app routes render client-side into the empty container.
+if (rootEl.hasChildNodes()) {
+  hydrateRoot(rootEl, app)
+} else {
+  createRoot(rootEl).render(app)
+}

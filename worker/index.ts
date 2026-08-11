@@ -1303,7 +1303,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
           meter,
         })
 
-        // Generate TTS audio for listening questions (MiniMax via Workers AI).
+        // Generate TTS audio for listening questions (Aura-2 via Workers AI).
         // Per-question failure leaves audioUrl unset — the student's browser
         // speechSynthesis fallback still covers playback.
         for (const q of content.questions ?? []) {
@@ -2471,7 +2471,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         return json({ attempts: results })
       }
 
-      // —— Text-to-speech (MiniMax via Workers AI, cached in R2) ——
+      // —— Text-to-speech (Aura-2 via Workers AI, cached in R2) ——
       if (path === '/api/tts/voices' && request.method === 'GET') {
         const user = await requireRole(env, request, 'teacher')
         if (user instanceof Response) return user
@@ -2677,7 +2677,14 @@ async function deleteTeacherAccount(env: Env, teacherId: string): Promise<void> 
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const path = new URL(request.url).pathname
+    const url = new URL(request.url)
+    const path = url.pathname
+
+    // Canonical host: fold www into the apex so link equity isn't split
+    if (url.hostname === 'www.getguidelight.com') {
+      url.hostname = 'getguidelight.com'
+      return withSecurityHeaders(Response.redirect(url.toString(), 301), env)
+    }
 
     const preflight = corsPreflight(request, env)
     if (preflight) return withSecurityHeaders(preflight, env)

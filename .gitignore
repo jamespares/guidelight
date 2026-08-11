@@ -28,4 +28,6 @@ dist-ssr
 # Local marketing/demo workspace (large recordings) and scratch screenshots
 /demo/
 public/demo/
-public/Screenshot *.png
+
+# Local Edge TTS venv for scripts/generate-audio.py
+scripts/.venv-audio/

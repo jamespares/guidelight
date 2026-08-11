@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/entry-server.tsx --config vite.ssr.config.ts && node scripts/prerender.mjs",
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "test": "vitest run",
@@ -19,6 +19,7 @@
     "db:demo:wipe:local": "node scripts/demo-data.mjs wipe --local",
     "deploy": "npm run build && wrangler deploy",
     "test:ai": "node scripts/ai-selftest.mjs",
+    "test:cefr": "node scripts/cefr-e2e.mjs",
     "push": "bash scripts/push.sh",
     "cf-typegen": "wrangler types"
   },

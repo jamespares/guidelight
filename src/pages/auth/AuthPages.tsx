@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { TRUST_LANDING } from '@/lib/trustCopy'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { cn } from '@/lib/utils'
 
 export function AuthShell({
@@ -48,6 +49,7 @@ export function AuthShell({
 type TeacherMode = 'login' | 'register' | 'magic' | 'forgot'
 
 export function TeacherAuth() {
+  useDocumentTitle('Teacher sign in — Guidelight')
   const [mode, setMode] = useState<TeacherMode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -516,6 +518,7 @@ export function ResetPasswordPage() {
 }
 
 export function StudentAuth() {
+  useDocumentTitle('Student sign in — Guidelight')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -585,6 +588,7 @@ export function StudentAuth() {
 }
 
 export function ParentAuth() {
+  useDocumentTitle('Parent sign in — Guidelight')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

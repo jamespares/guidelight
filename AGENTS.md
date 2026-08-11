@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Guidelight is an AI-infused homework and assessment platform for teachers and students. Teachers create classes, generate AI-personalised homework/assessments/lesson plans (including single-question essay tasks aligned to an uploaded exam-board rubric, with an AI-generated model essay and a rewrite loop), and review auto-marked attempts; students log in to complete tasks, take CEFR English-level diagnostics, practise reading speed (RSVP), read levelled stories, and take mock exams. CEFR (A1–C2) language standards are a first-class part of the product.
+Guidelight is an AI-native homework and assessment platform for teachers and students. Teachers create classes, generate AI-personalised homework/assessments/lesson plans (including single-question essay tasks aligned to an uploaded exam-board rubric, with an AI-generated model essay and a rewrite loop), and review auto-marked attempts; students log in to complete tasks, take CEFR English-level diagnostics, practise reading speed (RSVP), read levelled stories, and take mock exams. CEFR (A1–C2) language standards are a first-class part of the product.
 
 Everything runs on the Cloudflare edge: a single Worker serves the JSON API and the built React SPA. All AI runs server-side through the Workers AI binding — the browser never calls an external AI provider, so the app works anywhere the Cloudflare custom domain is reachable (including mainland China, with or without a VPN).
 
@@ -12,7 +12,7 @@ Everything runs on the Cloudflare edge: a single Worker serves the JSON API and 
 - **Frontend**: React 19 SPA (`src/`), react-router-dom 7, TanStack React Query, Tailwind CSS v4 (via `@tailwindcss/vite`), Radix UI primitives with shadcn-style components (`src/components/ui/`), three.js (landing page scene), recharts, lucide-react, pdfjs-dist, docx.
 - **AI models** (all via Workers AI, `worker/lib/ai.ts`):
   - Chat/generation/marking: `@cf/moonshotai/kimi-k2.6`.
-  - TTS for listening questions (`worker/lib/tts.ts`): MiniMax Speech 2.8 Turbo with automatic fallback to Deepgram Aura-2; audio is cached in the `guidelight-audio` R2 bucket by content hash. MiniMax needs AI Gateway → Unified Billing enabled with credits, otherwise it fails with `2021: Invalid User Credentials` and Aura-2 serves the audio.
+  - TTS for listening questions (`worker/lib/tts.ts`): Deepgram Aura-2 (`@cf/deepgram/aura-2-en`) only, neuron-billed with no AI Gateway billing setup; audio is cached in the `guidelight-audio` R2 bucket by content hash. Fixed-content audio (CEFR diagnostic) is pre-generated offline with Edge TTS (`scripts/generate-audio.py` + `scripts/audio-manifest.json`) and shipped in `public/cefr-audio/`.
   - Student playback falls back to on-device speech synthesis if generated audio is missing.
 - **Billing**: Stripe (Checkout/webhooks in `worker/lib/stripe.ts`, `worker/lib/billingApi.ts`), plus per-teacher AI usage metering/budget caps (`worker/lib/billing.ts`). A cron trigger (`0 6 1 * *`) runs monthly billing via the Worker's `scheduled` handler.
 - **Toolchain**: Vite 8 with `@cloudflare/vite-plugin` (dev server runs the real Worker locally), TypeScript ~6, oxlint, Vitest, Wrangler 4.
@@ -26,15 +26,15 @@ Everything runs on the Cloudflare edge: a single Worker serves the JSON API and 
   - `worker/routes/` — currently empty; routing lives in `worker/index.ts` and `worker/lib/`.
 - `src/` — React SPA.
   - `src/App.tsx` — all client routes; two role-gated layouts: `/teacher/*` and `/student/*` (auth via `RequireAuth` + `useAuth` from `src/lib/auth.tsx`).
-  - `src/pages/` — grouped by audience: `auth/`, `landing/`, `teacher/` (students, homework, assessments, task review, lessons, exam profiles, insights/reports), `student/` (tasks, attempts, reading speed, English level, stories, reading machine), `shared/` (settings, guides, legal pages).
+  - `src/pages/` — grouped by audience: `auth/`, `landing/`, `resources/` (public, crawlable explainer pages), `teacher/` (students, homework, assessments, task review, lessons, exam profiles, insights/reports), `student/` (tasks, attempts, reading speed, English level, stories, reading machine), `shared/` (settings, guides, legal pages).
   - `src/components/` — app-level components plus `ui/` (button, card, dialog, table, etc. — shadcn-style, composed with the `cn()` helper from `src/lib/utils.ts`).
-  - `src/lib/` — client helpers: `api.ts` (fetch wrapper), `auth.tsx`, `billing.tsx`, `theme.tsx`, `queryKeys.ts`, label/export helpers.
+  - `src/lib/` — client helpers: `api.ts` (fetch wrapper), `auth.tsx`, `billing.tsx`, `theme.tsx`, `queryKeys.ts`, `seo.ts` (single source of truth for titles/descriptions/JSON-LD), `useDocumentTitle.ts`, label/export helpers.
 - `shared/` — isomorphic TypeScript imported by both client and worker (via the `@shared` alias): `shared/cefr/` (test engine, item bank, marking, karaoke/RSVP, stories), `shared/exams/readiness.ts` (exam format/rubric types shared with AI marking). `shared/cefr/items.ts` is auto-generated by `scripts/generate-items.js` from `standards/cefr_standards_a1_c2.json` — do not edit it manually.
-- `migrations/` — sequential D1 SQL migrations (`0001_init.sql` … `0017_essay_rubric.sql`; note `0015` does not exist). Apply with `npm run db:migrate` (local) or `npx wrangler d1 migrations apply guidelight --remote`.
+- `migrations/` — sequential D1 SQL migrations (`0001_init.sql` … `0017_essay_rubric.sql`). Apply with `npm run db:migrate` (local) or `npx wrangler d1 migrations apply guidelight --remote`.
 - `standards/` — CEFR source data (flat CSVs, descriptor/grammar/vocabulary markdown, `cefr_standards_a1_c2.json`) used to generate the item bank and prompts.
-- `public/` — static assets (brand, stories, CEFR audio, three.js textures/models).
-- `scripts/` — Node utilities: `demo-data.mjs` (seed/wipe demo accounts), `ai-selftest.mjs` (E2E AI quality check), `generate-items.js` (item bank generator), `push.sh` (SSH git push — HTTPS to github.com often times out from mainland China).
-- `demo/` — marketing/onboarding/pitch deck generators (separate venv, unrelated to the app build).
+- `public/` — static assets (brand, stories, CEFR audio, three.js textures/models) plus the crawl surface: `robots.txt`, `sitemap.xml`, `llms.txt`, `brand/og-image.png` (regenerate with `scripts/generate-og-image.py`).
+- `scripts/` — Node utilities: `demo-data.mjs` (seed/wipe demo accounts), `ai-selftest.mjs` (E2E AI quality check), `generate-items.js` (item bank generator), `prerender.mjs` (static HTML for public routes), `push.sh` (SSH git push — HTTPS to github.com often times out from mainland China).
+- `demo/` — marketing/onboarding/pitch deck generators (separate venv, unrelated to the app build; dashboard screenshots live in `demo/onboarding-deck/screenshots/`).
 - `compliance/gdpr-encryption.md` — GDPR/encryption statement referenced by the legal pages.
 - `dist/` — build output (`dist/client` for assets); `dist/guidelight` is Wrangler's output.
 
@@ -48,9 +48,9 @@ npm run dev               # vite dev server (runs the Worker locally via @cloudf
 
 - `npm run validate` — full gate: `lint` + `typecheck` + `test` + `build`. Run this before considering work done.
 - `npm run lint` — oxlint (config `.oxlintrc.json`: react + typescript plugins, `react/rules-of-hooks` is an error).
-- `npm run typecheck` — `tsc -b` (project references: `tsconfig.app.json` covers `src` + `shared`; `tsconfig.node.json` covers `vite.config.ts`).
+- `npm run typecheck` — `tsc -b` (project references: `tsconfig.app.json` covers `src` + `shared`; `tsconfig.node.json` covers `vite.config.ts` + `vite.ssr.config.ts`).
 - `npm run test` / `npm run test:watch` — Vitest.
-- `npm run build` — Vite production build; `npm run preview` — preview built assets.
+- `npm run build` — Vite production build, then an SSR build (`vite.ssr.config.ts` → `dist/ssr`) and `scripts/prerender.mjs`, which renders the public routes (`/`, `/get-started`, `/resources/*`, `/terms`, `/privacy`, `/accessibility`) to static HTML with per-route head tags and JSON-LD from `src/lib/seo.ts`. `src/main.tsx` hydrates when `#root` is non-empty. The `index.html` template head must stay in sync with `seo.ts` defaults — the prerender script asserts it and fails the build on drift. `npm run preview` — preview built assets.
 - `npm run deploy` — `vite build && wrangler deploy`. Production is deployed via Cloudflare Workers CI on push to `main`.
 - `npm run cf-typegen` — regenerate `worker-configuration.d.ts` types from `wrangler.jsonc` after changing bindings.
 
@@ -60,7 +60,10 @@ npm run dev               # vite dev server (runs the Worker locally via @cloudf
 npm run db:demo:seed:local   # demo teacher demo@guidelight.test / demo1234, students demo.ava etc.
 npx wrangler dev             # in another terminal
 npm run test:ai              # exercises every AI-backed API and rejects deterministic fallbacks
+npm run test:cefr            # E2E for the CEFR level test + reading speed test (no AI required)
 ```
+
+`test:cefr` (`scripts/cefr-e2e.mjs`) bundles the real shared engines with esbuild at startup, so its expectations always match production logic; it covers the CEFR phase machine, item sanitisation, audio serving, a simulated 72-item submission, reading-speed WPM bounds and spot-checks, and teacher-side visibility. Both E2E scripts retry through the 60 req/60 s IP rate limit.
 
 Demo rows use `demo-`/`demo.` prefixes so `db:demo:wipe` can clean them safely. Remote variants: `db:demo:seed` / `db:demo:wipe` hit production — be careful.
 

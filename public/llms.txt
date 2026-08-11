@@ -1,0 +1,21 @@
+# Guidelight
+
+> Guidelight is an AI-native homework, assessment and analytics platform for teachers and students. Teachers create classes, generate curriculum-aligned homework, assessments, mock exams and lesson plans, and review AI-marked attempts; students complete tasks, take CEFR English-level diagnostics and practise reading speed. All AI runs server-side on Cloudflare Workers AI — class data is never sent to an external AI provider, and the app works anywhere the domain is reachable, including mainland China.
+
+- Operator: EduConnect Asia Ltd (London, UK)
+- Pricing: pay-as-you-go AI usage with a monthly spending cap; starter credit included, no subscription, no card required to start
+- Privacy: TLS everywhere, AES-256 at rest, GDPR export and deletion built in
+
+## Key pages
+
+- [Home](https://getguidelight.com/): product overview, features, pricing and FAQs
+- [Get started](https://getguidelight.com/get-started): teacher, student and parent sign-in
+- [CEFR levels explained](https://getguidelight.com/resources/cefr-levels): what A1–C2 mean and how Guidelight measures English level
+- [Rubric-aligned AI marking](https://getguidelight.com/resources/ai-marking-rubrics): how exam-board rubric alignment, model essays and the rewrite loop work
+- [Privacy Policy](https://getguidelight.com/privacy)
+- [Terms of Service](https://getguidelight.com/terms)
+- [Accessibility Statement](https://getguidelight.com/accessibility)
+
+## Contact
+
+- support@getguidelight.com
