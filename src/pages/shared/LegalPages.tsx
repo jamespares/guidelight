@@ -30,11 +30,6 @@ function LegalShell({ title, children }: { title: string; children: ReactNode })
           Operated by {OPERATOR_NAME} · Effective {LEGAL_EFFECTIVE_DATE}
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-3 rounded-md border border-border/50 bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-          These documents are product drafts tailored to how {PRODUCT_NAME} works today. They are not
-          legal advice. Have a UK solicitor review them before you rely on them for launch or
-          compliance.
-        </p>
         <div className="prose-legal mt-8 space-y-8 text-sm leading-relaxed text-muted-foreground">
           {children}
         </div>

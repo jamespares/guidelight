@@ -16,22 +16,22 @@ const HOW_IT_WORKS = [
   {
     title: 'Homework',
     description:
-      'Generate personalised tasks, review AI-drafted work before it reaches students, and capture every attempt as data on their understanding.',
+      'AI drafts curriculum-aligned tasks; you approve before anything reaches a student. Every attempt is marked, stored, and turned into a data point on your students’ understanding.',
   },
   {
     title: 'Assessments',
     description:
-      'Run formative and summative papers that mirror exam formats, with integrity measures and teacher-reviewed feedback before release.',
+      'Formative and summative papers that mirror exam formats, with integrity controls and readiness scoring built in.',
   },
   {
     title: 'Insights',
     description:
-      'Rich, ongoing feedback on your students’ understanding, from formative checks to summative readiness signals, so you know who is rising, who is stuck, and where to steer next.',
+      'Class and student trends, weakspot analysis, and exam-readiness probabilities — so you can steer with confidence, not guesswork.',
   },
   {
-    title: 'Lesson planning',
+    title: 'Lesson planning (bonus)',
     description:
-      'A helpful bonus: generate tailored, editable semester plans with scaffolded lessons you can refine and export.',
+      'A helpful extra: AI-generated semester plans you can edit and export when you need them.',
   },
 ] as const
 
@@ -103,17 +103,17 @@ export function Landing() {
         <div className="mx-auto max-w-3xl space-y-12 text-center">
           <div className="space-y-6">
             <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-              Classroom intelligence, finally in your hands
+              Evidence-based teaching
             </p>
             <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl md:text-5xl">
-              For teachers who want to know their students are learning it, not just that they
-              taught it
+              Know your students are learning it — not just that you taught it
             </h2>
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              It often feels like there is a lot of ocean between where your students are and where
-              you need them to be. Guidelight turns homework, assessments, and daily classwork into
-              rich evidence — so you can see who is learning, who needs support, and what to teach
-              next.
+              Teaching is a journey across an ocean of uncertainty. Guidelight is the data layer
+              that helps you steer — turning every homework, assessment, and class activity into
+              clear signals about who is learning, who needs help, and what to teach next. This is
+              the decision advantage usually reserved for institutions with analysts, now in every
+              teacher’s hands.
             </p>
           </div>
 
@@ -134,7 +134,8 @@ export function Landing() {
           </div>
 
           <p className="text-sm font-medium text-foreground/80">
-            Evidence-based teaching: rich data from homework and assessments, in your hands.
+            Guidelight is the guiding light for evidence-based teaching: rich classroom data, clear
+            reasoning, and the confidence that your teaching is working.
           </p>
         </div>
       </section>
