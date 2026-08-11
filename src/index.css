@@ -227,8 +227,12 @@
   --color-glass-border: hsl(var(--glass-border));
   --shadow-glass: var(--glass-shadow);
 
-  --font-sans: 'Sora', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans:
+    'Sora', ui-sans-serif, system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Noto Sans SC', sans-serif;
+  --font-display:
+    'Fraunces', Georgia, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC',
+    serif;
 }
 
 @layer base {

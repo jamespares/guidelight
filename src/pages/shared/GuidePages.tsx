@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { Download } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BILLING_SETTINGS_PATH, TRUST_DIAL } from '@/lib/trustCopy'
 import { TASK_KIND_GROUPS, TASK_KIND_LEGEND, taskKindBadgeClass, taskKindLabel } from '@/lib/taskLabels'
@@ -152,6 +154,26 @@ export function TeacherGuidePage() {
         title="Info"
         description="A clear walkthrough of the teacher portal — classes, lessons, tasks, mock exams, and insights."
       />
+
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
+          <div className="space-y-1">
+            <p className="font-display text-base font-semibold text-foreground">
+              Teacher onboarding guide (PDF)
+            </p>
+            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+              A printable walkthrough with real dashboard screenshots — from creating your first
+              class to your first insights, with the support email inside.
+            </p>
+          </div>
+          <Button asChild className="gap-2">
+            <a href="/guides/teacher-onboarding.pdf" download="guidelight-teacher-onboarding.pdf">
+              <Download className="size-4" />
+              Download guide
+            </a>
+          </Button>
+        </CardContent>
+      </Card>
 
       <Section title="Quick start">
         <ol className="list-decimal space-y-2 pl-5">
