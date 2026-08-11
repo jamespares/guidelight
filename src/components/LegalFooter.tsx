@@ -46,7 +46,7 @@ export function LegalFooter({ variant = 'inline', className }: LegalFooterProps)
       )}
     >
       {isOverlay ? (
-        <div className="inline-flex flex-col items-center gap-1 rounded-2xl border border-border/30 bg-card/50 px-5 py-2 shadow-sm backdrop-blur-md">
+        <div className="inline-flex flex-col items-center gap-1 rounded-2xl border border-border/20 bg-card/30 px-5 py-2 shadow-none backdrop-blur-md">
           <FooterNav />
           <p>{COPYRIGHT_LINE}</p>
         </div>

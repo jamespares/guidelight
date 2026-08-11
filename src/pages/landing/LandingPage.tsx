@@ -31,28 +31,28 @@ export function Landing() {
         id="main-content"
         className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center"
       >
-        <div className="max-w-xl space-y-8">
-          <div className="flex items-center justify-center gap-4">
-            <BrandStar className="h-16 w-16 text-[var(--brand-guide)]" />
-            <GuidelightWordmark showStar={false} className="text-5xl sm:text-6xl" />
+        <div className="max-w-2xl space-y-10">
+          <div className="flex items-center justify-center gap-5">
+            <BrandStar className="h-20 w-20 text-[var(--brand-guide)] sm:h-24 sm:w-24" />
+            <GuidelightWordmark showStar={false} className="text-6xl sm:text-7xl md:text-8xl" />
           </div>
 
-          <p className="text-lg font-semibold leading-relaxed text-slate-700 dark:text-white sm:text-xl">
+          <p className="text-lg font-normal leading-relaxed text-foreground/80 sm:text-xl">
             Lead your students to excellence
           </p>
 
-          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button asChild size="lg" className="min-w-[11rem] sm:px-10">
+              <Link to="/get-started">Get started</Link>
+            </Button>
             <DemoVideoDialog
               trigger={
-                <Button variant="outline" size="lg" className="sm:px-8">
+                <Button variant="ghost" size="lg" className="text-foreground/70 hover:text-foreground">
                   <Play className="h-4 w-4" />
                   Watch demo
                 </Button>
               }
             />
-            <Button asChild size="lg" className="sm:px-8">
-              <Link to="/get-started">Get started</Link>
-            </Button>
           </div>
         </div>
       </main>

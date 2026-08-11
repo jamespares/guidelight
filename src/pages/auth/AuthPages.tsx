@@ -149,7 +149,7 @@ export function TeacherAuth() {
   if (magicBusy) {
     return (
       <AuthShell>
-        <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
+        <Card className="border-0 bg-card/25 shadow-sm backdrop-blur-xl">
           <CardContent className="p-8 text-center text-muted-foreground">
             Signing you in…
           </CardContent>
@@ -178,19 +178,19 @@ export function TeacherAuth() {
 
   return (
     <AuthShell>
-      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
+      <Card className="border-0 bg-card/25 shadow-sm backdrop-blur-xl">
         <CardHeader>
           <CardTitle as="h1" className="text-2xl">{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
           {mode === 'login' || mode === 'register' ? (
-            <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg bg-secondary p-1">
+            <div className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-secondary/50 p-1">
               <button
                 type="button"
                 className={cn(
-                  'inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-all',
-                  mode === 'login' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground',
+                  'inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-all',
+                  mode === 'login' ? 'bg-card/80 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
                 )}
                 onClick={() => {
                   setMode('login')
@@ -205,8 +205,8 @@ export function TeacherAuth() {
               <button
                 type="button"
                 className={cn(
-                  'inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-all',
-                  mode === 'register' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground',
+                  'inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-all',
+                  mode === 'register' ? 'bg-card/80 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
                 )}
                 onClick={() => {
                   setMode('register')
@@ -220,7 +220,7 @@ export function TeacherAuth() {
             </div>
           ) : null}
 
-          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+          <form className="space-y-5" onSubmit={(e) => void onSubmit(e)}>
             {mode === 'register' ? (
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
@@ -318,7 +318,7 @@ export function TeacherAuth() {
               <>
                 <button
                   type="button"
-                  className="block w-full text-muted-foreground underline-offset-4 hover:underline"
+                  className="block w-full text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                   onClick={() => {
                     setMode('magic')
                     setError('')
@@ -329,7 +329,7 @@ export function TeacherAuth() {
                 </button>
                 <button
                   type="button"
-                  className="block w-full text-muted-foreground underline-offset-4 hover:underline"
+                  className="block w-full text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                   onClick={() => {
                     setMode('forgot')
                     setError('')
@@ -342,7 +342,7 @@ export function TeacherAuth() {
             ) : (
               <button
                 type="button"
-                className="block w-full text-muted-foreground underline-offset-4 hover:underline"
+                className="block w-full text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 onClick={() => {
                   setMode('login')
                   setError('')
@@ -399,7 +399,7 @@ export function VerifyEmailPage() {
 
   return (
     <AuthShell>
-      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
+      <Card className="border-0 bg-card/25 shadow-sm backdrop-blur-xl">
         <CardHeader>
           <CardTitle as="h1" className="text-2xl">Verify email</CardTitle>
           <CardDescription>
@@ -463,7 +463,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell>
-      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
+      <Card className="border-0 bg-card/25 shadow-sm backdrop-blur-xl">
         <CardHeader>
           <CardTitle as="h1" className="flex items-center gap-2 text-2xl">
             <KeyRound className="h-6 w-6" />
@@ -472,7 +472,7 @@ export function ResetPasswordPage() {
           <CardDescription>Choose a new password for your teacher account.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+          <form className="space-y-5" onSubmit={(e) => void onSubmit(e)}>
             <div className="space-y-2">
               <Label htmlFor="password">New password</Label>
               <Input
@@ -540,13 +540,13 @@ export function StudentAuth() {
 
   return (
     <AuthShell>
-      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
+      <Card className="border-0 bg-card/25 shadow-sm backdrop-blur-xl">
         <CardHeader>
           <CardTitle as="h1" className="text-2xl">Student</CardTitle>
           <CardDescription>Use the username and password your teacher gave you.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+          <form className="space-y-5" onSubmit={(e) => void onSubmit(e)}>
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input
@@ -609,13 +609,13 @@ export function ParentAuth() {
 
   return (
     <AuthShell>
-      <Card className="border-border/30 bg-card/30 shadow-lg backdrop-blur-xl">
+      <Card className="border-0 bg-card/25 shadow-sm backdrop-blur-xl">
         <CardHeader>
           <CardTitle as="h1" className="text-2xl">Parent</CardTitle>
           <CardDescription>Use the parent username and password your teacher gave you.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+          <form className="space-y-5" onSubmit={(e) => void onSubmit(e)}>
             <div className="space-y-2">
               <Label htmlFor="parent-username">Username</Label>
               <Input
