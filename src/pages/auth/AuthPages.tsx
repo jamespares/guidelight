@@ -313,6 +313,11 @@ export function TeacherAuth() {
                       ? 'Send sign-in link'
                       : 'Send reset link'}
             </Button>
+            {mode !== 'login' ? (
+              <p className="text-center text-xs text-muted-foreground">
+                Emails can sometimes take a few minutes to arrive — check your spam folder too.
+              </p>
+            ) : null}
           </form>
 
           <div className="mt-4 space-y-2 text-center text-sm">

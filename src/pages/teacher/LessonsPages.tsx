@@ -6,6 +6,7 @@ import {
   Download,
   List,
   Plus,
+  Presentation,
   Save,
   Sparkles,
   Trash2,
@@ -54,6 +55,7 @@ import {
   type LessonStage,
 } from '@/lib/api'
 import { exportLessonBatchCsv, exportLessonBatchDocx } from '@/lib/lessonExport'
+import { exportLessonPptx } from '@/lib/lessonPptx'
 import {
   ACTIVITY_STYLE_OPTIONS,
   activityStyleHint,
@@ -371,11 +373,137 @@ function PlanLessonsForm({
   )
 }
 
+function CreatePptForm({
+  batches,
+  onDone,
+}: {
+  batches: LessonBatchRow[]
+  onDone: () => void
+}) {
+  const [batchId, setBatchId] = useState('')
+  const [batch, setBatch] = useState<LessonBatchRow | null>(null)
+  const [lessons, setLessons] = useState<LessonRow[]>([])
+  const [lessonId, setLessonId] = useState('')
+  const [loadingLessons, setLoadingLessons] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!batchId) {
+      setBatch(null)
+      setLessons([])
+      setLessonId('')
+      return
+    }
+    let cancelled = false
+    setLoadingLessons(true)
+    setError('')
+    setLessonId('')
+    api
+      .lessonBatch(batchId)
+      .then((res) => {
+        if (cancelled) return
+        setBatch(res.batch)
+        setLessons(res.lessons)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setBatch(null)
+        setLessons([])
+        setError(err instanceof Error ? err.message : 'Failed to load lessons')
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingLessons(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [batchId])
+
+  async function onGenerate() {
+    const lesson = lessons.find((l) => l.id === lessonId)
+    if (!batch || !lesson) return
+    setBusy(true)
+    setError('')
+    try {
+      await exportLessonPptx(batch, lesson)
+      onDone()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create presentation')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="ppt-batch">Lesson batch</Label>
+        <Select value={batchId} onValueChange={setBatchId}>
+          <SelectTrigger id="ppt-batch">
+            <SelectValue placeholder="Select a lesson batch" />
+          </SelectTrigger>
+          <SelectContent>
+            {batches.map((b) => (
+              <SelectItem key={b.id} value={b.id}>
+                {b.title || `${b.subject} plan`} · {b.class_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {batchId ? (
+        <div className="space-y-2">
+          <Label htmlFor="ppt-lesson">Lesson</Label>
+          {loadingLessons ? (
+            <p className="text-sm text-muted-foreground">Loading lessons…</p>
+          ) : lessons.length ? (
+            <Select value={lessonId} onValueChange={setLessonId}>
+              <SelectTrigger id="ppt-lesson">
+                <SelectValue placeholder="Select a lesson" />
+              </SelectTrigger>
+              <SelectContent>
+                {lessons.map((l) => (
+                  <SelectItem key={l.id} value={l.id}>
+                    Week {l.week_index} · {l.scheduled_date} — {l.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This batch has no lessons yet — open it and check its plan first.
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      ) : null}
+
+      <Button
+        type="button"
+        className="w-full gap-2"
+        disabled={!lessonId || busy || loadingLessons}
+        onClick={() => void onGenerate()}
+      >
+        <Presentation className="size-4" />
+        {busy ? 'Building presentation…' : 'Generate PPT'}
+      </Button>
+    </div>
+  )
+}
+
 export function LessonsPage() {
   const navigate = useNavigate()
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [batches, setBatches] = useState<LessonBatchRow[]>([])
   const [open, setOpen] = useState(false)
+  const [pptOpen, setPptOpen] = useState(false)
   const [error, setError] = useState('')
 
   async function load() {
@@ -394,52 +522,79 @@ export function LessonsPage() {
         title="Lessons"
         description="Plan PPP lesson batches with Guidelight, then review them on a calendar or list."
         action={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2" disabled={!classes.length}>
-                <Plus className="size-4" />
-                Plan lessons
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Plan lessons</DialogTitle>
-                <DialogDescription>
-                  Choose the class, schedule, and resources. Guidelight will draft a PPP syllabus
-                  (mostly Quiet work, with occasional Interactive career-framed activities).
-                </DialogDescription>
-              </DialogHeader>
-              {classes.length ? (
-                <PlanLessonsForm
-                  classes={classes}
-                  onDone={(id) => {
-                    setOpen(false)
-                    void navigate(`/teacher/lessons/${id}`)
-                  }}
-                />
-              ) : (
-                <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Dialog open={pptOpen} onOpenChange={setPptOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Presentation className="size-4" />
+                  Create PPT
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Create PPT</DialogTitle>
+                  <DialogDescription>
+                    Pick a lesson batch and a lesson — Guidelight builds a PowerPoint of the
+                    lesson plan and downloads it to your device.
+                  </DialogDescription>
+                </DialogHeader>
+                {batches.length ? (
+                  <CreatePptForm batches={batches} onDone={() => setPptOpen(false)} />
+                ) : (
                   <p className="text-sm text-muted-foreground">
-                    Before you can plan lessons, add a class with students on the{' '}
-                    <Link to="/teacher/students" className="font-semibold underline underline-offset-4">
-                      Students
-                    </Link>{' '}
-                    page.
+                    No lesson batches yet — press Plan lessons first to generate a syllabus, then
+                    come back to turn a lesson into a presentation.
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    No card is needed to start — your account has starter credit and a monthly AI
-                    spending cap.
-                  </p>
-                  <Button asChild>
-                    <Link to="/teacher/students" className="gap-2">
-                      <Users className="size-4" />
-                      Add class
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+                )}
+              </DialogContent>
+            </Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2" disabled={!classes.length}>
+                  <Plus className="size-4" />
+                  Plan lessons
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Plan lessons</DialogTitle>
+                  <DialogDescription>
+                    Choose the class, schedule, and resources. Guidelight will draft a PPP syllabus
+                    (mostly Quiet work, with occasional Interactive career-framed activities).
+                  </DialogDescription>
+                </DialogHeader>
+                {classes.length ? (
+                  <PlanLessonsForm
+                    classes={classes}
+                    onDone={(id) => {
+                      setOpen(false)
+                      void navigate(`/teacher/lessons/${id}`)
+                    }}
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Before you can plan lessons, add a class with students on the{' '}
+                      <Link to="/teacher/students" className="font-semibold underline underline-offset-4">
+                        Students
+                      </Link>{' '}
+                      page.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      No card is needed to start — your account has starter credit and a monthly AI
+                      spending cap.
+                    </p>
+                    <Button asChild>
+                      <Link to="/teacher/students" className="gap-2">
+                        <Users className="size-4" />
+                        Add class
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
         }
       />
 

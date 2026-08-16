@@ -117,7 +117,7 @@ async function invalidateTeacherSessions(env: Env, teacherId: string): Promise<v
 }
 
 const GENERIC_SENT =
-  'If that email is registered, we sent a link. Check your inbox (and spam folder).'
+  'If that email is registered, we sent a link. Check your inbox (and spam folder). Emails can sometimes take a few minutes to arrive.'
 
 export async function handleAuth(env: Env, request: Request, path: string): Promise<Response | null> {
   const secure = wantsSecureCookie(request)
@@ -174,7 +174,8 @@ export async function handleAuth(env: Env, request: Request, path: string): Prom
       {
         ok: true,
         needsVerification: true,
-        message: 'Check your email to verify your account before signing in.',
+        message:
+          'Check your email to verify your account before signing in. Emails can sometimes take a few minutes to arrive.',
       },
       201,
     )

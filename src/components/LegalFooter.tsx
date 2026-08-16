@@ -20,6 +20,10 @@ function FooterNav({ linkClassName }: { linkClassName?: string }) {
         CEFR guide
       </Link>
       <span aria-hidden>·</span>
+      <Link to="/stories" className={cn(linkClasses, linkClassName)}>
+        Graded stories
+      </Link>
+      <span aria-hidden>·</span>
       <Link to="/resources/ai-marking-rubrics" className={cn(linkClasses, linkClassName)}>
         AI marking
       </Link>

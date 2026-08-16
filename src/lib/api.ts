@@ -129,6 +129,7 @@ export interface TaskRow {
   time_limit_seconds: number | null
   reading_text?: string
   class_name?: string
+  created_at: string
   published_at?: string
   last_score?: number | null
   attempt_status?: string | null

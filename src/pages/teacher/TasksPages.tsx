@@ -1,7 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileUp, Plus, Sparkles, Users, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, FileUp, Plus, Sparkles, Users, X } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -206,7 +206,7 @@ function TaskCreateForm({
       } else {
         res = await api.createTask({
           type,
-          subtype: type === 'assessment' ? subtype : subtype === 'diagnostic' ? 'diagnostic' : null,
+          subtype: type === 'assessment' ? subtype : null,
           class_id: classId,
           subject,
           description:
@@ -252,9 +252,13 @@ function TaskCreateForm({
       {needsDiag ? (
         <Card className="border border-warning-foreground/30 bg-warning text-warning-foreground">
           <CardContent className="p-3 text-sm">
-            A diagnostic is highly recommended first — it gives Guidelight the personalisation data
-            to tailor homework and assessments. You can still create this task, but it will be less
-            personalised until students complete a diagnostic.
+            A diagnostic assessment is highly recommended first — it gives Guidelight the
+            personalisation data to tailor homework and assessments. Create one under{' '}
+            <Link to="/teacher/assessments" className="font-semibold underline underline-offset-4">
+              Assessments
+            </Link>
+            . You can still create this task, but it will be less personalised until students
+            complete a diagnostic assessment.
           </CardContent>
         </Card>
       ) : null}
@@ -294,18 +298,7 @@ function TaskCreateForm({
             and reading speed measure general English proficiency — not your class topic.
           </p>
         </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="diag-hw"
-            checked={subtype === 'diagnostic'}
-            onCheckedChange={(v) => setSubtype(v === true ? 'diagnostic' : null)}
-          />
-          <Label htmlFor="diag-hw" className="font-normal">
-            Mark as diagnostic homework
-          </Label>
-        </div>
-      )}
+      ) : null}
 
       {isMock ? (
         <div className="space-y-4 rounded-lg border p-4">
@@ -649,6 +642,15 @@ function TaskCreateForm({
   )
 }
 
+type TaskSortKey = 'created_at' | 'title' | 'class' | 'status'
+
+function formatTaskDate(createdAt: string): string {
+  // SQLite datetime('now') returns 'YYYY-MM-DD HH:MM:SS' in UTC
+  const iso = createdAt.includes('T') ? createdAt : `${createdAt.replace(' ', 'T')}Z`
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? createdAt : d.toLocaleDateString()
+}
+
 function TaskList({
   type,
   title,
@@ -662,6 +664,10 @@ function TaskList({
 }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [sort, setSort] = useState<{ key: TaskSortKey; dir: 'asc' | 'desc' }>({
+    key: 'created_at',
+    dir: 'desc',
+  })
   const navigate = useNavigate()
 
   const { data: tasks = [], isLoading } = useQuery({
@@ -678,6 +684,57 @@ function TaskList({
       return res.classes
     },
   })
+
+  const sortedTasks = useMemo(() => {
+    const value = (t: (typeof tasks)[number]): string => {
+      switch (sort.key) {
+        case 'title':
+          return (t.title || t.description).toLowerCase()
+        case 'class':
+          return (t.class_name ?? '').toLowerCase()
+        case 'status':
+          return t.status
+        case 'created_at':
+          return t.created_at
+      }
+    }
+    return [...tasks].sort((a, b) => {
+      const cmp = value(a).localeCompare(value(b))
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }, [tasks, sort])
+
+  function toggleSort(key: TaskSortKey) {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: key === 'created_at' ? 'desc' : 'asc' },
+    )
+  }
+
+  function sortableHead(key: TaskSortKey, label: string) {
+    const active = sort.key === key
+    return (
+      <TableHead scope="col">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 hover:text-foreground"
+          onClick={() => toggleSort(key)}
+        >
+          {label}
+          {active ? (
+            sort.dir === 'asc' ? (
+              <ArrowUp className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowDown className="h-3.5 w-3.5" />
+            )
+          ) : (
+            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+        </button>
+      </TableHead>
+    )
+  }
 
   return (
     <div>
@@ -730,11 +787,12 @@ function TaskList({
         <TableCaption>{`List of ${type} tasks.`}</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead scope="col">Title</TableHead>
-            <TableHead scope="col">Class</TableHead>
+            {sortableHead('title', 'Title')}
+            {sortableHead('class', 'Class')}
             <TableHead scope="col">Subject</TableHead>
             <TableHead scope="col">Type</TableHead>
-            <TableHead scope="col">Status</TableHead>
+            {sortableHead('status', 'Status')}
+            {sortableHead('created_at', 'Created')}
             <TableHead scope="col">
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -744,19 +802,19 @@ function TaskList({
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
               <TableRow key={i}>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
                   <Skeleton className="h-4 w-full" />
                 </TableCell>
               </TableRow>
             ))
           ) : tasks.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground">
+              <TableCell colSpan={7} className="text-muted-foreground">
                 No {type} yet.
               </TableCell>
             </TableRow>
           ) : (
-            tasks.map((t) => (
+            sortedTasks.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.title || t.description.slice(0, 40)}</TableCell>
                 <TableCell>{t.class_name}</TableCell>
@@ -769,6 +827,7 @@ function TaskList({
                 <TableCell>
                   <Badge variant={t.status === 'published' ? 'accent' : 'warn'}>{t.status}</Badge>
                 </TableCell>
+                <TableCell className="whitespace-nowrap">{formatTaskDate(t.created_at)}</TableCell>
                 <TableCell>
                   <Link
                     className="font-semibold underline-offset-4 hover:underline"

@@ -111,6 +111,15 @@ const CefrLevelsPage = lazy(() =>
 const AiMarkingRubricsPage = lazy(() =>
   import('./pages/resources/ResourcePages').then((m) => ({ default: m.AiMarkingRubricsPage })),
 )
+const PublicStoriesHubPage = lazy(() =>
+  import('./pages/stories/PublicStoriesPages').then((m) => ({ default: m.PublicStoriesHubPage })),
+)
+const PublicStoriesLevelPage = lazy(() =>
+  import('./pages/stories/PublicStoriesPages').then((m) => ({ default: m.PublicStoriesLevelPage })),
+)
+const PublicStoryReaderPage = lazy(() =>
+  import('./pages/stories/PublicStoriesPages').then((m) => ({ default: m.PublicStoryReaderPage })),
+)
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -174,6 +183,9 @@ export default function App() {
       <Route path="/accessibility" element={<AccessibilityStatementPage />} />
       <Route path="/resources/cefr-levels" element={<CefrLevelsPage />} />
       <Route path="/resources/ai-marking-rubrics" element={<AiMarkingRubricsPage />} />
+      <Route path="/stories" element={<PublicStoriesHubPage />} />
+      <Route path="/stories/read/:slug" element={<PublicStoryReaderPage />} />
+      <Route path="/stories/:level" element={<PublicStoriesLevelPage />} />
 
       <Route
         path="/teacher"

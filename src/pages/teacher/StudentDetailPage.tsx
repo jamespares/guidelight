@@ -595,7 +595,7 @@ export function StudentDetailPage() {
         <CardContent>
           <p className="whitespace-pre-wrap text-sm leading-relaxed">
             {summary ||
-              'No summary yet. Generate one after students complete diagnostic or homework.'}
+              'No summary yet. Generate one after the student completes a diagnostic assessment or homework.'}
           </p>
         </CardContent>
       </Card>

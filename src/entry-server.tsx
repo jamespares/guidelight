@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { renderToString } from 'react-dom/server'
-import { StaticRouter } from 'react-router-dom'
+import { Route, Routes, StaticRouter } from 'react-router-dom'
 import { ThemeProvider } from '@/lib/theme'
 import { Landing } from '@/pages/landing/LandingPage'
 import { RoleSelectPage } from '@/pages/landing/RoleSelectPage'
@@ -10,6 +10,12 @@ import {
   PrivacyPolicyPage,
   TermsOfServicePage,
 } from '@/pages/shared/LegalPages'
+import {
+  PublicStoriesHubPage,
+  PublicStoriesLevelPage,
+  PublicStoryReaderPage,
+} from '@/pages/stories/PublicStoriesPages'
+import { STORIES } from '@shared/cefr/stories'
 
 /**
  * SSR entry used only by scripts/prerender.mjs (built via vite.ssr.config.ts).
@@ -26,6 +32,26 @@ const PAGES: Record<string, ComponentType> = {
   '/terms': TermsOfServicePage,
   '/privacy': PrivacyPolicyPage,
   '/accessibility': AccessibilityStatementPage,
+  '/stories': PublicStoriesHubPage,
+  ...Object.fromEntries(
+    ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'].map((level) => [
+      `/stories/${level}`,
+      PublicStoriesLevelPage,
+    ]),
+  ),
+  ...Object.fromEntries(
+    STORIES.map((story) => [`/stories/read/${story.slug}`, PublicStoryReaderPage]),
+  ),
+}
+
+/**
+ * Route pattern used to render a prerendered path, so dynamic pages
+ * (story levels/readers) get their useParams values under StaticRouter.
+ */
+function patternFor(path: string): string {
+  if (path.startsWith('/stories/read/')) return '/stories/read/:slug'
+  if (/^\/stories\/[a-c][12]$/.test(path)) return '/stories/:level'
+  return path
 }
 
 export function renderRoute(path: string): string {
@@ -34,7 +60,9 @@ export function renderRoute(path: string): string {
   return renderToString(
     <ThemeProvider>
       <StaticRouter location={path}>
-        <Page />
+        <Routes>
+          <Route path={patternFor(path)} element={<Page />} />
+        </Routes>
       </StaticRouter>
     </ThemeProvider>,
   )

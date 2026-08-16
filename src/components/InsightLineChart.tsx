@@ -217,7 +217,7 @@ export function InsightLineChartCard({
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex max-h-[90vh] w-[min(96vw,1100px)] !max-w-none flex-col gap-4 overflow-hidden">
+        <DialogContent className="flex h-[min(90vh,720px)] w-[min(96vw,1100px)] !max-w-none flex-col gap-4 overflow-auto">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
@@ -225,7 +225,7 @@ export function InsightLineChartCard({
               aligned to their dates.
             </DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 flex-1" style={{ height: 'min(70vh, 560px)' }}>
+          <div className="min-h-0 flex-1">
             <ChartPlot
               data={data}
               events={events}

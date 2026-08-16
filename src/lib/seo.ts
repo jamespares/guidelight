@@ -1,6 +1,7 @@
 import { DEMO_VIDEO_POSTER, DEMO_VIDEO_URL } from '@/lib/demo'
 import { APP_URL, OPERATOR_NAME, SUPPORT_EMAIL } from '@/lib/legal'
 import { landingCopy } from '@/pages/landing/landingCopy'
+import { STORIES } from '@shared/cefr/stories'
 
 /**
  * Single source of truth for SEO/GEO metadata.
@@ -23,6 +24,38 @@ export interface RouteMeta {
   title: string
   description: string
 }
+
+/** Document titles for the stories pages, shared by prerender + client nav. */
+export const storiesHubTitle = 'Graded English stories (A1–C2) with audio — Guidelight'
+export const storyLevelTitle = (level: string) =>
+  `${level} graded English stories with audio — Guidelight`
+export const storyReaderTitle = (story: { title: string; level: string }) =>
+  `${story.title} — ${story.level} graded story with audio — Guidelight`
+
+const STORY_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
+
+const storiesRoutes: RouteMeta[] = [
+  {
+    path: '/stories',
+    title: storiesHubTitle,
+    description:
+      'Twelve free CEFR-graded English stories from A1 to C2, each with synchronised audio, word-by-word karaoke highlighting, Chinese translation and PDF/DOCX downloads.',
+  },
+  ...STORY_LEVELS.map(
+    (level): RouteMeta => ({
+      path: `/stories/${level.toLowerCase()}`,
+      title: storyLevelTitle(level),
+      description: `Free ${level} CEFR-graded English stories with audio, word-by-word karaoke highlighting, Chinese translations and PDF/DOCX downloads — no login required.`,
+    }),
+  ),
+  ...STORIES.map(
+    (story): RouteMeta => ({
+      path: `/stories/read/${story.slug}`,
+      title: storyReaderTitle(story),
+      description: `Read and listen to “${story.title}” (${story.zhTitle}) — a free ${story.level} CEFR-graded English story, ${story.words} words in ${story.accent}, with karaoke highlighting and PDF/DOCX downloads.`,
+    }),
+  ),
+]
 
 /** Public routes that get prerendered to static HTML at build time. */
 export const PRERENDER_ROUTES: RouteMeta[] = [
@@ -63,6 +96,7 @@ export const PRERENDER_ROUTES: RouteMeta[] = [
     description:
       'Guidelight’s commitment to WCAG 2.1 AA: keyboard navigation, screen-reader support, contrast, and how to report barriers.',
   },
+  ...storiesRoutes,
 ]
 
 const organizationJsonLd = {

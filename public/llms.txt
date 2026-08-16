@@ -11,6 +11,7 @@
 - [Home](https://getguidelight.com/): product overview, features, pricing and FAQs
 - [Get started](https://getguidelight.com/get-started): teacher, student and parent sign-in
 - [CEFR levels explained](https://getguidelight.com/resources/cefr-levels): what A1–C2 mean and how Guidelight measures English level
+- [Graded stories](https://getguidelight.com/stories): twelve free CEFR-graded English stories (A1–C2) with audio, karaoke highlighting and Chinese translations — no login required
 - [Rubric-aligned AI marking](https://getguidelight.com/resources/ai-marking-rubrics): how exam-board rubric alignment, model essays and the rewrite loop work
 - [Privacy Policy](https://getguidelight.com/privacy)
 - [Terms of Service](https://getguidelight.com/terms)

@@ -12,8 +12,12 @@ import {
   type WordTiming,
 } from '@shared/cefr/karaoke'
 import { api } from '@/lib/api'
+import { storiesHubTitle, storyLevelTitle, storyReaderTitle } from '@/lib/seo'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
+
+const STUDENT_BASE = '/student/stories'
 
 const LEVEL_BLURBS: Record<(typeof LEVELS)[number], string> = {
   A1: 'Very simple stories — short sentences about everyday life.',
@@ -24,13 +28,16 @@ const LEVEL_BLURBS: Record<(typeof LEVELS)[number], string> = {
   C2: 'Near-native texts — irony, precision and sophisticated argument.',
 }
 
-export function StoriesHubPage() {
+export function StoriesHubPage({ base = STUDENT_BASE }: { base?: string }) {
+  useDocumentTitle(storiesHubTitle)
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/student/tools" className="text-sm text-muted-foreground hover:underline">
-          ← Tools
-        </Link>
+        {base === STUDENT_BASE ? (
+          <Link to="/student/tools" className="text-sm text-muted-foreground hover:underline">
+            ← Tools
+          </Link>
+        ) : null}
         <PageHeader
           title="A1–C2 English Stories"
           description="Twelve graded stories — download, listen, copy out, and know them inside out."
@@ -60,7 +67,7 @@ export function StoriesHubPage() {
         {LEVELS.map((level) => (
           <Link
             key={level}
-            to={`/student/stories/${level.toLowerCase()}`}
+            to={`${base}/${level.toLowerCase()}`}
             className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
           >
             <Badge variant="accent">{level}</Badge>
@@ -74,15 +81,16 @@ export function StoriesHubPage() {
   )
 }
 
-export function StoriesLevelPage() {
+export function StoriesLevelPage({ base = STUDENT_BASE }: { base?: string }) {
   const { level } = useParams()
   const band = (level ?? '').toUpperCase()
   const stories = STORIES.filter((s) => s.level === band)
+  useDocumentTitle(storyLevelTitle(band))
 
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/student/stories" className="text-sm text-muted-foreground hover:underline">
+        <Link to={base} className="text-sm text-muted-foreground hover:underline">
           ← A1–C2 English Stories
         </Link>
         <PageHeader
@@ -94,7 +102,7 @@ export function StoriesLevelPage() {
         {stories.map((story) => (
           <Link
             key={story.slug}
-            to={`/student/stories/read/${story.slug}`}
+            to={`${base}/read/${story.slug}`}
             className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40"
           >
             <Badge variant="secondary">{story.level}</Badge>
@@ -110,15 +118,21 @@ export function StoriesLevelPage() {
   )
 }
 
-export function StoryReaderPage() {
+export function StoryReaderPage({ base = STUDENT_BASE }: { base?: string }) {
   const { slug } = useParams()
   const story = STORIES.find((s) => s.slug === slug) as Story | undefined
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [blocks, setBlocks] = useState<StoryBlock[]>([])
+  // Initialise blocks synchronously (no timings) so the story text is present
+  // on first render — including in the prerendered static HTML — and upgrade
+  // to timed karaoke cues once the timings JSON loads.
+  const [blocks, setBlocks] = useState<StoryBlock[]>(() =>
+    story ? prepareKaraoke(story.title, story.paragraphs.map((p) => p.en), []).blocks : [],
+  )
   const [cues, setCues] = useState<Cue[] | null>(null)
   const [activeSpan, setActiveSpan] = useState(-1)
   const [showZh, setShowZh] = useState(false)
   const [rate, setRate] = useState(1)
+  useDocumentTitle(story ? storyReaderTitle(story) : 'Story not found — Guidelight')
 
   useEffect(() => {
     if (!story) return
@@ -178,7 +192,7 @@ export function StoryReaderPage() {
     <div className="space-y-6">
       <div>
         <Link
-          to={`/student/stories/${story.level.toLowerCase()}`}
+          to={`${base}/${story.level.toLowerCase()}`}
           className="text-sm text-muted-foreground hover:underline"
         >
           ← {story.level} stories

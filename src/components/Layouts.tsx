@@ -7,12 +7,14 @@ import {
   LayoutDashboard,
   LineChart,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   Wrench,
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { BrandMark } from '@/components/BrandMark'
@@ -67,6 +69,8 @@ function TeacherCapBanner() {
   return <CapHitBanner />
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'guidelight:sidebar-collapsed'
+
 function AppShell({
   role,
   items,
@@ -83,6 +87,45 @@ function AppShell({
   showBillingDial?: boolean
 }) {
   const { user, logout } = useAuth()
+  const [collapsed, setCollapsed] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1',
+  )
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0')
+      } catch {
+        // localStorage unavailable — sidebar still toggles for the session
+      }
+      return next
+    })
+  }
+
+  const renderNavItem = ({ to, label, icon: Icon }: NavItem) => (
+    <NavLink
+      key={to}
+      to={to}
+      title={label}
+      aria-label={label}
+      onMouseEnter={() => prefetchRouteChunk(to)}
+      onFocus={() => prefetchRouteChunk(to)}
+      className={({ isActive }) =>
+        cn(
+          'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+          collapsed && 'justify-center px-0',
+          isActive
+            ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm'
+            : 'text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
+        )
+      }
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {collapsed ? null : label}
+    </NavLink>
+  )
 
   return (
     <div className="flex min-h-screen">
@@ -92,100 +135,106 @@ function AppShell({
       >
         Skip to main content
       </a>
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-sidebar-border/60 bg-sidebar/80 text-sidebar-foreground backdrop-blur-xl">
-        <header className="flex items-start justify-between gap-2 border-b border-sidebar-border px-4 py-5">
-          <BrandMark role={role} />
-          <ThemeToggle className="mt-0.5" />
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border/60 bg-sidebar/80 text-sidebar-foreground backdrop-blur-xl transition-[width]',
+          collapsed ? 'w-16' : 'w-60',
+        )}
+      >
+        <header
+          className={cn(
+            'flex gap-2 border-b border-sidebar-border px-4 py-5',
+            collapsed ? 'flex-col items-center' : 'items-start justify-between',
+          )}
+        >
+          {collapsed ? null : <BrandMark role={role} />}
+          <div className={cn('flex gap-1', collapsed ? 'flex-col items-center' : 'items-center')}>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-muted transition-all hover:bg-foreground/5 hover:text-sidebar-foreground"
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+            <ThemeToggle className="mt-0.5" />
+          </div>
         </header>
 
         <nav className="flex flex-1 flex-col gap-1 p-3">
-          {items.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onMouseEnter={() => prefetchRouteChunk(to)}
-              onFocus={() => prefetchRouteChunk(to)}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm'
-                    : 'text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
-                )
-              }
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </NavLink>
-          ))}
+          {items.map(renderNavItem)}
 
           <div className="my-2 border-t border-sidebar-border" />
 
-          {secondaryItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onMouseEnter={() => prefetchRouteChunk(to)}
-              onFocus={() => prefetchRouteChunk(to)}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm'
-                    : 'text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
-                )
-              }
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </NavLink>
-          ))}
+          {secondaryItems.map(renderNavItem)}
         </nav>
 
         <footer className="space-y-2 border-t border-sidebar-border p-3">
-          {showBillingDial ? <SidebarUsageDial /> : null}
-          <div className="px-3 text-xs text-sidebar-muted">
-            <div className="font-medium text-sidebar-foreground">{user?.name}</div>
-            {user?.username ? <div>@{user.username}</div> : null}
-            {user?.email ? <div className="truncate">{user.email}</div> : null}
-          </div>
+          {showBillingDial && !collapsed ? <SidebarUsageDial /> : null}
+          {collapsed ? null : (
+            <div className="px-3 text-xs text-sidebar-muted">
+              <div className="font-medium text-sidebar-foreground">{user?.name}</div>
+              {user?.username ? <div>@{user.username}</div> : null}
+              {user?.email ? <div className="truncate">{user.email}</div> : null}
+            </div>
+          )}
           <NavLink
             to={footerTo}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-muted transition-all hover:bg-foreground/5 hover:text-sidebar-foreground"
+            title={footerLabel}
+            aria-label={footerLabel}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-muted transition-all hover:bg-foreground/5 hover:text-sidebar-foreground',
+              collapsed && 'justify-center px-0',
+            )}
           >
             <Home className="h-4 w-4" />
-            {footerLabel}
+            {collapsed ? null : footerLabel}
           </NavLink>
-          <nav className="flex flex-wrap gap-x-2 gap-y-1 px-3 text-[11px] text-sidebar-muted">
-            <NavLink to="/terms" className="hover:text-sidebar-foreground hover:underline">
-              Terms
-            </NavLink>
-            <span aria-hidden>·</span>
-            <NavLink to="/privacy" className="hover:text-sidebar-foreground hover:underline">
-              Privacy
-            </NavLink>
-            <span aria-hidden>·</span>
-            <NavLink to="/accessibility" className="hover:text-sidebar-foreground hover:underline">
-              Accessibility
-            </NavLink>
-            <span aria-hidden>·</span>
-            <a href={SUPPORT_MAILTO} className="hover:text-sidebar-foreground hover:underline">
-              Contact
-            </a>
-          </nav>
+          {collapsed ? null : (
+            <nav className="flex flex-wrap gap-x-2 gap-y-1 px-3 text-[11px] text-sidebar-muted">
+              <NavLink to="/terms" className="hover:text-sidebar-foreground hover:underline">
+                Terms
+              </NavLink>
+              <span aria-hidden>·</span>
+              <NavLink to="/privacy" className="hover:text-sidebar-foreground hover:underline">
+                Privacy
+              </NavLink>
+              <span aria-hidden>·</span>
+              <NavLink to="/accessibility" className="hover:text-sidebar-foreground hover:underline">
+                Accessibility
+              </NavLink>
+              <span aria-hidden>·</span>
+              <a href={SUPPORT_MAILTO} className="hover:text-sidebar-foreground hover:underline">
+                Contact
+              </a>
+            </nav>
+          )}
           <Button
             type="button"
             variant="ghost"
-            className="w-full justify-start text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground"
+            title="Sign out"
+            aria-label="Sign out"
+            className={cn(
+              'w-full justify-start text-sidebar-muted hover:bg-foreground/5 hover:text-sidebar-foreground',
+              collapsed && 'justify-center px-0',
+            )}
             onClick={() => void logout()}
           >
             <LogOut className="h-4 w-4" />
-            Sign out
+            {collapsed ? null : 'Sign out'}
           </Button>
         </footer>
       </aside>
 
-      <main id="main-content" className="ml-60 flex-1 p-8 lg:p-10">
+      <main
+        id="main-content"
+        className={cn('flex-1 p-8 transition-[margin] lg:p-10', collapsed ? 'ml-16' : 'ml-60')}
+      >
         <div className="mx-auto w-full max-w-7xl motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
           {showBillingDial ? <TeacherCapBanner /> : null}
           <Suspense fallback={<PageLoadingFallback />}>

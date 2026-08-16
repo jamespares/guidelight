@@ -148,7 +148,7 @@ async function loadInsightEvents(
 
 async function hasDiagnostic(env: Env, classId: string): Promise<boolean> {
   const row = await env.DB.prepare(
-    `SELECT id FROM tasks WHERE class_id = ? AND subtype = 'diagnostic' AND status = 'published' LIMIT 1`,
+    `SELECT id FROM tasks WHERE class_id = ? AND type = 'assessment' AND subtype = 'diagnostic' AND status = 'published' LIMIT 1`,
   )
     .bind(classId)
     .first()
