@@ -25,6 +25,18 @@ import { findTaskGaps } from '@/lib/taskGaps'
 import { queryKeys } from '@/lib/queryKeys'
 import { taskTypeBadgeClass, taskTypeLabel } from '@/lib/taskLabels'
 
+// Open question types take a multi-line model answer (teacher-only) that anchors
+// the AI marker; objective types keep a single-line answer key.
+// Mirrors the open/default branch in src/lib/taskGaps.ts.
+const MODEL_ANSWER_TYPES: ReadonlySet<Question['type']> = new Set([
+  'short_written',
+  'extended_written',
+  'reading_comprehension',
+  'image_analysis',
+  'frayer',
+  'listen_respond',
+])
+
 export function TaskReviewPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
@@ -327,7 +339,26 @@ export function TaskReviewPage() {
                 />
               </div>
             ) : null}
-            {q.correctAnswer !== undefined ? (
+            {MODEL_ANSWER_TYPES.has(q.type) ? (
+              <div className="space-y-2">
+                <Label htmlFor={`q-${q.id}-answer`}>Model answer (teacher-only)</Label>
+                <Textarea
+                  id={`q-${q.id}-answer`}
+                  value={
+                    Array.isArray(q.correctAnswer)
+                      ? q.correctAnswer.join('\n')
+                      : q.correctAnswer || ''
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value
+                    // Store undefined (not '') when cleared: an empty answer key
+                    // would auto-pass the offline fallback marker.
+                    updateQuestion(i, { correctAnswer: value.trim() ? value : undefined })
+                  }}
+                  placeholder="A strong sample answer — the AI marker uses it to calibrate marking. Students never see it."
+                />
+              </div>
+            ) : (
               <div className="space-y-2">
                 <Label htmlFor={`q-${q.id}-answer`}>Correct answer</Label>
                 <Input
@@ -337,10 +368,13 @@ export function TaskReviewPage() {
                       ? q.correctAnswer.join(' | ')
                       : q.correctAnswer || ''
                   }
-                  onChange={(e) => updateQuestion(i, { correctAnswer: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    updateQuestion(i, { correctAnswer: value.trim() ? value : undefined })
+                  }}
                 />
               </div>
-            ) : null}
+            )}
             {q.audioScript ? (
               <div className="space-y-2">
                 <Label htmlFor={`q-${q.id}-audio`}>Listen script</Label>
