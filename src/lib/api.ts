@@ -602,6 +602,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ answers }),
     }),
+  // Teacher-only read-only preview (passage + spot-checks, no attempt created)
+  readingSpeedTaskPreview: (taskId: string) =>
+    request<{
+      title: string
+      body: string
+      wordCount: number
+      passNeed: number
+      checks?: Array<{ id: string; prompt: string; options: string[]; answer?: string }>
+    }>(`/api/reading/speed/task/${taskId}/preview`),
 
   // English level (CEFR)
   cefrTaskStatus: (taskId: string) =>
