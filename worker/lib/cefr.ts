@@ -232,6 +232,38 @@ export async function handleCefrApi(
   }
 
   // —— Reading speed assessment ——
+  // Teacher preview: passage + spot-checks read-only — no attempt rows, no
+  // timing, works on drafts and published tasks.
+  const speedPreview = path.match(/^\/api\/reading\/speed\/task\/([^/]+)\/preview$/)
+  if (speedPreview && request.method === 'GET') {
+    if (user.role !== 'teacher') return error('Forbidden', 403)
+    const taskId = speedPreview[1]
+    const task = await env.DB.prepare(
+      `SELECT t.id, t.subtype, t.title, t.reading_text, c.teacher_id
+       FROM tasks t JOIN classes c ON c.id = t.class_id WHERE t.id = ?`,
+    )
+      .bind(taskId)
+      .first<{
+        id: string
+        subtype: string | null
+        title: string
+        reading_text: string
+        teacher_id: string
+      }>()
+    if (!task || task.teacher_id !== user.id) return error('Not found', 404)
+    if (task.subtype !== 'reading_speed') return error('Not a reading speed task', 400)
+    const checks = buildSpotChecks(task.reading_text, hashSeed(taskId))
+    return json({
+      title: task.title,
+      body: task.reading_text,
+      wordCount: countWords(task.reading_text),
+      passNeed: SPOT_CHECK_PASS,
+      // Students receive only { id, prompt, options }; teachers also see the
+      // answer so they can sanity-check each spot-check before assigning.
+      checks: checks.map((c) => ({ id: c.id, prompt: c.prompt, options: c.options, answer: c.answer })),
+    })
+  }
+
   const speedStatus = path.match(/^\/api\/reading\/speed\/([^/]+)$/)
   if (speedStatus && request.method === 'GET') {
     if (user.role !== 'student') return error('Forbidden', 403)
