@@ -200,6 +200,13 @@ export function TaskReviewPage() {
                 Preview as student
               </Link>
             </Button>
+          ) : task.subtype === 'reading_speed' ? (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link to={`/teacher/tasks/${task.id}/reading-speed-preview`}>
+                <Eye className="h-4 w-4" />
+                Preview as student
+              </Link>
+            </Button>
           ) : !isSpecial ? (
             <Button type="button" variant="outline" size="sm" asChild>
               <Link to={`/teacher/tasks/${task.id}/preview`}>
