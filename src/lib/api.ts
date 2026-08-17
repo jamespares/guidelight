@@ -492,6 +492,9 @@ export const api = {
     request<{ task: TaskRow & { content: TaskContent } }>(`/api/tasks/${id}/preview`),
   updateTask: (id: string, body: Record<string, unknown>) =>
     request(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  // Teacher-only: deletes a draft task (server rejects published tasks)
+  deleteTask: (id: string) =>
+    request<{ ok: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' }),
   publishTask: (id: string, body?: { assign_all?: boolean; student_ids?: string[] }) =>
     request(`/api/tasks/${id}/publish`, { method: 'POST', body: JSON.stringify(body ?? {}) }),
   taskAttempts: (id: string) =>
