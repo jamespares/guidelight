@@ -512,6 +512,42 @@ export async function handleCefrApi(
   }
 
   // —— English level (CEFR diagnostic) ——
+  // Teacher preview: return one full form of the diagnostic read-only —
+  // no cefr_tests/attempts rows, no billing, works on drafts and published tasks.
+  const cefrPreview = path.match(/^\/api\/cefr\/tests\/task\/([^/]+)\/preview$/)
+  if (cefrPreview && request.method === 'GET') {
+    if (user.role !== 'teacher') return error('Forbidden', 403)
+    const taskId = cefrPreview[1]
+    const task = await env.DB.prepare(
+      `SELECT t.id, t.subtype, t.title, t.time_limit_seconds, c.teacher_id
+       FROM tasks t JOIN classes c ON c.id = t.class_id WHERE t.id = ?`,
+    )
+      .bind(taskId)
+      .first<{
+        id: string
+        subtype: string | null
+        title: string
+        time_limit_seconds: number | null
+        teacher_id: string
+      }>()
+    if (!task || task.teacher_id !== user.id) return error('Not found', 404)
+    if (task.subtype !== 'english_level') return error('Not an English level task', 400)
+
+    // Students get a random parallel form; teachers can preview any of them
+    // (?form=N, clamped by selectItems' own modulo) — default form 0.
+    const requested = Number(new URL(request.url).searchParams.get('form'))
+    const formIndex = Number.isInteger(requested) && requested >= 0 ? requested : 0
+    const items = selectItems({ formIndex })
+    return json({
+      title: task.title,
+      timeLimitSeconds: task.time_limit_seconds ?? TEST_TIME_LIMIT_SECONDS,
+      formIndex: formIndex % PARALLEL_FORM_COUNT,
+      formCount: PARALLEL_FORM_COUNT,
+      items: items.map(sanitizeItemForStudent),
+      passages: PASSAGES,
+    })
+  }
+
   const cefrStatus = path.match(/^\/api\/cefr\/tests\/task\/([^/]+)$/)
   if (cefrStatus && request.method === 'GET') {
     if (user.role !== 'student') return error('Forbidden', 403)

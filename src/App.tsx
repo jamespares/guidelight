@@ -26,6 +26,11 @@ const TaskReviewPage = lazy(() =>
 const TaskPreviewPage = lazy(() =>
   import('./pages/teacher/TaskPreviewPage').then((m) => ({ default: m.TaskPreviewPage })),
 )
+const EnglishLevelPreviewPage = lazy(() =>
+  import('./pages/teacher/EnglishLevelPreviewPage').then((m) => ({
+    default: m.EnglishLevelPreviewPage,
+  })),
+)
 const LessonsPage = lazy(() =>
   import('./pages/teacher/LessonsPages').then((m) => ({ default: m.LessonsPage })),
 )
@@ -201,6 +206,7 @@ export default function App() {
         <Route path="assessments" element={<AssessmentsPage />} />
         <Route path="tasks/:id" element={<TaskReviewPage />} />
         <Route path="tasks/:id/preview" element={<TaskPreviewPage />} />
+        <Route path="tasks/:id/english-level-preview" element={<EnglishLevelPreviewPage />} />
         <Route path="lessons" element={<LessonsPage />} />
         <Route path="lessons/:batchId" element={<LessonBatchPage />} />
         <Route path="lessons/:batchId/:lessonId" element={<LessonDetailPage />} />

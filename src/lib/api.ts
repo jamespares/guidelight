@@ -453,7 +453,7 @@ export const api = {
     id: string,
     body: { interests?: string; career_ambitions?: string; username?: string },
   ) => request(`/api/students/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  resetStudentPassword: (id: string, body?: { password?: string }) =>
+  resetStudentPassword: (id: string, body?: { password: string }) =>
     request<{ password: string }>(`/api/students/${id}/reset-password`, {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
@@ -649,6 +649,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ answers }),
     }),
+  // Teacher-only read-only preview of one parallel form (no attempt created)
+  cefrTaskPreview: (taskId: string, form?: number) =>
+    request<{
+      title: string
+      timeLimitSeconds: number
+      formIndex: number
+      formCount: number
+      items?: Array<Record<string, unknown>>
+      passages?: Record<string, string>
+    }>(`/api/cefr/tests/task/${taskId}/preview${form != null ? `?form=${form}` : ''}`),
 
   // Reading machine
   readingMaterials: () =>

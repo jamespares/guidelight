@@ -193,7 +193,14 @@ export function TaskReviewPage() {
           >
             ← Back
           </Link>
-          {!isSpecial ? (
+          {task.subtype === 'english_level' ? (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link to={`/teacher/tasks/${task.id}/english-level-preview`}>
+                <Eye className="h-4 w-4" />
+                Preview as student
+              </Link>
+            </Button>
+          ) : !isSpecial ? (
             <Button type="button" variant="outline" size="sm" asChild>
               <Link to={`/teacher/tasks/${task.id}/preview`}>
                 <Eye className="h-4 w-4" />
