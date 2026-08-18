@@ -19,6 +19,16 @@ const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
 const STUDENT_BASE = '/student/stories'
 
+/** Approximate IELTS band equivalents for each CEFR level (Cambridge/IDP alignment). */
+const IELTS_BANDS: Record<(typeof LEVELS)[number], string> = {
+  A1: '2.0–3.0',
+  A2: '3.0–3.5',
+  B1: '4.0–5.0',
+  B2: '5.5–6.5',
+  C1: '7.0–8.0',
+  C2: '8.5–9.0',
+}
+
 const LEVEL_BLURBS: Record<(typeof LEVELS)[number], string> = {
   A1: 'Very simple stories — short sentences about everyday life.',
   A2: 'Everyday stories — past events and future plans, shopping, travel.',
@@ -70,7 +80,10 @@ export function StoriesHubPage({ base = STUDENT_BASE }: { base?: string }) {
             to={`${base}/${level.toLowerCase()}`}
             className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
           >
-            <Badge variant="accent">{level}</Badge>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="accent">{level}</Badge>
+              <Badge variant="outline">IELTS {IELTS_BANDS[level]}</Badge>
+            </div>
             <h2 className="mt-3 text-lg font-semibold">{level} stories</h2>
             <p className="mt-1 text-sm text-muted-foreground">{LEVEL_BLURBS[level]}</p>
             <p className="mt-3 text-xs text-muted-foreground">2 stories</p>
@@ -105,7 +118,10 @@ export function StoriesLevelPage({ base = STUDENT_BASE }: { base?: string }) {
             to={`${base}/read/${story.slug}`}
             className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40"
           >
-            <Badge variant="secondary">{story.level}</Badge>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">{story.level}</Badge>
+              <Badge variant="outline">IELTS {IELTS_BANDS[story.level]}</Badge>
+            </div>
             <h2 className="mt-3 text-lg font-semibold">{story.title}</h2>
             <p className="text-sm text-muted-foreground">{story.zhTitle}</p>
             <p className="mt-2 text-xs text-muted-foreground">
@@ -197,7 +213,10 @@ export function StoryReaderPage({ base = STUDENT_BASE }: { base?: string }) {
         >
           ← {story.level} stories
         </Link>
-        <PageHeader title={story.title} description={`${story.zhTitle} · ${story.words} words`} />
+        <PageHeader
+          title={story.title}
+          description={`${story.zhTitle} · ${story.words} words · IELTS ${IELTS_BANDS[story.level]}`}
+        />
       </div>
 
       <Card>
