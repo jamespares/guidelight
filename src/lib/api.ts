@@ -159,7 +159,7 @@ export interface LessonPlan {
   practice: LessonStage
   production: LessonStage
   differentiation?: string
-  plenary?: string
+  plenary?: LessonStage
   homeworkOptional?: string
 }
 
@@ -425,7 +425,7 @@ export const api = {
     }>('/api/parent/insights'),
   resetParentCredentials: (
     studentId: string,
-    body?: { username?: string; password?: string },
+    body?: { username?: string; password: string },
   ) =>
     request<{ username: string; password: string }>(
       `/api/students/${studentId}/parent-credentials`,
@@ -494,6 +494,9 @@ export const api = {
     request(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   publishTask: (id: string, body?: { assign_all?: boolean; student_ids?: string[] }) =>
     request(`/api/tasks/${id}/publish`, { method: 'POST', body: JSON.stringify(body ?? {}) }),
+  // Draft tasks only — the worker returns 409 for published tasks.
+  deleteTask: (id: string) =>
+    request<{ ok: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' }),
   taskAttempts: (id: string) =>
     request<{ attempts: Array<Record<string, unknown>> }>(`/api/tasks/${id}/attempts`),
   ttsVoices: () => request<{ voices: TtsVoice[] }>('/api/tts/voices'),
