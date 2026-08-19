@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, ArrowUpDown, FileUp, Plus, Sparkles, Users, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, FileUp, Plus, Sparkles, Trash2, Users, X } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -664,6 +664,8 @@ function TaskList({
 }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [deletingId, setDeletingId] = useState('')
+  const [deleteError, setDeleteError] = useState('')
   const [sort, setSort] = useState<{ key: TaskSortKey; dir: 'asc' | 'desc' }>({
     key: 'created_at',
     dir: 'desc',
@@ -710,6 +712,21 @@ function TaskList({
         ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
         : { key, dir: key === 'created_at' ? 'desc' : 'asc' },
     )
+  }
+
+  async function deleteDraft(t: (typeof tasks)[number]) {
+    const label = t.title || t.description.slice(0, 40)
+    if (!confirm(`Delete draft "${label}"? This cannot be undone.`)) return
+    setDeletingId(t.id)
+    setDeleteError('')
+    try {
+      await api.deleteTask(t.id)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all(type) })
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed')
+    } finally {
+      setDeletingId('')
+    }
   }
 
   function sortableHead(key: TaskSortKey, label: string) {
@@ -771,6 +788,12 @@ function TaskList({
         }
       />
 
+      {deleteError ? (
+        <div aria-live="polite" role="status">
+          <p className="text-sm text-destructive">{deleteError}</p>
+        </div>
+      ) : null}
+
       {classes.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -829,12 +852,26 @@ function TaskList({
                 </TableCell>
                 <TableCell className="whitespace-nowrap">{formatTaskDate(t.created_at)}</TableCell>
                 <TableCell>
-                  <Link
-                    className="font-semibold underline-offset-4 hover:underline"
-                    to={`/teacher/tasks/${t.id}`}
-                  >
-                    Open
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      className="font-semibold underline-offset-4 hover:underline"
+                      to={`/teacher/tasks/${t.id}`}
+                    >
+                      Open
+                    </Link>
+                    {t.status === 'draft' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Delete draft ${t.title || t.description.slice(0, 40)}`}
+                        disabled={deletingId === t.id}
+                        onClick={() => void deleteDraft(t)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))
