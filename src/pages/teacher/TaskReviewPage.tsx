@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Save, Send, Volume2, Eye } from 'lucide-react'
+import { Save, Send, Trash2, Volume2, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { MarkingGapsBanner } from '@/components/MarkingGapsBanner'
 import { Badge } from '@/components/ui/badge'
@@ -39,6 +39,7 @@ const MODEL_ANSWER_TYPES: ReadonlySet<Question['type']> = new Set([
 
 export function TaskReviewPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [content, setContent] = useState<TaskContent | null>(null)
   const [assignMode, setAssignMode] = useState<'class' | 'individuals'>('class')
@@ -97,6 +98,43 @@ export function TaskReviewPage() {
     if (!content) return
     const questions = content.questions.map((q, i) => (i === qi ? { ...q, ...patch } : q))
     setContent({ ...content, questions })
+  }
+
+  // Remove a question locally; the change only persists on Save/Publish.
+  // A task must keep at least one question.
+  function removeQuestion(qi: number) {
+    if (!content || content.questions.length <= 1) return
+    const q = content.questions[qi]
+    const ok = window.confirm(
+      `Remove Q${qi + 1} (“${q.prompt.slice(0, 80)}${q.prompt.length > 80 ? '…' : ''}”)?\n\n` +
+        'The change is kept when you save the draft or publish.',
+    )
+    if (!ok) return
+    setContent({ ...content, questions: content.questions.filter((_, i) => i !== qi) })
+    setMessage(`Q${qi + 1} removed — save the draft to keep this change`)
+  }
+
+  // Drafts only — the server rejects deleting published tasks (they hold
+  // students' attempt history).
+  async function deleteDraft() {
+    if (!id || !task) return
+    const ok = window.confirm(
+      `Delete this draft ${task.type} (“${content?.title || task.title || 'Untitled'}”)? This cannot be undone.`,
+    )
+    if (!ok) return
+    setBusy(true)
+    setError('')
+    try {
+      await api.deleteTask(id)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all('homework') }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all('assessment') }),
+      ])
+      navigate(task.type === 'homework' ? '/teacher/homework' : '/teacher/assessments')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed')
+      setBusy(false)
+    }
   }
 
   async function generateAudio(qi: number, q: Question) {
@@ -193,28 +231,43 @@ export function TaskReviewPage() {
           >
             ← Back
           </Link>
-          {task.subtype === 'english_level' ? (
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link to={`/teacher/tasks/${task.id}/english-level-preview`}>
-                <Eye className="h-4 w-4" />
-                Preview as student
-              </Link>
-            </Button>
-          ) : task.subtype === 'reading_speed' ? (
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link to={`/teacher/tasks/${task.id}/reading-speed-preview`}>
-                <Eye className="h-4 w-4" />
-                Preview as student
-              </Link>
-            </Button>
-          ) : !isSpecial ? (
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link to={`/teacher/tasks/${task.id}/preview`}>
-                <Eye className="h-4 w-4" />
-                Preview as student
-              </Link>
-            </Button>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {task.subtype === 'english_level' ? (
+              <Button type="button" variant="outline" size="sm" asChild>
+                <Link to={`/teacher/tasks/${task.id}/english-level-preview`}>
+                  <Eye className="h-4 w-4" />
+                  Preview as student
+                </Link>
+              </Button>
+            ) : task.subtype === 'reading_speed' ? (
+              <Button type="button" variant="outline" size="sm" asChild>
+                <Link to={`/teacher/tasks/${task.id}/reading-speed-preview`}>
+                  <Eye className="h-4 w-4" />
+                  Preview as student
+                </Link>
+              </Button>
+            ) : !isSpecial ? (
+              <Button type="button" variant="outline" size="sm" asChild>
+                <Link to={`/teacher/tasks/${task.id}/preview`}>
+                  <Eye className="h-4 w-4" />
+                  Preview as student
+                </Link>
+              </Button>
+            ) : null}
+            {task.status === 'draft' ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-destructive"
+                disabled={busy}
+                onClick={() => void deleteDraft()}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete draft
+              </Button>
+            ) : null}
+          </div>
         </div>
         <PageHeader
           title={`Review: ${content.title || task.title}`}
@@ -311,13 +364,33 @@ export function TaskReviewPage() {
         ? content.questions.map((q, i) => (
         <Card key={q.id}>
           <CardHeader className="pb-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Q{i + 1} · {q.type} · topic: {q.topic}
-              {q.bloomLevel ? ` · Bloom: ${q.bloomLevel}` : ''}
-            </p>
-            {q.learningObjective ? (
-              <p className="text-sm text-muted-foreground">{q.learningObjective}</p>
-            ) : null}
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Q{i + 1} · {q.type} · topic: {q.topic}
+                  {q.bloomLevel ? ` · Bloom: ${q.bloomLevel}` : ''}
+                </p>
+                {q.learningObjective ? (
+                  <p className="text-sm text-muted-foreground">{q.learningObjective}</p>
+                ) : null}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+                disabled={content.questions.length <= 1}
+                title={
+                  content.questions.length <= 1
+                    ? 'A task needs at least one question'
+                    : 'Remove this question'
+                }
+                onClick={() => removeQuestion(i)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Remove
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">

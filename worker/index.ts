@@ -1473,6 +1473,31 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         return json({ ok: true })
       }
 
+      // Delete a draft task. Published tasks are refused: they carry student
+      // assignment/attempt data that must stay intact for reports and insights.
+      if (taskMatch && request.method === 'DELETE') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const taskId = taskMatch[1]
+        const task = await env.DB.prepare(
+          `SELECT t.id, t.status, c.teacher_id FROM tasks t
+           JOIN classes c ON c.id = t.class_id WHERE t.id = ?`,
+        )
+          .bind(taskId)
+          .first<{ id: string; status: string; teacher_id: string }>()
+        if (!task || task.teacher_id !== user.id) return error('Not found', 404)
+        if (task.status !== 'draft') {
+          return error('Only draft tasks can be deleted', 400)
+        }
+        // FK cascades cover these, but delete explicitly so the cleanup does
+        // not depend on D1 foreign-key enforcement being enabled.
+        await env.DB.prepare(`DELETE FROM task_assignments WHERE task_id = ?`).bind(taskId).run()
+        await env.DB.prepare(`DELETE FROM attempts WHERE task_id = ?`).bind(taskId).run()
+        await env.DB.prepare(`DELETE FROM reading_speed_attempts WHERE task_id = ?`).bind(taskId).run()
+        await env.DB.prepare(`DELETE FROM tasks WHERE id = ?`).bind(taskId).run()
+        return json({ ok: true })
+      }
+
       if (path.match(/^\/api\/tasks\/[^/]+\/publish$/) && request.method === 'POST') {
         const user = await requireRole(env, request, 'teacher')
         if (user instanceof Response) return user

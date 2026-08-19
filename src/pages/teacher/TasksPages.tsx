@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, ArrowUpDown, FileUp, Plus, Sparkles, Users, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, FileUp, Plus, Sparkles, Trash2, Users, X } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
 import { GenerationBusyLabel } from '@/components/GenerationProgress'
 import { PageHeader } from '@/components/PageHeader'
@@ -664,6 +664,8 @@ function TaskList({
 }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [deletingId, setDeletingId] = useState('')
+  const [listError, setListError] = useState('')
   const [sort, setSort] = useState<{ key: TaskSortKey; dir: 'asc' | 'desc' }>({
     key: 'created_at',
     dir: 'desc',
@@ -736,6 +738,23 @@ function TaskList({
     )
   }
 
+  // Drafts only — the server rejects deleting published tasks (they hold
+  // students' attempt history).
+  async function deleteDraft(t: (typeof tasks)[number]) {
+    const label = t.title || t.description.slice(0, 40) || 'Untitled'
+    if (!window.confirm(`Delete draft “${label}”? This cannot be undone.`)) return
+    setDeletingId(t.id)
+    setListError('')
+    try {
+      await api.deleteTask(t.id)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all(type) })
+    } catch (err) {
+      setListError(err instanceof Error ? err.message : 'Delete failed')
+    } finally {
+      setDeletingId('')
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -770,6 +789,8 @@ function TaskList({
           </Dialog>
         }
       />
+
+      {listError ? <p className="mb-3 text-sm text-destructive">{listError}</p> : null}
 
       {classes.length === 0 ? (
         <EmptyState
@@ -829,12 +850,25 @@ function TaskList({
                 </TableCell>
                 <TableCell className="whitespace-nowrap">{formatTaskDate(t.created_at)}</TableCell>
                 <TableCell>
-                  <Link
-                    className="font-semibold underline-offset-4 hover:underline"
-                    to={`/teacher/tasks/${t.id}`}
-                  >
-                    Open
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      className="font-semibold underline-offset-4 hover:underline"
+                      to={`/teacher/tasks/${t.id}`}
+                    >
+                      Open
+                    </Link>
+                    {t.status === 'draft' ? (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:opacity-50"
+                        disabled={deletingId === t.id}
+                        onClick={() => void deleteDraft(t)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {deletingId === t.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))
