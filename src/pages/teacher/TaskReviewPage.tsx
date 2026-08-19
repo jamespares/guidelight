@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Save, Send, Volume2, Eye } from 'lucide-react'
+import { Save, Send, Trash2, Volume2, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { MarkingGapsBanner } from '@/components/MarkingGapsBanner'
 import { Badge } from '@/components/ui/badge'
@@ -96,6 +96,13 @@ export function TaskReviewPage() {
   function updateQuestion(qi: number, patch: Partial<Question>) {
     if (!content) return
     const questions = content.questions.map((q, i) => (i === qi ? { ...q, ...patch } : q))
+    setContent({ ...content, questions })
+  }
+
+  function removeQuestion(qi: number) {
+    if (!content || content.questions.length <= 1) return
+    if (!confirm('Delete this question? Save the draft to keep this change.')) return
+    const questions = content.questions.filter((_, i) => i !== qi)
     setContent({ ...content, questions })
   }
 
@@ -311,10 +318,23 @@ export function TaskReviewPage() {
         ? content.questions.map((q, i) => (
         <Card key={q.id}>
           <CardHeader className="pb-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Q{i + 1} · {q.type} · topic: {q.topic}
-              {q.bloomLevel ? ` · Bloom: ${q.bloomLevel}` : ''}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Q{i + 1} · {q.type} · topic: {q.topic}
+                {q.bloomLevel ? ` · Bloom: ${q.bloomLevel}` : ''}
+              </p>
+              {task.status === 'draft' && content.questions.length > 1 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label={`Delete question ${i + 1}`}
+                  onClick={() => removeQuestion(i)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
             {q.learningObjective ? (
               <p className="text-sm text-muted-foreground">{q.learningObjective}</p>
             ) : null}
