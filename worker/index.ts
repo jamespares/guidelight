@@ -744,7 +744,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
            JOIN classes c ON c.id = s.class_id
            WHERE s.id = ? AND c.teacher_id = ?`,
         )
-          .bind(studentId)
+          .bind(studentId, user.id)
           .first<{ id: string; username: string; display_name: string }>()
         if (!s) return error('Not found', 404)
 
@@ -1995,7 +1995,7 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
             weakspots_summary?: string
             weakspots_updated_at?: string | null
           }>()
-        if (!s || s.teacher_id !== user.id) return error('Not found', 404)
+        if (!s) return error('Not found', 404)
 
         const attempts = await env.DB.prepare(
           `SELECT a.score_pct, a.submitted_at, a.feedback_json, t.type
@@ -2569,7 +2569,6 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
       return error('Internal server error', 500)
     }
   }
-}
 
 async function exportTeacherAccount(env: Env, teacherId: string): Promise<Record<string, unknown>> {
   const teacher = await env.DB.prepare(`SELECT id, email, name, created_at FROM teachers WHERE id = ?`)
