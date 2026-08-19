@@ -492,6 +492,9 @@ export const api = {
     request<{ task: TaskRow & { content: TaskContent } }>(`/api/tasks/${id}/preview`),
   updateTask: (id: string, body: Record<string, unknown>) =>
     request(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  // Drafts only — the worker refuses to delete published tasks
+  deleteTask: (id: string) =>
+    request<{ ok: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' }),
   publishTask: (id: string, body?: { assign_all?: boolean; student_ids?: string[] }) =>
     request(`/api/tasks/${id}/publish`, { method: 'POST', body: JSON.stringify(body ?? {}) }),
   taskAttempts: (id: string) =>
@@ -548,13 +551,13 @@ export const api = {
     request<{
       weakspots: Weakspot[]
       summary: string
-      weakspotsUpdatedAt: string
+      weakspotsUpdatedAt?: string
     }>(`/api/students/${studentId}/pinpoint-weakspots`, { method: 'POST', body: '{}' }),
   pinpointClassWeakspots: (classId: string) =>
     request<{
       weakspots: Weakspot[]
       summary: string
-      weakspotsUpdatedAt: string
+      weakspotsUpdatedAt?: string
     }>(`/api/classes/${classId}/pinpoint-weakspots`, { method: 'POST', body: '{}' }),
   createReport: (body: {
     student_id?: string
