@@ -551,13 +551,13 @@ export const api = {
     request<{
       weakspots: Weakspot[]
       summary: string
-      weakspotsUpdatedAt?: string
+      weakspotsUpdatedAt: string
     }>(`/api/students/${studentId}/pinpoint-weakspots`, { method: 'POST', body: '{}' }),
   pinpointClassWeakspots: (classId: string) =>
     request<{
       weakspots: Weakspot[]
       summary: string
-      weakspotsUpdatedAt?: string
+      weakspotsUpdatedAt: string
     }>(`/api/classes/${classId}/pinpoint-weakspots`, { method: 'POST', body: '{}' }),
   createReport: (body: {
     student_id?: string
