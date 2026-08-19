@@ -159,7 +159,7 @@ export interface LessonPlan {
   practice: LessonStage
   production: LessonStage
   differentiation?: string
-  plenary?: LessonStage
+  plenary?: string
   homeworkOptional?: string
 }
 
@@ -425,7 +425,7 @@ export const api = {
     }>('/api/parent/insights'),
   resetParentCredentials: (
     studentId: string,
-    body?: { username?: string; password: string },
+    body?: { username?: string; password?: string },
   ) =>
     request<{ username: string; password: string }>(
       `/api/students/${studentId}/parent-credentials`,
