@@ -444,6 +444,10 @@ export const api = {
       classId: string
       credentials: Array<{ id: string; display_name: string; username: string; password: string }>
     }>('/api/classes', { method: 'POST', body: JSON.stringify(body) }),
+  addStudentsToClass: (classId: string, body: { names_text: string }) =>
+    request<{
+      credentials: Array<{ id: string; display_name: string; username: string; password: string }>
+    }>(`/api/classes/${classId}/students`, { method: 'POST', body: JSON.stringify(body) }),
   students: () => request<{ students: StudentRow[] }>('/api/students'),
   student: (id: string) =>
     request<{ student: StudentRow; attempts: unknown[] }>(
