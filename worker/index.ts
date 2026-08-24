@@ -525,6 +525,61 @@ async function handleFetch(request: Request, env: Env): Promise<Response> {
         return json({ classId, credentials }, 201)
       }
 
+      // —— Add students to an existing class ——
+      const classStudentsMatch = path.match(/^\/api\/classes\/([^/]+)\/students$/)
+      if (classStudentsMatch && request.method === 'POST') {
+        const user = await requireRole(env, request, 'teacher')
+        if (user instanceof Response) return user
+        const classId = classStudentsMatch[1]
+        const klass = await env.DB.prepare(`SELECT id, teacher_id FROM classes WHERE id = ?`)
+          .bind(classId)
+          .first<{ id: string; teacher_id: string }>()
+        if (!klass || klass.teacher_id !== user.id) return error('Not found', 404)
+
+        const body = (await request.json()) as { names_text?: string }
+        if (!body.names_text) return error('Student names are required')
+        const names = parseNameBlock(body.names_text)
+        if (names.length === 0) return error('No student names found in paste')
+
+        const credentials: Array<{
+          id: string
+          display_name: string
+          username: string
+          password: string
+        }> = []
+
+        for (const display_name of names) {
+          const id = generateId()
+          const base = slugify(display_name) || 'student'
+          let username = `${base}${Math.floor(Math.random() * 900 + 100)}`
+          // Ensure uniqueness
+          for (let i = 0; i < 5; i++) {
+            const clash = await env.DB.prepare(`SELECT id FROM students WHERE username = ?`)
+              .bind(username)
+              .first()
+            if (!clash) break
+            username = `${base}${Math.floor(Math.random() * 9000 + 1000)}`
+          }
+          const password = randomPassword(8)
+          const password_hash = await hashPassword(password)
+          await env.DB.prepare(
+            `INSERT INTO students (id, class_id, display_name, username, password_hash)
+             VALUES (?, ?, ?, ?, ?)`,
+          )
+            .bind(id, classId, display_name, username, password_hash)
+            .run()
+          credentials.push({ id, display_name, username, password })
+        }
+
+        await env.DB.prepare(
+          `UPDATE classes SET student_count = student_count + ? WHERE id = ?`,
+        )
+          .bind(names.length, classId)
+          .run()
+
+        return json({ credentials }, 201)
+      }
+
       // —— Students list (spreadsheet) ——
       if (path === '/api/students' && request.method === 'GET') {
         const user = await requireRole(env, request, 'teacher')
