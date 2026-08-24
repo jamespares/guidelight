@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, UserPlus } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -136,6 +143,38 @@ export function StudentsPage() {
   const [namesText, setNamesText] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const { data: classes = [] } = useQuery({
+    queryKey: queryKeys.classes.all,
+    queryFn: async () => (await api.classes()).classes,
+  })
+  const [addOpen, setAddOpen] = useState(false)
+  const [addClassId, setAddClassId] = useState('')
+  const [addNamesText, setAddNamesText] = useState('')
+  const [addSaving, setAddSaving] = useState(false)
+
+  async function onAddStudents(e: FormEvent) {
+    e.preventDefault()
+    if (!addClassId) {
+      setError('Choose a class first')
+      return
+    }
+    setAddSaving(true)
+    setError('')
+    try {
+      const res = await api.addStudentsToClass(addClassId, { names_text: addNamesText })
+      setCredentials(res.credentials)
+      setAddOpen(false)
+      setAddClassId('')
+      setAddNamesText('')
+      await queryClient.invalidateQueries({ queryKey: queryKeys.students.all })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.classes.all })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed')
+    } finally {
+      setAddSaving(false)
+    }
+  }
+
   async function onCreate(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -170,6 +209,58 @@ export function StudentsPage() {
         title="Students"
         description={`${students.length} learner${students.length === 1 ? '' : 's'} · names stored as first name + surname initial`}
         action={
+          <div className="flex flex-wrap gap-2">
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" disabled={classes.length === 0}>
+                <UserPlus className="h-4 w-4" />
+                Add students
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Add students to a class</DialogTitle>
+                <DialogDescription>
+                  Add new joiners to an existing class. They will see all homework and assessments
+                  already published to the whole class.
+                </DialogDescription>
+              </DialogHeader>
+              <form className="space-y-4" onSubmit={(e) => void onAddStudents(e)}>
+                <div className="space-y-2">
+                  <Label htmlFor="add-class">Class</Label>
+                  <Select value={addClassId} onValueChange={setAddClassId}>
+                    <SelectTrigger id="add-class">
+                      <SelectValue placeholder="Choose a class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} — {c.subject}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="add-names">Student names</Label>
+                  <p className="text-xs text-muted-foreground">
+                    One per line or comma-separated. We store only first name + second initial.
+                  </p>
+                  <Textarea
+                    id="add-names"
+                    value={addNamesText}
+                    onChange={(e) => setAddNamesText(e.target.value)}
+                    required
+                    placeholder={'Sam Turner\nIris Wong'}
+                  />
+                </div>
+                {error && addOpen ? <p className="text-sm text-destructive">{error}</p> : null}
+                <Button type="submit" className="w-full" disabled={addSaving}>
+                  {addSaving ? 'Adding…' : 'Create student logins'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button type="button">
@@ -249,10 +340,11 @@ export function StudentsPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 
-      {(error || queryError?.message) && !open ? (
+      {(error || queryError?.message) && !open && !addOpen ? (
         <p className="mb-4 text-sm text-destructive">{error || queryError?.message}</p>
       ) : null}
 
