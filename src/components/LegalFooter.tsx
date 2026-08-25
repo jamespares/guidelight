@@ -24,6 +24,10 @@ function FooterNav({ linkClassName }: { linkClassName?: string }) {
         Graded stories
       </Link>
       <span aria-hidden>·</span>
+      <Link to="/flashcards" className={cn(linkClasses, linkClassName)}>
+        Word flashcards
+      </Link>
+      <span aria-hidden>·</span>
       <Link to="/resources/ai-marking-rubrics" className={cn(linkClasses, linkClassName)}>
         AI marking
       </Link>

@@ -483,6 +483,17 @@ export function StudentToolsPage() {
           </p>
         </Link>
 
+        <Link
+          to="/flashcards"
+          className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
+        >
+          <h2 className="text-lg font-semibold">Oxford 3000 word flashcards</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Free English–中文 flashcards for the A1–B2 core word list — self-test, skip ahead and
+            pick up where you left off. No login needed, so you can share the link too.
+          </p>
+        </Link>
+
         <button
           type="button"
           disabled={busy}

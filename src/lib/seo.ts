@@ -1,6 +1,7 @@
 import { DEMO_VIDEO_POSTER, DEMO_VIDEO_URL } from '@/lib/demo'
 import { APP_URL, OPERATOR_NAME, SUPPORT_EMAIL } from '@/lib/legal'
 import { landingCopy } from '@/pages/landing/landingCopy'
+import { FLASHCARD_LEVELS, OXFORD_3000 } from '@/pages/flashcards/oxford3000'
 import { STORIES } from '@shared/cefr/stories'
 
 /**
@@ -32,6 +33,12 @@ export const storyLevelTitle = (level: string) =>
 export const storyReaderTitle = (story: { title: string; level: string }) =>
   `${story.title} — ${story.level} graded story with audio — Guidelight`
 
+/** Document titles for the Oxford 3000 flashcards pages, shared by prerender + client nav. */
+export const flashcardsHubTitle =
+  'Oxford 3000 flashcards (A1–B2) — free English–Chinese vocabulary trainer — Guidelight'
+export const flashcardLevelTitle = (level: string) =>
+  `${level} Oxford 3000 flashcards — English–Chinese vocabulary — Guidelight`
+
 const STORY_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
 const storiesRoutes: RouteMeta[] = [
@@ -53,6 +60,22 @@ const storiesRoutes: RouteMeta[] = [
       path: `/stories/read/${story.slug}`,
       title: storyReaderTitle(story),
       description: `Read and listen to “${story.title}” (${story.zhTitle}) — a free ${story.level} CEFR-graded English story, ${story.words} words in ${story.accent}, with karaoke highlighting and PDF/DOCX downloads.`,
+    }),
+  ),
+]
+
+const flashcardsRoutes: RouteMeta[] = [
+  {
+    path: '/flashcards',
+    title: flashcardsHubTitle,
+    description:
+      'Free English–Chinese flashcards for the Oxford 3000 — the 3,000 most important words to learn in English — organised by CEFR level A1–B2. Self-test, skip ahead and pick up where you left off. No login required.',
+  },
+  ...FLASHCARD_LEVELS.map(
+    (level): RouteMeta => ({
+      path: `/flashcards/${level.toLowerCase()}`,
+      title: flashcardLevelTitle(level),
+      description: `Free ${level} English–Chinese flashcards: ${OXFORD_3000[level].length} Oxford 3000 words with part of speech and Chinese meaning. Flip to self-test, mark known words and jump to any word number — no login required.`,
     }),
   ),
 ]
@@ -97,6 +120,7 @@ export const PRERENDER_ROUTES: RouteMeta[] = [
       'Guidelight’s commitment to WCAG 2.1 AA: keyboard navigation, screen-reader support, contrast, and how to report barriers.',
   },
   ...storiesRoutes,
+  ...flashcardsRoutes,
 ]
 
 const organizationJsonLd = {

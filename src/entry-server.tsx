@@ -15,6 +15,7 @@ import {
   PublicStoriesLevelPage,
   PublicStoryReaderPage,
 } from '@/pages/stories/PublicStoriesPages'
+import { FlashcardsHubPage, FlashcardsLevelPage } from '@/pages/flashcards/FlashcardsPage'
 import { STORIES } from '@shared/cefr/stories'
 
 /**
@@ -42,6 +43,10 @@ const PAGES: Record<string, ComponentType> = {
   ...Object.fromEntries(
     STORIES.map((story) => [`/stories/read/${story.slug}`, PublicStoryReaderPage]),
   ),
+  '/flashcards': FlashcardsHubPage,
+  ...Object.fromEntries(
+    ['a1', 'a2', 'b1', 'b2'].map((level) => [`/flashcards/${level}`, FlashcardsLevelPage]),
+  ),
 }
 
 /**
@@ -51,6 +56,7 @@ const PAGES: Record<string, ComponentType> = {
 function patternFor(path: string): string {
   if (path.startsWith('/stories/read/')) return '/stories/read/:slug'
   if (/^\/stories\/[a-c][12]$/.test(path)) return '/stories/:level'
+  if (/^\/flashcards\/[ab][12]$/.test(path)) return '/flashcards/:level'
   return path
 }
 
