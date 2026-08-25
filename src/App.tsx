@@ -130,6 +130,16 @@ const PublicStoriesLevelPage = lazy(() =>
 const PublicStoryReaderPage = lazy(() =>
   import('./pages/stories/PublicStoriesPages').then((m) => ({ default: m.PublicStoryReaderPage })),
 )
+const PublicFlashcardsHubPage = lazy(() =>
+  import('./pages/flashcards/PublicFlashcardsPages').then((m) => ({
+    default: m.PublicFlashcardsHubPage,
+  })),
+)
+const PublicFlashcardsLevelPage = lazy(() =>
+  import('./pages/flashcards/PublicFlashcardsPages').then((m) => ({
+    default: m.PublicFlashcardsLevelPage,
+  })),
+)
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -196,6 +206,8 @@ export default function App() {
       <Route path="/stories" element={<PublicStoriesHubPage />} />
       <Route path="/stories/read/:slug" element={<PublicStoryReaderPage />} />
       <Route path="/stories/:level" element={<PublicStoriesLevelPage />} />
+      <Route path="/flashcards" element={<PublicFlashcardsHubPage />} />
+      <Route path="/flashcards/:level" element={<PublicFlashcardsLevelPage />} />
 
       <Route
         path="/teacher"
