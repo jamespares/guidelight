@@ -4,7 +4,7 @@
  * ECDICT (stardict) dictionary. Powers the free public flashcards tool.
  *
  * Entries are ordered exactly as in the source PDF: by level (A1→B2), then
- * alphabetically. `ph` is the IPA phonetic (British) where available.
+ * alphabetically.
  */
 export interface OxfordWord {
   /** Headword, e.g. "about" or "light (from the sun/a lamp)" */
@@ -15,6 +15,9 @@ export interface OxfordWord {
   lv: 'A1' | 'A2' | 'B1' | 'B2'
   /** Chinese gloss (simplified) */
   zh: string
-  /** IPA phonetic transcription, may be empty */
+  /** IPA phonetic transcription (British); empty when unavailable */
   ph: string
 }
+
+/** Compact on-disk shape: [word, pos, zh, phonetic?] — level is implied by the file. */
+export type RawWord = [w: string, pos: string, zh: string, ph?: string]
