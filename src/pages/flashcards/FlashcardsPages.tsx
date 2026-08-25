@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { OXFORD_3000, type OxfordWord } from '@/data/oxford3000'
+import { OXFORD_3000, type OxfordWord } from '@/data/oxford3000/index'
 import {
   flashcardsHubTitle,
   flashcardsLevelTitle,
