@@ -11,6 +11,10 @@ import {
   TermsOfServicePage,
 } from '@/pages/shared/LegalPages'
 import {
+  PublicFlashcardsHubPage,
+  PublicFlashcardsLevelPage,
+} from '@/pages/flashcards/PublicFlashcardsPages'
+import {
   PublicStoriesHubPage,
   PublicStoriesLevelPage,
   PublicStoryReaderPage,
@@ -42,6 +46,10 @@ const PAGES: Record<string, ComponentType> = {
   ...Object.fromEntries(
     STORIES.map((story) => [`/stories/read/${story.slug}`, PublicStoryReaderPage]),
   ),
+  '/flashcards': PublicFlashcardsHubPage,
+  ...Object.fromEntries(
+    ['a1', 'a2', 'b1', 'b2'].map((level) => [`/flashcards/${level}`, PublicFlashcardsLevelPage]),
+  ),
 }
 
 /**
@@ -51,6 +59,7 @@ const PAGES: Record<string, ComponentType> = {
 function patternFor(path: string): string {
   if (path.startsWith('/stories/read/')) return '/stories/read/:slug'
   if (/^\/stories\/[a-c][12]$/.test(path)) return '/stories/:level'
+  if (/^\/flashcards\/[ab][12]$/.test(path)) return '/flashcards/:level'
   return path
 }
 
