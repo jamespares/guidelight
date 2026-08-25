@@ -11,14 +11,11 @@ import {
   TermsOfServicePage,
 } from '@/pages/shared/LegalPages'
 import {
-  PublicFlashcardsHubPage,
-  PublicFlashcardsLevelPage,
-} from '@/pages/flashcards/PublicFlashcardsPages'
-import {
   PublicStoriesHubPage,
   PublicStoriesLevelPage,
   PublicStoryReaderPage,
 } from '@/pages/stories/PublicStoriesPages'
+import { FlashcardsHubPage, FlashcardsLevelPage } from '@/pages/flashcards/FlashcardsPage'
 import { STORIES } from '@shared/cefr/stories'
 
 /**
@@ -46,9 +43,9 @@ const PAGES: Record<string, ComponentType> = {
   ...Object.fromEntries(
     STORIES.map((story) => [`/stories/read/${story.slug}`, PublicStoryReaderPage]),
   ),
-  '/flashcards': PublicFlashcardsHubPage,
+  '/flashcards': FlashcardsHubPage,
   ...Object.fromEntries(
-    ['a1', 'a2', 'b1', 'b2'].map((level) => [`/flashcards/${level}`, PublicFlashcardsLevelPage]),
+    ['a1', 'a2', 'b1', 'b2'].map((level) => [`/flashcards/${level}`, FlashcardsLevelPage]),
   ),
 }
 
