@@ -34,6 +34,30 @@ export const storyReaderTitle = (story: { title: string; level: string }) =>
 
 const STORY_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
+/** Document titles for the Oxford 3000 flashcards pages, shared by prerender + client nav. */
+export type FlashcardsLevel = 'A1' | 'A2' | 'B1' | 'B2'
+export const flashcardsHubTitle = 'Oxford 3000 flashcards with Chinese meanings (A1–B2) — Guidelight'
+export const flashcardsLevelTitle = (level: string) =>
+  `Oxford 3000 ${level} flashcards — English to Chinese vocabulary practice — Guidelight`
+
+const FLASHCARDS_LEVELS: FlashcardsLevel[] = ['A1', 'A2', 'B1', 'B2']
+
+const flashcardsRoutes: RouteMeta[] = [
+  {
+    path: '/flashcards',
+    title: flashcardsHubTitle,
+    description:
+      'Free Oxford 3000 flashcards organised by CEFR level (A1–B2), English to Chinese. Test yourself, skip words you know, and jump back to where you left off — no login required. 免费牛津3000词抽认卡，英译中，按CEFR等级分类。',
+  },
+  ...FLASHCARDS_LEVELS.map(
+    (level): RouteMeta => ({
+      path: `/flashcards/${level.toLowerCase()}`,
+      title: flashcardsLevelTitle(level),
+      description: `Free Oxford 3000 ${level} flashcards with Chinese translations — tap to flip, skip the words you know and pick up where you left off. 免费牛津3000词${level}等级中英抽认卡，无需登录。`,
+    }),
+  ),
+]
+
 const storiesRoutes: RouteMeta[] = [
   {
     path: '/stories',
@@ -97,6 +121,7 @@ export const PRERENDER_ROUTES: RouteMeta[] = [
       'Guidelight’s commitment to WCAG 2.1 AA: keyboard navigation, screen-reader support, contrast, and how to report barriers.',
   },
   ...storiesRoutes,
+  ...flashcardsRoutes,
 ]
 
 const organizationJsonLd = {
