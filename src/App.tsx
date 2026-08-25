@@ -130,15 +130,11 @@ const PublicStoriesLevelPage = lazy(() =>
 const PublicStoryReaderPage = lazy(() =>
   import('./pages/stories/PublicStoriesPages').then((m) => ({ default: m.PublicStoryReaderPage })),
 )
-const PublicFlashcardsHubPage = lazy(() =>
-  import('./pages/flashcards/PublicFlashcardsPages').then((m) => ({
-    default: m.PublicFlashcardsHubPage,
-  })),
+const FlashcardsHubPage = lazy(() =>
+  import('./pages/flashcards/FlashcardsPage').then((m) => ({ default: m.FlashcardsHubPage })),
 )
-const PublicFlashcardsLevelPage = lazy(() =>
-  import('./pages/flashcards/PublicFlashcardsPages').then((m) => ({
-    default: m.PublicFlashcardsLevelPage,
-  })),
+const FlashcardsLevelPage = lazy(() =>
+  import('./pages/flashcards/FlashcardsPage').then((m) => ({ default: m.FlashcardsLevelPage })),
 )
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
@@ -206,8 +202,8 @@ export default function App() {
       <Route path="/stories" element={<PublicStoriesHubPage />} />
       <Route path="/stories/read/:slug" element={<PublicStoryReaderPage />} />
       <Route path="/stories/:level" element={<PublicStoriesLevelPage />} />
-      <Route path="/flashcards" element={<PublicFlashcardsHubPage />} />
-      <Route path="/flashcards/:level" element={<PublicFlashcardsLevelPage />} />
+      <Route path="/flashcards" element={<FlashcardsHubPage />} />
+      <Route path="/flashcards/:level" element={<FlashcardsLevelPage />} />
 
       <Route
         path="/teacher"
