@@ -28,6 +28,10 @@ function FooterNav({ linkClassName }: { linkClassName?: string }) {
         Word flashcards
       </Link>
       <span aria-hidden>·</span>
+      <Link to="/ielts-listening" className={cn(linkClasses, linkClassName)}>
+        IELTS listening mock
+      </Link>
+      <span aria-hidden>·</span>
       <Link to="/resources/ai-marking-rubrics" className={cn(linkClasses, linkClassName)}>
         AI marking
       </Link>

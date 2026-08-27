@@ -16,6 +16,8 @@ import {
   PublicStoryReaderPage,
 } from '@/pages/stories/PublicStoriesPages'
 import { FlashcardsHubPage, FlashcardsLevelPage } from '@/pages/flashcards/FlashcardsPage'
+import { IeltsHubPage } from '@/pages/ielts/IeltsHubPage'
+import { IeltsTestPage } from '@/pages/ielts/IeltsTestPage'
 import { STORIES } from '@shared/cefr/stories'
 
 /**
@@ -47,6 +49,8 @@ const PAGES: Record<string, ComponentType> = {
   ...Object.fromEntries(
     ['a1', 'a2', 'b1', 'b2'].map((level) => [`/flashcards/${level}`, FlashcardsLevelPage]),
   ),
+  '/ielts-listening': IeltsHubPage,
+  '/ielts-listening/test-1': IeltsTestPage,
 }
 
 /**

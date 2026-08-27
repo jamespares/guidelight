@@ -136,6 +136,12 @@ const FlashcardsHubPage = lazy(() =>
 const FlashcardsLevelPage = lazy(() =>
   import('./pages/flashcards/FlashcardsPage').then((m) => ({ default: m.FlashcardsLevelPage })),
 )
+const IeltsHubPage = lazy(() =>
+  import('./pages/ielts/IeltsHubPage').then((m) => ({ default: m.IeltsHubPage })),
+)
+const IeltsTestPage = lazy(() =>
+  import('./pages/ielts/IeltsTestPage').then((m) => ({ default: m.IeltsTestPage })),
+)
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -204,6 +210,8 @@ export default function App() {
       <Route path="/stories/:level" element={<PublicStoriesLevelPage />} />
       <Route path="/flashcards" element={<FlashcardsHubPage />} />
       <Route path="/flashcards/:level" element={<FlashcardsLevelPage />} />
+      <Route path="/ielts-listening" element={<IeltsHubPage />} />
+      <Route path="/ielts-listening/test-1" element={<IeltsTestPage />} />
 
       <Route
         path="/teacher"
