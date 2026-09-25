@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChevronDown,
   ClipboardList,
+  Gauge,
   Languages,
   LineChart,
   PiggyBank,
@@ -13,6 +14,7 @@ import {
   Receipt,
   ShieldCheck,
   SlidersHorizontal,
+  Timer,
   type LucideIcon,
 } from 'lucide-react'
 import { BrandStar, GuidelightWordmark } from '@/components/BrandMark'
@@ -39,6 +41,8 @@ const FEATURE_ICONS: LucideIcon[] = [
 ]
 
 const PRICING_ICONS: LucideIcon[] = [PiggyBank, SlidersHorizontal, Receipt]
+
+const FREE_TOOL_ICONS: LucideIcon[] = [Gauge, Timer]
 
 const LANG_STORAGE_KEY = 'guidelight-landing-lang'
 
@@ -199,6 +203,7 @@ export function Landing() {
   const [lang, setLang] = useState<LandingLang>(initialLang)
   const t = landingCopy[lang]
   const featuresView = useInView<HTMLDivElement>(0.15)
+  const freeToolsView = useInView<HTMLDivElement>(0.15)
   const pricingView = useInView<HTMLDivElement>(0.15)
   const faqView = useInView<HTMLDivElement>(0.15)
 
@@ -317,6 +322,54 @@ export function Landing() {
                 index={i}
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Free tools section */}
+      <section id="free-tools" className="relative z-10 w-full px-6 pb-24 sm:pb-28">
+        <div
+          ref={freeToolsView.ref}
+          className={cn(
+            'mx-auto max-w-4xl space-y-12 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out',
+            freeToolsView.inView
+              ? 'motion-safe:translate-y-0 motion-safe:opacity-100'
+              : 'motion-safe:translate-y-6 motion-safe:opacity-0',
+          )}
+        >
+          <div className="space-y-4 text-center">
+            <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
+              {t.freeTools.eyebrow}
+            </p>
+            <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+              {t.freeTools.heading}
+            </h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {t.freeTools.items.map((tool, i) => {
+              const Icon = FREE_TOOL_ICONS[i] ?? Gauge
+              return (
+                <Card
+                  key={tool.title}
+                  className="group relative h-full overflow-hidden border-0 bg-card/25 text-left shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-card/35 hover:shadow-lg motion-safe:hover:-translate-y-1"
+                >
+                  <CardContent className="relative flex h-full flex-col p-6">
+                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-border/40 bg-card/40 text-foreground/80">
+                      <Icon className="size-5" />
+                    </div>
+                    <h3 className="mb-3 font-display text-lg font-semibold text-foreground">
+                      {tool.title}
+                    </h3>
+                    <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
+                      {tool.body}
+                    </p>
+                    <Button asChild className="mt-6 self-start">
+                      <Link to={tool.href}>{tool.cta}</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
       </section>
