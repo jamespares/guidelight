@@ -54,6 +54,24 @@ const en = {
       },
     ],
   },
+  freeTools: {
+    eyebrow: 'Free tools',
+    heading: 'Try two student assessments — free, no login',
+    items: [
+      {
+        title: 'Free English level test',
+        body: 'The full CEFR A1–C2 diagnostic — vocabulary, listening, reading, grammar and writing — with an instant level, indicative IELTS band and a report to share with your teacher.',
+        cta: 'Take the level test',
+        href: '/english-level-test',
+      },
+      {
+        title: 'Free reading speed test',
+        body: 'Measure English reading fluency in words per minute, with built-in comprehension spot-checks — a score and report in about two minutes.',
+        cta: 'Take the speed test',
+        href: '/reading-speed-test',
+      },
+    ],
+  },
   reviews: {
     eyebrow: 'Testimonials',
     heading: 'What teachers are saying',
@@ -213,6 +231,24 @@ const zh: LandingCopy = {
         features:
           '完整的 CEFR A1–C2 水平诊断（含听力理解），对应雅思分数段；RSVP 阅读速度测试并配理解抽查。',
         impact: '一次测评，即可让每位学生定位到合适的水平。',
+      },
+    ],
+  },
+  freeTools: {
+    eyebrow: '免费工具',
+    heading: '免费体验两项学生测评——无需登录',
+    items: [
+      {
+        title: '免费英语水平测试',
+        body: '完整的 CEFR A1–C2 诊断——词汇、听力、阅读、语法与写作——即时生成等级、雅思参考分数段和可分享给老师的成绩报告。',
+        cta: '开始水平测试',
+        href: '/english-level-test',
+      },
+      {
+        title: '免费阅读速度测试',
+        body: '以每分钟词数（WPM）衡量英语阅读流畅度，内置理解抽查——约两分钟即可获得成绩与报告。',
+        cta: '开始速度测试',
+        href: '/reading-speed-test',
       },
     ],
   },
