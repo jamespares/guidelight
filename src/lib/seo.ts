@@ -39,6 +39,27 @@ export const flashcardsHubTitle =
 export const flashcardLevelTitle = (level: string) =>
   `${level} Oxford 3000 flashcards — English–Chinese vocabulary — Guidelight`
 
+/** Document titles for the free public tests, shared by prerender + client nav. */
+export const englishLevelTestTitle =
+  'Free English level test (CEFR A1–C2) with instant report — Guidelight'
+export const readingSpeedTestTitle =
+  'Free reading speed test (WPM) with comprehension checks — Guidelight'
+
+const freeToolsRoutes: RouteMeta[] = [
+  {
+    path: '/english-level-test',
+    title: englishLevelTestTitle,
+    description:
+      'Free 72-question English level test covering vocabulary, listening, reading, grammar and writing from A1 to C2 — instant CEFR level, indicative IELTS band and a full report. No login required.',
+  },
+  {
+    path: '/reading-speed-test',
+    title: readingSpeedTestTitle,
+    description:
+      'Free English reading speed test: read a short passage at your natural pace, pass three comprehension spot-checks and get your words-per-minute score instantly. No login required.',
+  },
+]
+
 const STORY_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
 const storiesRoutes: RouteMeta[] = [
@@ -121,6 +142,7 @@ export const PRERENDER_ROUTES: RouteMeta[] = [
   },
   ...storiesRoutes,
   ...flashcardsRoutes,
+  ...freeToolsRoutes,
 ]
 
 const organizationJsonLd = {
