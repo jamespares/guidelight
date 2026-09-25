@@ -12,7 +12,7 @@ const StudentsPage = lazy(() =>
   import('./pages/teacher/StudentsPage').then((m) => ({ default: m.StudentsPage })),
 )
 const StudentDetailPage = lazy(() =>
-  import('./pages/teacher/StudentDetailPage').then((m) => ({ default: m.StudentDetailPage })),
+  import('./pages/teacher/StudentsPage').then((m) => ({ default: m.StudentDetailPage })),
 )
 const HomeworkPage = lazy(() =>
   import('./pages/teacher/TasksPages').then((m) => ({ default: m.HomeworkPage })),
@@ -136,6 +136,12 @@ const FlashcardsHubPage = lazy(() =>
 const FlashcardsLevelPage = lazy(() =>
   import('./pages/flashcards/FlashcardsPage').then((m) => ({ default: m.FlashcardsLevelPage })),
 )
+const EnglishLevelTestPage = lazy(() =>
+  import('./pages/tools/EnglishLevelTestPage').then((m) => ({ default: m.EnglishLevelTestPage })),
+)
+const ReadingSpeedTestPage = lazy(() =>
+  import('./pages/tools/ReadingSpeedTestPage').then((m) => ({ default: m.ReadingSpeedTestPage })),
+)
 
 function RequireAuth({ role, children }: { role: 'teacher' | 'student' | 'parent'; children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -204,6 +210,8 @@ export default function App() {
       <Route path="/stories/:level" element={<PublicStoriesLevelPage />} />
       <Route path="/flashcards" element={<FlashcardsHubPage />} />
       <Route path="/flashcards/:level" element={<FlashcardsLevelPage />} />
+      <Route path="/english-level-test" element={<EnglishLevelTestPage />} />
+      <Route path="/reading-speed-test" element={<ReadingSpeedTestPage />} />
 
       <Route
         path="/teacher"

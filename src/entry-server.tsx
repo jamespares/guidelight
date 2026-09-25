@@ -16,6 +16,8 @@ import {
   PublicStoryReaderPage,
 } from '@/pages/stories/PublicStoriesPages'
 import { FlashcardsHubPage, FlashcardsLevelPage } from '@/pages/flashcards/FlashcardsPage'
+import { EnglishLevelTestPage } from '@/pages/tools/EnglishLevelTestPage'
+import { ReadingSpeedTestPage } from '@/pages/tools/ReadingSpeedTestPage'
 import { STORIES } from '@shared/cefr/stories'
 
 /**
@@ -47,6 +49,8 @@ const PAGES: Record<string, ComponentType> = {
   ...Object.fromEntries(
     ['a1', 'a2', 'b1', 'b2'].map((level) => [`/flashcards/${level}`, FlashcardsLevelPage]),
   ),
+  '/english-level-test': EnglishLevelTestPage,
+  '/reading-speed-test': ReadingSpeedTestPage,
 }
 
 /**
