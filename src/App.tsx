@@ -12,7 +12,7 @@ const StudentsPage = lazy(() =>
   import('./pages/teacher/StudentsPage').then((m) => ({ default: m.StudentsPage })),
 )
 const StudentDetailPage = lazy(() =>
-  import('./pages/teacher/StudentsPage').then((m) => ({ default: m.StudentDetailPage })),
+  import('./pages/teacher/StudentDetailPage').then((m) => ({ default: m.StudentDetailPage })),
 )
 const HomeworkPage = lazy(() =>
   import('./pages/teacher/TasksPages').then((m) => ({ default: m.HomeworkPage })),
